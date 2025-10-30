@@ -9,13 +9,13 @@ use Contoweb\AbacusOdata\Enums\ODataOperator;
 abstract class AbacusModel
 {
     protected static string $resource;
-    protected array $attributes = [];
-    protected array $original = [];
+    protected array         $attributes = [];
+    protected array         $original   = [];
 
     public function __construct(array $attributes = [])
     {
         $this->attributes = $attributes;
-        $this->original = $attributes;
+        $this->original   = $attributes;
     }
 
     /**
@@ -24,6 +24,7 @@ abstract class AbacusModel
     public static function query(): AbacusQueryBuilder
     {
         $service = app(AbacusService::class);
+
         return new AbacusQueryBuilder($service, static::$resource);
     }
 
@@ -50,6 +51,7 @@ abstract class AbacusModel
     public static function find(mixed $id): ?static
     {
         $result = static::query()->find($id);
+
         return $result ? new static($result) : null;
     }
 
@@ -58,7 +60,7 @@ abstract class AbacusModel
      * Example: Project::where('Id', ODataOperator::EQUALS, 9100)->get()
      * Example: Project::where('Id', 'eq', 9100)->get()
      */
-    public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusQueryBuilder
+    public static function where(string $field, ODataOperator | string $operator, mixed $value): AbacusQueryBuilder
     {
         return static::query()->where($field, $operator, $value);
     }
@@ -66,7 +68,7 @@ abstract class AbacusModel
     /**
      * Start select query
      */
-    public static function select(array|string $fields): AbacusQueryBuilder
+    public static function select(array | string $fields): AbacusQueryBuilder
     {
         return static::query()->select($fields);
     }
@@ -90,7 +92,7 @@ abstract class AbacusModel
     /**
      * Expand Navigation Properties
      */
-    public static function expand(array|string $relations): AbacusQueryBuilder
+    public static function expand(array | string $relations): AbacusQueryBuilder
     {
         return static::query()->expand($relations);
     }
@@ -101,7 +103,7 @@ abstract class AbacusModel
     public static function create(array $attributes): static
     {
         $service = app(AbacusService::class);
-        $result = $service->create(static::$resource, $attributes);
+        $result  = $service->create(static::$resource, $attributes);
 
         return new static($result);
     }
@@ -114,10 +116,10 @@ abstract class AbacusModel
         $service = app(AbacusService::class);
 
         if (isset($this->attributes['Id'])) {
-            $result = $service->update(static::$resource, $this->attributes['Id'], $this->getDirty());
+            $result           = $service->update(static::$resource, $this->attributes['Id'], $this->getDirty());
             $this->attributes = array_merge($this->attributes, $result);
         } else {
-            $result = $service->create(static::$resource, $this->attributes);
+            $result           = $service->create(static::$resource, $this->attributes);
             $this->attributes = $result;
         }
 
@@ -131,7 +133,7 @@ abstract class AbacusModel
      */
     public function update(array $attributes = []): static
     {
-        if (!empty($attributes)) {
+        if ( ! empty($attributes)) {
             foreach ($attributes as $key => $value) {
                 $this->setAttribute($key, $value);
             }
@@ -145,11 +147,12 @@ abstract class AbacusModel
      */
     public function delete(): bool
     {
-        if (!isset($this->attributes['Id'])) {
+        if ( ! isset($this->attributes['Id'])) {
             return false;
         }
 
         $service = app(AbacusService::class);
+
         return $service->delete(static::$resource, $this->attributes['Id']);
     }
 
@@ -226,7 +229,7 @@ abstract class AbacusModel
      */
     public function fresh(): ?static
     {
-        if (!isset($this->attributes['Id'])) {
+        if ( ! isset($this->attributes['Id'])) {
             return null;
         }
 

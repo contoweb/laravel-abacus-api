@@ -15,7 +15,7 @@ class AbacusServiceProvider extends ServiceProvider
     {
         // Merge config
         $this->mergeConfigFrom(
-            __DIR__.'/../config/abacus-odata.php',
+            __DIR__ . '/../config/abacus-odata.php',
             'abacus-odata'
         );
 
@@ -39,7 +39,7 @@ class AbacusServiceProvider extends ServiceProvider
     {
         // Publish config with multiple tags
         $this->publishes([
-            __DIR__.'/../config/abacus-odata.php' => config_path('abacus-odata.php'),
+            __DIR__ . '/../config/abacus-odata.php' => config_path('abacus-odata.php'),
         ], ['config', 'abacus-config', 'abacus', 'abacus-odata']);
 
         // Register commands

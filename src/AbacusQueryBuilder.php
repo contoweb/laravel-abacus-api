@@ -8,16 +8,16 @@ class AbacusQueryBuilder
 {
     protected AbacusService $service;
     protected string        $resource;
-    protected array $filters = [];
-    protected array $selects = [];
-    protected ?string $orderBy = null;
-    protected ?int $top = null;
-    protected array $expand = [];
-    protected string $format = 'json';
+    protected array         $filters = [];
+    protected array         $selects = [];
+    protected ?string       $orderBy = null;
+    protected ?int          $top     = null;
+    protected array         $expand  = [];
+    protected string        $format  = 'json';
 
     public function __construct(AbacusService $service, string $resource)
     {
-        $this->service = $service;
+        $this->service  = $service;
         $this->resource = $resource;
     }
 
@@ -26,7 +26,7 @@ class AbacusQueryBuilder
      * Example: ->where('LastName', ODataOperator::EQUALS, 'Müller')
      * Example: ->where('LastName', 'eq', 'Müller')
      */
-    public function where(string $field, ODataOperator|string $operator, mixed $value)
+    public function where(string $field, ODataOperator | string $operator, mixed $value)
     {
         /* Convert enum to string value */
         $operatorValue = $operator instanceof ODataOperator ? $operator->value : $operator;
@@ -34,13 +34,13 @@ class AbacusQueryBuilder
         /* Supported operators: eq, ge, gt, le, lt */
         $allowedOperators = ['eq', 'lt', 'gt', 'le', 'ge'];
 
-        if (!in_array($operatorValue, $allowedOperators)) {
+        if ( ! in_array($operatorValue, $allowedOperators)) {
             throw new \InvalidArgumentException(
                 "Operator '{$operatorValue}' not supported. Allowed: " . implode(', ', $allowedOperators)
             );
         }
 
-        $formattedValue = $this->formatValue($value);
+        $formattedValue  = $this->formatValue($value);
         $this->filters[] = "{$field} {$operatorValue} {$formattedValue}";
 
         return $this;
@@ -57,7 +57,7 @@ class AbacusQueryBuilder
     /**
      * Combine multiple filters (AND linkage)
      */
-    public function whereAnd(string $field, ODataOperator|string $operator, mixed $value)
+    public function whereAnd(string $field, ODataOperator | string $operator, mixed $value)
     {
         return $this->where($field, $operator, $value);
     }
@@ -66,7 +66,7 @@ class AbacusQueryBuilder
      * $select - Query only specific properties
      * Example: ->select(['LastName', 'AddressNumber'])
      */
-    public function select(array|string $fields)
+    public function select(array | string $fields)
     {
         $this->selects = array_merge(
             $this->selects,
@@ -110,7 +110,7 @@ class AbacusQueryBuilder
      */
     public function orderBy(string $field, string $direction = 'asc')
     {
-        if (!in_array(strtolower($direction), ['asc', 'desc'])) {
+        if ( ! in_array(strtolower($direction), ['asc', 'desc'])) {
             throw new \InvalidArgumentException("Direction must be 'asc' or 'desc'");
         }
 
@@ -123,7 +123,7 @@ class AbacusQueryBuilder
      * $expand - Expand navigation properties
      * Example: ->expand('Addresses') or ->expand(['Addresses', 'Contacts'])
      */
-    public function expand(array|string $relations)
+    public function expand(array | string $relations)
     {
         $this->expand = array_merge(
             $this->expand,
@@ -139,7 +139,7 @@ class AbacusQueryBuilder
      */
     public function format(string $format)
     {
-        if (!in_array($format, ['json', 'atom', 'xml'])) {
+        if ( ! in_array($format, ['json', 'atom', 'xml'])) {
             throw new \InvalidArgumentException("Format must be 'json', 'atom' or 'xml'");
         }
 
@@ -196,7 +196,7 @@ class AbacusQueryBuilder
     public function first()
     {
         $this->top = 1;
-        $result = $this->get();
+        $result    = $this->get();
 
         return $result->first();
     }
@@ -226,12 +226,12 @@ class AbacusQueryBuilder
         $query = [];
 
         // $filter
-        if (!empty($this->filters)) {
+        if ( ! empty($this->filters)) {
             $query['$filter'] = implode(' and ', $this->filters);
         }
 
         // $select
-        if (!empty($this->selects)) {
+        if ( ! empty($this->selects)) {
             $query['$select'] = implode(',', $this->selects);
         }
 
@@ -246,7 +246,7 @@ class AbacusQueryBuilder
         }
 
         // $expand
-        if (!empty($this->expand)) {
+        if ( ! empty($this->expand)) {
             $query['$expand'] = implode(',', $this->expand);
         }
 
@@ -280,7 +280,7 @@ class AbacusQueryBuilder
             return $value->format('Y-m-d\TH:i:s\Z');
         }
 
-        return (string) $value;
+        return (string)$value;
     }
 
     /**

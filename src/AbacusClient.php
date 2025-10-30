@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Cache;
 
 class AbacusClient
 {
-    const CACHE_NAMESPACE = 'abacus_access_token:';
+    const CACHE_NAMESPACE      = 'abacus_access_token:';
     const API_ENTITY_BASE_PATH = '/api/entity/v1/mandants';
 
     private string $baseUrl;
@@ -22,10 +22,10 @@ class AbacusClient
 
     public function __construct()
     {
-        $this->baseUrl = config('abacus-odata.rest_api.url');
-        $this->mandate = config('abacus-odata.rest_api.mandate');
-        $this->clientId = config('abacus-odata.rest_api.client_id');
-        $this->clientSecret = config('abacus-odata.rest_api.client_secret');
+        $this->baseUrl       = config('abacus-odata.rest_api.url');
+        $this->mandate       = config('abacus-odata.rest_api.mandate');
+        $this->clientId      = config('abacus-odata.rest_api.client_id');
+        $this->clientSecret  = config('abacus-odata.rest_api.client_secret');
         $this->tokenEndpoint = config('abacus-odata.rest_api.token_endpoint');
     }
 
@@ -49,7 +49,7 @@ class AbacusClient
     {
         $url = $this->baseUrl;
 
-        if (!str_starts_with($url, 'http://') && !str_starts_with($url, 'https://')) {
+        if ( ! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
             $url = 'https://' . $url;
         }
 
@@ -84,18 +84,18 @@ class AbacusClient
     private function fetchFreshAccessToken(): string
     {
         $response = Http::asForm()
-            ->post($this->getBaseUrl() . $this->tokenEndpoint, [
-                'grant_type' => 'client_credentials',
-                'client_id' => $this->clientId,
-                'client_secret' => $this->clientSecret,
-            ]);
+                        ->post($this->getBaseUrl() . $this->tokenEndpoint, [
+                            'grant_type'    => 'client_credentials',
+                            'client_id'     => $this->clientId,
+                            'client_secret' => $this->clientSecret,
+                        ]);
 
         if ($response->failed() || $response->json('access_token') === null) {
             throw new \RuntimeException('Cannot fetch access token from API.');
         }
 
-        $accessToken = $response->json('access_token');
-        $tokenLifetime = (int) $response->json('expires_in');
+        $accessToken   = $response->json('access_token');
+        $tokenLifetime = (int)$response->json('expires_in');
 
         /* Cache token with 10 second buffer before expiration */
         Cache::put($this->getCacheKey(), $accessToken, $tokenLifetime - 10);
@@ -111,7 +111,7 @@ class AbacusClient
     {
         $response = $callback();
 
-        if (!($response instanceof Response)) {
+        if ( ! ($response instanceof Response)) {
             throw new \TypeError('Callback function must return an instance of ' . Response::class);
         }
 
@@ -143,9 +143,9 @@ class AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($url) {
             return Http::withToken($this->getAccessToken())
-                ->withHeaders(['Accept' => 'application/json'])
-                ->timeout(30)
-                ->get($url);
+                       ->withHeaders(['Accept' => 'application/json'])
+                       ->timeout(30)
+                       ->get($url);
         })->throw();
     }
 

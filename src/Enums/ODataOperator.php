@@ -19,11 +19,11 @@ namespace Contoweb\AbacusOdata\Enums;
 enum ODataOperator: string
 {
     /* Comparison Operators */
-    case EQUALS = 'eq';
-    case GREATER_THAN = 'gt';
+    case EQUALS                = 'eq';
+    case GREATER_THAN          = 'gt';
     case GREATER_THAN_OR_EQUAL = 'ge';
-    case LESS_THAN = 'lt';
-    case LESS_THAN_OR_EQUAL = 'le';
+    case LESS_THAN             = 'lt';
+    case LESS_THAN_OR_EQUAL    = 'le';
 
     /**
      * Get all supported operator values

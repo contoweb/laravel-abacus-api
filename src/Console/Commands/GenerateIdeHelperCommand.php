@@ -16,22 +16,23 @@ class GenerateIdeHelperCommand extends Command
     protected $description = 'Generate IDE helper file from Abacus Swagger JSON';
 
     protected array $typeMapping = [
-        'string' => 'string',
+        'string'  => 'string',
         'integer' => 'int',
-        'number' => 'float',
+        'number'  => 'float',
         'boolean' => 'bool',
-        'array' => 'array',
-        'object' => 'array',
+        'array'   => 'array',
+        'object'  => 'array',
     ];
 
     public function handle(): int
     {
-        if (!config('abacus-odata.ide_helper.enabled')) {
+        if ( ! config('abacus-odata.ide_helper.enabled')) {
             $this->info('IDE Helper generation is disabled in config.');
+
             return 0;
         }
 
-        $url = $this->option('url') ?? config('abacus-odata.ide_helper.swagger_url');
+        $url        = $this->option('url') ?? config('abacus-odata.ide_helper.swagger_url');
         $outputFile = base_path($this->option('output') ?? config('abacus-odata.ide_helper.output_file'));
 
         try {
@@ -41,35 +42,39 @@ class GenerateIdeHelperCommand extends Command
 
                 $response = Http::timeout(30)->get($url);
 
-                if (!$response->successful()) {
+                if ( ! $response->successful()) {
                     $this->error("Failed to fetch Swagger JSON: HTTP {$response->status()}");
+
                     return 1;
                 }
 
                 $swagger = $response->json();
             } else {
                 $jsonFile = $this->option('file') ?? config('abacus-odata.ide_helper.swagger_json_file');
- 
+
                 $jsonPath = base_path($jsonFile);
 
                 $this->info("Reading Swagger JSON from file: {$jsonPath}");
 
-                if (!File::exists($jsonPath)) {
+                if ( ! File::exists($jsonPath)) {
                     $this->error("Swagger JSON file not found: {$jsonPath}");
+
                     return 1;
                 }
 
                 $jsonContent = File::get($jsonPath);
-                $swagger = json_decode($jsonContent, true);
+                $swagger     = json_decode($jsonContent, true);
 
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     $this->error("Invalid JSON in file: " . json_last_error_msg());
+
                     return 1;
                 }
             }
 
-            if (!isset($swagger['definitions'])) {
+            if ( ! isset($swagger['definitions'])) {
                 $this->error('Invalid Swagger format: missing definitions');
+
                 return 1;
             }
 
@@ -85,9 +90,9 @@ class GenerateIdeHelperCommand extends Command
             $this->comment('Restart your IDE or run "File → Invalidate Caches" in PhpStorm');
 
             return 0;
-
         } catch (\Exception $e) {
             $this->error("Error: {$e->getMessage()}");
+
             return 1;
         }
     }
@@ -97,16 +102,16 @@ class GenerateIdeHelperCommand extends Command
         $models = [];
 
         foreach ($definitions as $definitionName => $definition) {
-            if (!$this->isEntity($definitionName)) {
+            if ( ! $this->isEntity($definitionName)) {
                 continue;
             }
 
-            $modelName = $this->getModelName($definitionName);
+            $modelName  = $this->getModelName($definitionName);
             $properties = $this->parseProperties($definition['properties'] ?? []);
 
             $models[$modelName] = [
-                'resource' => $modelName,
-                'properties' => $properties,
+                'resource'    => $modelName,
+                'properties'  => $properties,
                 'description' => $definition['description'] ?? null,
             ];
         }
@@ -130,6 +135,7 @@ class GenerateIdeHelperCommand extends Command
     protected function getModelName(string $definitionName): string
     {
         $parts = explode('.', $definitionName);
+
         return end($parts);
     }
 
@@ -138,13 +144,13 @@ class GenerateIdeHelperCommand extends Command
         $parsed = [];
 
         foreach ($properties as $name => $property) {
-            $type = $this->mapType($property);
+            $type        = $this->mapType($property);
             $description = $property['description'] ?? null;
-            $nullable = !($property['required'] ?? false);
+            $nullable    = ! ($property['required'] ?? false);
 
             $parsed[$name] = [
-                'type' => $type,
-                'nullable' => $nullable,
+                'type'        => $type,
+                'nullable'    => $nullable,
                 'description' => $description,
             ];
         }
@@ -154,7 +160,7 @@ class GenerateIdeHelperCommand extends Command
 
     protected function mapType(array $property): string
     {
-        $type = $property['type'] ?? 'string';
+        $type   = $property['type'] ?? 'string';
         $format = $property['format'] ?? null;
 
         if ($format === 'date-time' || $format === 'date') {
@@ -170,8 +176,9 @@ class GenerateIdeHelperCommand extends Command
         }
 
         if (is_array($type)) {
-            $itemType = $property['items']['type'] ?? 'mixed';
+            $itemType       = $property['items']['type'] ?? 'mixed';
             $mappedItemType = $this->typeMapping[$itemType] ?? 'mixed';
+
             return "array<{$mappedItemType}>";
         }
 
