@@ -16,6 +16,7 @@ return [
         'mandate' => env('ABACUS_REST_API_MANDATE', '7777'),
         'client_id' => env('ABACUS_REST_API_CLIENT_ID', ''),
         'client_secret' => env('ABACUS_REST_API_CLIENT_SECRET', ''),
+        'token_endpoint' => env('ABACUS_TOKEN_ENDPOINT', '/oauth/oauth2/v1/token'),
     ],
 
     /*
@@ -29,10 +30,8 @@ return [
 
     'ide_helper' => [
         'enabled' => env('ABACUS_IDE_HELPER_ENABLED', true),
-        'swagger_url' => env(
-            'ABACUS_SWAGGER_URL',
-            'https://apihub.abacus.ch/VAADIN/dynamic/resource/3/6ec89d2f-56c8-4dac-b64b-124ae63ebfe4/swagger.json'
-        ),
+        'swagger_url' => env('ABACUS_SWAGGER_URL', null),
+        'swagger_json_file' => env('ABACUS_SWAGGER_JSON_FILE', 'storage/app/swagger.json'),
         'output_file' => env('ABACUS_IDE_HELPER_OUTPUT', '_ide_helper_abacus.php'),
     ],
 

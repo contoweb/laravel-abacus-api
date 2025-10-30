@@ -1,11 +1,12 @@
 <?php
 
-namespace Contoweb\AbacusRestOdata\Models;
+namespace Contoweb\AbacusOdata\Models;
 
-use Contoweb\AbacusRestOdata\AbacusRestService;
-use Contoweb\AbacusRestOdata\AbacusQueryBuilder;
+use Contoweb\AbacusOdata\AbacusService;
+use Contoweb\AbacusOdata\AbacusQueryBuilder;
+use Contoweb\AbacusOdata\Enums\ODataOperator;
 
-abstract class AbacusRestModel
+abstract class AbacusModel
 {
     protected static string $resource;
     protected array $attributes = [];
@@ -18,25 +19,33 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Query Builder erstellen
+     * Create query builder
      */
     public static function query(): AbacusQueryBuilder
     {
-        $service = app(AbacusRestService::class);
+        $service = app(AbacusService::class);
         return new AbacusQueryBuilder($service, static::$resource);
     }
 
     /**
-     * Alle Entities abrufen
+     *  Fetch all entities across all pagination pages as Collection
+     *  Follows all @odata.nextLink URLs automatically
      */
-    public static function all(): array
+    public static function all()
     {
-        $results = static::query()->get();
-        return static::hydrate($results);
+        return static::query()->getAllPages()->map(fn($item) => new static($item));
     }
 
     /**
-     * Entity via Primary Key finden
+     * Fetch all entities (first page only) as Collection
+     */
+    public static function firstPage()
+    {
+        return static::query()->get()->map(fn($item) => new static($item));
+    }
+
+    /**
+     * Find entity via primary key
      */
     public static function find(mixed $id): ?static
     {
@@ -45,15 +54,17 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Where-Query starten
+     * Start where query
+     * Example: Project::where('Id', ODataOperator::EQUALS, 9100)->get()
+     * Example: Project::where('Id', 'eq', 9100)->get()
      */
-    public static function where(string $field, string $operator, mixed $value): AbacusQueryBuilder
+    public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusQueryBuilder
     {
         return static::query()->where($field, $operator, $value);
     }
 
     /**
-     * Select-Query starten
+     * Start select query
      */
     public static function select(array|string $fields): AbacusQueryBuilder
     {
@@ -79,28 +90,28 @@ abstract class AbacusRestModel
     /**
      * Expand Navigation Properties
      */
-    public static function with(array|string $relations): AbacusQueryBuilder
+    public static function expand(array|string $relations): AbacusQueryBuilder
     {
-        return static::query()->with($relations);
+        return static::query()->expand($relations);
     }
 
     /**
-     * Entity erstellen
+     * Create entity
      */
     public static function create(array $attributes): static
     {
-        $service = app(AbacusRestService::class);
+        $service = app(AbacusService::class);
         $result = $service->create(static::$resource, $attributes);
 
         return new static($result);
     }
 
     /**
-     * Entity speichern (create oder update)
+     * Save entity (create or update)
      */
     public function save(): static
     {
-        $service = app(AbacusRestService::class);
+        $service = app(AbacusService::class);
 
         if (isset($this->attributes['Id'])) {
             $result = $service->update(static::$resource, $this->attributes['Id'], $this->getDirty());
@@ -116,7 +127,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Entity aktualisieren
+     * Update entity
      */
     public function update(array $attributes = []): static
     {
@@ -130,7 +141,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Entity löschen
+     * Delete entity
      */
     public function delete(): bool
     {
@@ -138,20 +149,12 @@ abstract class AbacusRestModel
             return false;
         }
 
-        $service = app(AbacusRestService::class);
+        $service = app(AbacusService::class);
         return $service->delete(static::$resource, $this->attributes['Id']);
     }
 
     /**
-     * Array von Daten in Model-Instanzen umwandeln
-     */
-    protected static function hydrate(array $items): array
-    {
-        return array_map(fn($item) => new static($item), $items);
-    }
-
-    /**
-     * Attribute abrufen
+     * Get attribute
      */
     public function getAttribute(string $key): mixed
     {
@@ -159,7 +162,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Attribute setzen
+     * Set attribute
      */
     public function setAttribute(string $key, mixed $value): void
     {
@@ -167,7 +170,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Alle Attribute abrufen
+     * Get all attributes
      */
     public function getAttributes(): array
     {
@@ -175,7 +178,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Model als Array zurückgeben
+     * Return model as array
      */
     public function toArray(): array
     {
@@ -183,7 +186,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Model als JSON zurückgeben
+     * Return model as JSON
      */
     public function toJson(int $options = 0): string
     {
@@ -191,7 +194,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Prüfen ob Attribute geändert wurden
+     * Check if attributes have changed
      */
     public function isDirty(?string $key = null): bool
     {
@@ -203,7 +206,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Geänderte Attribute abrufen
+     * Get changed attributes
      */
     public function getDirty(): array
     {
@@ -219,7 +222,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Originale Attribute wiederherstellen
+     * Restore original attributes
      */
     public function fresh(): ?static
     {
@@ -255,7 +258,7 @@ abstract class AbacusRestModel
     }
 
     /**
-     * Resource-Name abrufen
+     * Get resource name
      */
     public static function getResource(): string
     {

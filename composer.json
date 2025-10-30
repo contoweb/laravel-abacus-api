@@ -1,21 +1,16 @@
 {
-    "name": "contoweb/laravel-odata-client",
+    "name": "contoweb/laravel-abacus-odata",
     "description": "Laravel wrapper for Abacus OData API to consume it in a Laravel way.",
-    "version": "1.0.0",
     "type": "library",
     "keywords": [
         "laravel",
         "abacus",
         "rest",
         "odata",
-        "api"
+        "api",
+        "erp"
     ],
     "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "Contoweb\\LaravelOdataClient\\": "src/"
-        }
-    },
     "authors": [
         {
             "name": "Joel Rhenisch",
@@ -29,6 +24,32 @@
         "illuminate/console": "^10.0|^11.0",
         "guzzlehttp/guzzle": "^7.0"
     },
-    "minimum-stability": "dev",
+    "require-dev": {
+        "phpunit/phpunit": "^10.0|^11.0",
+        "orchestra/testbench": "^8.0|^9.0",
+        "mockery/mockery": "^1.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Contoweb\\AbacusOdata\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Contoweb\\AbacusOdata\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Contoweb\\AbacusOdata\\AbacusServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+    },
+    "minimum-stability": "stable",
     "prefer-stable": true
 }

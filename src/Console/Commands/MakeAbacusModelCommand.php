@@ -1,6 +1,6 @@
 <?php
 
-namespace contoweb\AbacusRestOdata\Console\Commands;
+namespace Contoweb\AbacusOdata\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -16,7 +16,7 @@ class MakeAbacusModelCommand extends Command
     {
         $name = $this->argument('name');
         $resource = $this->option('resource') ?? Str::plural($name);
-        $namespace = config('abacus-rest-odata.models_namespace');
+        $namespace = config('abacus-odata.models_namespace');
 
         $path = $this->getPath($namespace, $name);
 
@@ -66,9 +66,9 @@ class MakeAbacusModelCommand extends Command
 
 namespace {{namespace}};
 
-use contoweb\AbacusRestOdata\Models\AbacusRestModel;
+use Contoweb\AbacusOdata\Models\AbacusModel;
 
-class {{class}} extends AbacusRestModel
+class {{class}} extends AbacusModel
 {
     protected static string $resource = '{{resource}}';
 }

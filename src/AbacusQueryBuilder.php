@@ -1,11 +1,13 @@
 <?php
 
-namespace Contoweb\AbacusRestOdata;
+namespace Contoweb\AbacusOdata;
+
+use Contoweb\AbacusOdata\Enums\ODataOperator;
 
 class AbacusQueryBuilder
 {
-    protected AbacusRestService $service;
-    protected string $resource;
+    protected AbacusService $service;
+    protected string        $resource;
     protected array $filters = [];
     protected array $selects = [];
     protected ?string $orderBy = null;
@@ -13,34 +15,39 @@ class AbacusQueryBuilder
     protected array $expand = [];
     protected string $format = 'json';
 
-    public function __construct(AbacusRestService $service, string $resource)
+    public function __construct(AbacusService $service, string $resource)
     {
         $this->service = $service;
         $this->resource = $resource;
     }
 
     /**
-     * Filter mit unterstützten Operatoren: eq, lt, gt, le, ge
-     * Beispiel: ->where('LastName', 'eq', 'Müller')
+     * Filter with OData operators
+     * Example: ->where('LastName', ODataOperator::EQUALS, 'Müller')
+     * Example: ->where('LastName', 'eq', 'Müller')
      */
-    public function where(string $field, string $operator, mixed $value)
+    public function where(string $field, ODataOperator|string $operator, mixed $value)
     {
+        /* Convert enum to string value */
+        $operatorValue = $operator instanceof ODataOperator ? $operator->value : $operator;
+
+        /* Supported operators: eq, ge, gt, le, lt */
         $allowedOperators = ['eq', 'lt', 'gt', 'le', 'ge'];
 
-        if (!in_array($operator, $allowedOperators)) {
+        if (!in_array($operatorValue, $allowedOperators)) {
             throw new \InvalidArgumentException(
-                "Operator '{$operator}' nicht unterstützt. Erlaubt: " . implode(', ', $allowedOperators)
+                "Operator '{$operatorValue}' not supported. Allowed: " . implode(', ', $allowedOperators)
             );
         }
 
         $formattedValue = $this->formatValue($value);
-        $this->filters[] = "{$field} {$operator} {$formattedValue}";
+        $this->filters[] = "{$field} {$operatorValue} {$formattedValue}";
 
         return $this;
     }
 
     /**
-     * Convenience-Methode für Gleichheit
+     * Convenience method for equality
      */
     public function whereEquals(string $field, mixed $value)
     {
@@ -48,16 +55,16 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Mehrere Filter kombinieren (AND-Verknüpfung)
+     * Combine multiple filters (AND linkage)
      */
-    public function whereAnd(string $field, string $operator, mixed $value)
+    public function whereAnd(string $field, ODataOperator|string $operator, mixed $value)
     {
         return $this->where($field, $operator, $value);
     }
 
     /**
-     * $select - Nur bestimmte Properties abfragen
-     * Beispiel: ->select(['LastName', 'AddressNumber'])
+     * $select - Query only specific properties
+     * Example: ->select(['LastName', 'AddressNumber'])
      */
     public function select(array|string $fields)
     {
@@ -70,8 +77,8 @@ class AbacusQueryBuilder
     }
 
     /**
-     * $top - Nur Top N Elemente zurückgeben
-     * Beispiel: ->top(10)
+     * $top - Return only top N elements
+     * Example: ->top(10)
      */
     public function top(int $limit)
     {
@@ -97,14 +104,14 @@ class AbacusQueryBuilder
     }
 
     /**
-     * $orderby - Sortierung nach Attribut (asc oder desc)
-     * Beispiel: ->orderBy('LastName', 'desc')
-     * WICHTIG: Nur ein orderBy möglich, weitere überschreiben vorherige
+     * $orderby - Sort by attribute (asc or desc)
+     * Example: ->orderBy('LastName', 'desc')
+     * IMPORTANT: Only one orderBy possible, further calls override previous ones
      */
     public function orderBy(string $field, string $direction = 'asc')
     {
         if (!in_array(strtolower($direction), ['asc', 'desc'])) {
-            throw new \InvalidArgumentException("Direction muss 'asc' oder 'desc' sein");
+            throw new \InvalidArgumentException("Direction must be 'asc' or 'desc'");
         }
 
         $this->orderBy = "{$field} " . strtolower($direction);
@@ -113,8 +120,8 @@ class AbacusQueryBuilder
     }
 
     /**
-     * $expand - Navigation Properties erweitern
-     * Beispiel: ->expand('Addresses') oder ->expand(['Addresses', 'Contacts'])
+     * $expand - Expand navigation properties
+     * Example: ->expand('Addresses') or ->expand(['Addresses', 'Contacts'])
      */
     public function expand(array|string $relations)
     {
@@ -127,21 +134,13 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Alias für expand() (Laravel-like)
-     */
-    public function with(array|string $relations)
-    {
-        return $this->expand($relations);
-    }
-
-    /**
-     * $format - Response-Format ändern (json, atom, xml)
+     * $format - Change response format (json, atom, xml)
      * Default: json
      */
     public function format(string $format)
     {
         if (!in_array($format, ['json', 'atom', 'xml'])) {
-            throw new \InvalidArgumentException("Format muss 'json', 'atom' oder 'xml' sein");
+            throw new \InvalidArgumentException("Format must be 'json', 'atom' or 'xml'");
         }
 
         $this->format = $format;
@@ -150,29 +149,60 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Query ausführen und Ergebnisse zurückgeben
+     * Execute query and return results as Collection
      */
-    public function get()
+    public function getFirstPage()
     {
         $result = $this->service->query($this->resource, $this->buildODataQuery());
 
-        // JSON-Response enthält normalerweise 'value' Array
-        return $result['value'] ?? $result;
+        /* JSON response usually contains 'value' array */
+        $data = $result['value'] ?? $result;
+
+        return collect($data);
     }
 
     /**
-     * Ersten Treffer zurückgeben
+     * Execute query and return all paginated results as Collection
+     * Follows all @odata.nextLink URLs automatically
+     */
+    public function get()
+    {
+        $allResults = [];
+
+        /* Fetch first page */
+        $response = $this->service->queryWithMetadata($this->resource, $this->buildODataQuery());
+
+        /* Collect results of first page */
+        if (isset($response['value'])) {
+            $allResults = array_merge($allResults, $response['value']);
+        }
+
+        /* Fetch all remaining pages */
+        while (isset($response['@odata.nextLink'])) {
+            \Log::debug('Fetching next page: ' . $response['@odata.nextLink']);
+            $response = $this->service->getNextPage($response['@odata.nextLink']);
+
+            if (isset($response['value'])) {
+                $allResults = array_merge($allResults, $response['value']);
+            }
+        }
+
+        return collect($allResults);
+    }
+
+    /**
+     * Return first match
      */
     public function first()
     {
         $this->top = 1;
         $result = $this->get();
 
-        return is_array($result) && count($result) > 0 ? $result[0] : null;
+        return $result->first();
     }
 
     /**
-     * Entity via Primary Key abrufen
+     * Fetch entity via primary key
      */
     public function find($id)
     {
@@ -180,8 +210,8 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Spezifische Property eines Entities abrufen
-     * Beispiel: Subjects::query()->findProperty(2, 'LastName')
+     * Fetch specific property of an entity
+     * Example: Subjects::query()->findProperty(2, 'LastName')
      */
     public function findProperty($id, string $property)
     {
@@ -189,7 +219,7 @@ class AbacusQueryBuilder
     }
 
     /**
-     * OData Query-Parameter zusammenbauen
+     * Assemble OData query parameters
      */
     protected function buildODataQuery(): array
     {
@@ -229,12 +259,12 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Werte für OData formatieren
+     * Format values for OData
      */
     protected function formatValue(mixed $value): string
     {
         if (is_string($value)) {
-            // Einfache Anführungszeichen escapen
+            /* Escape single quotes */
             return "'" . str_replace("'", "''", $value) . "'";
         }
 
@@ -254,7 +284,7 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Debug: Query-Parameter anzeigen
+     * Debug: Display query parameters
      */
     public function toODataQuery(): array
     {

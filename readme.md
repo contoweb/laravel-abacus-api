@@ -18,7 +18,7 @@ Laravel package für die Abacus REST API mit OData-Unterstützung und Eloquent-�
 ## Installation
 
 ```bash
-composer require your-vendor/abacus-rest-odata
+composer require your-vendor/abacus-odata
 ```
 
 ### Config publishen
@@ -52,9 +52,9 @@ Erstellt:
 
 namespace App\Models\Abacus;
 
-use YourVendor\AbacusRestOdata\Models\AbacusRestModel;
+use YourVendor\AbacusRestOdata\Models\AbacusModel;
 
-class Subject extends AbacusRestModel
+class Subject extends AbacusModel
 {
     protected static string $resource = 'Subjects';
 }
@@ -201,7 +201,7 @@ php artisan abacus:generate-ide-helper --output=_ide_helper_custom.php
 
 ## Konfiguration
 
-Die Konfigurationsdatei `config/abacus-rest-odata.php`:
+Die Konfigurationsdatei `config/abacus-odata.php`:
 
 ```php
 return [
@@ -278,19 +278,19 @@ $this->assertCount(1, $subjects);
 
 ```php
 // Subject (Kontakte/Adressen)
-class Subject extends AbacusRestModel
+class Subject extends AbacusModel
 {
     protected static string $resource = 'Subjects';
 }
 
 // Invoice (Rechnungen)
-class Invoice extends AbacusRestModel
+class Invoice extends AbacusModel
 {
     protected static string $resource = 'Invoices';
 }
 
 // Article (Artikel)
-class Article extends AbacusRestModel
+class Article extends AbacusModel
 {
     protected static string $resource = 'Articles';
 }

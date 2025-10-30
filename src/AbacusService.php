@@ -1,20 +1,20 @@
 <?php
 
-namespace Contoweb\AbacusRestOdata;
+namespace Contoweb\AbacusOdata;
 
 use Illuminate\Support\Facades\Cache;
 
-class AbacusRestService
+class AbacusService
 {
-    protected AbacusRestClient $client;
+    protected AbacusClient $client;
 
-    public function __construct(AbacusRestClient $client)
+    public function __construct(AbacusClient $client)
     {
         $this->client = $client;
     }
 
     /**
-     * Liste von Entities mit Query-Parametern
+     * List of entities with query parameters
      * GET /api/entity/v1/mandants/{mandate}/Subjects
      */
     public function query(string $resource, array $odataParams = []): array
@@ -27,7 +27,30 @@ class AbacusRestService
     }
 
     /**
-     * Spezifisches Entity via Primary Key
+     * Query with complete response including metadata (@odata.nextLink, etc.)
+     * Useful for pagination
+     */
+    public function queryWithMetadata(string $resource, array $odataParams = []): array
+    {
+        $path = $this->client->entityPath($resource);
+
+        return $this->client
+            ->get($path, $odataParams)
+            ->json();
+    }
+
+    /**
+     * Fetch next page via @odata.nextLink
+     */
+    public function getNextPage(string $nextLink): array
+    {
+        return $this->client
+            ->getNextLink($nextLink)
+            ->json();
+    }
+
+    /**
+     * Specific entity via primary key
      * GET /api/entity/v1/mandants/{mandate}/Subjects(2)
      */
     public function find(string $resource, mixed $id): array
@@ -40,7 +63,7 @@ class AbacusRestService
     }
 
     /**
-     * Spezifische Property eines Entities
+     * Specific property of an entity
      * GET /api/entity/v1/mandants/{mandate}/Subjects(2)/LastName
      */
     public function findProperty(string $resource, mixed $id, string $property): mixed
@@ -53,7 +76,7 @@ class AbacusRestService
     }
 
     /**
-     * Entity erstellen
+     * Create entity
      * POST /api/entity/v1/mandants/{mandate}/Subjects
      */
     public function create(string $resource, array $data): array
@@ -66,7 +89,7 @@ class AbacusRestService
     }
 
     /**
-     * Entity aktualisieren (PATCH)
+     * Update entity (PATCH)
      * PATCH /api/entity/v1/mandants/{mandate}/Subjects(2)
      */
     public function update(string $resource, mixed $id, array $data): array
@@ -79,7 +102,7 @@ class AbacusRestService
     }
 
     /**
-     * Entity vollständig ersetzen (PUT)
+     * Replace entity completely (PUT)
      * PUT /api/entity/v1/mandants/{mandate}/Subjects(2)
      */
     public function replace(string $resource, mixed $id, array $data): array
@@ -92,7 +115,7 @@ class AbacusRestService
     }
 
     /**
-     * Entity löschen
+     * Delete entity
      * DELETE /api/entity/v1/mandants/{mandate}/Subjects(2)
      */
     public function delete(string $resource, mixed $id): bool
@@ -105,7 +128,7 @@ class AbacusRestService
     }
 
     /**
-     * Liste aller verfügbaren Entity-IDs
+     * List of all available entity IDs
      * GET /api/entity/v1/mandants/{mandate}/
      */
     public function listEntityIds(): array
