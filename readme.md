@@ -3,17 +3,17 @@
 [![Latest Version](https://img.shields.io/packagist/v/contoweb/laravel-abacus-api.svg?style=flat-square)](https://packagist.org/packages/contoweb/laravel-abacus-api)
 [![License](https://img.shields.io/packagist/l/contoweb/laravel-abacus-api.svg?style=flat-square)](LICENSE.md)
 
-Laravel package für die Abacus REST API mit OData-Unterstützung und Eloquent-ähnlichen Models.
+Laravel package for the Abacus REST API with OData support and Eloquent-like models.
 
 ## Features
 
-✅ **Eloquent-ähnliche API** - Vertraute Laravel-Syntax  
-✅ **OData-Unterstützung** - Filter, Select, OrderBy, Top, Expand  
-✅ **Type-Safe** - Vollständige PHPDoc-Unterstützung  
-✅ **IDE Autocomplete** - Automatische IDE Helper Generierung  
-✅ **CRUD-Operationen** - Create, Read, Update, Delete  
-✅ **Query Builder** - Fluent Interface für komplexe Queries  
-✅ **Testbar** - Einfaches Mocking mit Laravel HTTP Fake
+✅ **Eloquent-like API** - Familiar Laravel syntax
+✅ **OData Support** - Filter, Select, OrderBy, Top, Expand
+✅ **Type-Safe** - Full PHPDoc support
+✅ **IDE Autocomplete** - Automatic IDE Helper generation
+✅ **CRUD Operations** - Create, Read, Update, Delete
+✅ **Query Builder** - Fluent interface for complex queries
+✅ **Testable** - Easy mocking with Laravel HTTP Fake
 
 ## Installation
 
@@ -21,15 +21,15 @@ Laravel package für die Abacus REST API mit OData-Unterstützung und Eloquent-�
 composer require contoweb/laravel-abacus-api
 ```
 
-### Config publishen
+### Publish Config
 
 ```bash
 php artisan vendor:publish --tag=abacus-config
 ```
 
-### Umgebungsvariablen
+### Environment Variables
 
-Füge in `.env` hinzu:
+Add to your `.env` file:
 
 ```env
 ABACUS_REST_API_URL=entity-api1-1.demo.abacus.ch
@@ -40,13 +40,13 @@ ABACUS_REST_API_CLIENT_SECRET=your-client-secret
 
 ## Quick Start
 
-### 1. Model erstellen
+### 1. Create a Model
 
 ```bash
 php artisan make:abacus-model Subject --resource=Subjects
 ```
 
-Erstellt:
+This creates:
 
 ```php
 <?php
@@ -61,72 +61,72 @@ class Subject extends AbacusModel
 }
 ```
 
-### 2. IDE Helper generieren
+### 2. Generate IDE Helper
 
 ```bash
 php artisan abacus:generate-ide-helper
 ```
 
-Dies generiert automatisch PHPDoc für alle Properties aus dem Abacus Swagger JSON.
+This automatically generates PHPDoc for all properties from the Abacus Swagger JSON.
 
-### 3. Models verwenden
+### 3. Use the Models
 
 ```php
 use App\Models\Abacus\Subject;
 
-// Alle Subjects
+/* All Subjects */
 $subjects = Subject::all();
 
-// Subject finden
+/* Find a Subject */
 $subject = Subject::find(1);
 
-// Mit Filtern
+/* With Filters */
 $subjects = Subject::where('LastName', 'eq', 'Müller')
     ->where('City', 'eq', 'Zürich')
     ->orderBy('FirstName', 'asc')
     ->top(10)
     ->get();
 
-// Erstellen
+/* Create */
 $subject = Subject::create([
     'FirstName' => 'Max',
     'LastName' => 'Mustermann',
     'Email' => 'max@example.com',
 ]);
 
-// Aktualisieren
+/* Update */
 $subject->Email = 'new@example.com';
 $subject->save();
 
-// Löschen
+/* Delete */
 $subject->delete();
 ```
 
-## Verwendung
+## Usage
 
 ### Query Builder
 
 ```php
-// Filter mit unterstützten Operatoren: eq, lt, gt, le, ge
+/* Filter with supported operators: eq, lt, gt, le, ge */
 Subject::where('LastName', 'eq', 'Müller')
     ->where('Active', 'eq', true)
     ->get();
 
-// Select spezifischer Properties
+/* Select specific properties */
 Subject::select(['FirstName', 'LastName', 'Email'])
     ->get();
 
-// OrderBy (nur ein orderBy pro Query)
+/* OrderBy (only one orderBy per query) */
 Subject::orderBy('LastName', 'desc')
     ->get();
 
-// Top N Elemente
+/* Top N elements */
 Subject::top(10)->get();
 
-// Expand Navigation Properties
+/* Expand Navigation Properties */
 Subject::with('Addresses')->get();
 
-// Kombiniert
+/* Combined */
 Subject::where('City', 'eq', 'Zürich')
     ->select(['FirstName', 'LastName', 'Email'])
     ->orderBy('LastName', 'asc')
@@ -135,74 +135,74 @@ Subject::where('City', 'eq', 'Zürich')
     ->get();
 ```
 
-### CRUD Operationen
+### CRUD Operations
 
 ```php
-// Create
+/* Create */
 $subject = Subject::create([
     'FirstName' => 'Anna',
     'LastName' => 'Muster',
 ]);
 
-// Read
+/* Read */
 $subject = Subject::find(1);
 $subjects = Subject::all();
 
-// Update
+/* Update */
 $subject->Email = 'new@example.com';
 $subject->save();
 
-// oder
+/* or */
 $subject->update(['Email' => 'new@example.com']);
 
-// Delete
+/* Delete */
 $subject->delete();
 ```
 
-### Direkt mit Service arbeiten
+### Working Directly with the Service
 
 ```php
 use Contoweb\AbacusApi\AbacusService;
 
 $service = app(AbacusService::class);
 
-// Query
+/* Query */
 $result = $service->query('Subjects', [
     '$filter' => "LastName eq 'Müller'",
     '$top' => 10,
 ]);
 
-// Metadata
+/* Metadata */
 $metadata = $service->metadata();
 
-// Entity IDs
+/* Entity IDs */
 $entities = $service->listEntityIds();
 ```
 
 ## Commands
 
-### Model erstellen
+### Create a Model
 
 ```bash
 php artisan make:abacus-model Subject --resource=Subjects
 ```
 
-### IDE Helper generieren
+### Generate IDE Helper
 
 ```bash
-# Mit Standard-URL aus Config
+/* With default URL from config */
 php artisan abacus:generate-ide-helper
 
-# Mit eigener URL
+/* With custom URL */
 php artisan abacus:generate-ide-helper --url=https://custom.url/swagger.json
 
-# Mit anderem Output
+/* With custom output */
 php artisan abacus:generate-ide-helper --output=_ide_helper_custom.php
 ```
 
-## Konfiguration
+## Configuration
 
-Die Konfigurationsdatei `config/abacus-api.php`:
+The configuration file `config/abacus-api.php`:
 
 ```php
 return [
@@ -225,7 +225,7 @@ return [
 
 ## Composer Scripts
 
-Füge in deine `composer.json` hinzu für automatische IDE Helper Generierung:
+Add to your `composer.json` for automatic IDE Helper generation:
 
 ```json
 {
@@ -243,7 +243,7 @@ Füge in deine `composer.json` hinzu für automatische IDE Helper Generierung:
 use Illuminate\Support\Facades\Http;
 use App\Models\Abacus\Subject;
 
-// HTTP Requests mocken
+/* Mock HTTP Requests */
 Http::fake([
     'entity-api1-1.demo.abacus.ch/*' => Http::response([
         'value' => [
@@ -258,39 +258,39 @@ $this->assertCount(1, $subjects);
 
 ## OData Features
 
-### Unterstützte Filter-Operatoren
+### Supported Filter Operators
 
-- `eq` - Gleich
-- `lt` - Kleiner als
-- `gt` - Größer als
-- `le` - Kleiner oder gleich
-- `ge` - Größer oder gleich
+- `eq` - Equal
+- `lt` - Less than
+- `gt` - Greater than
+- `le` - Less than or equal
+- `ge` - Greater than or equal
 
-### Unterstützte Query-Optionen
+### Supported Query Options
 
-- `$filter` - Filter-Bedingungen
-- `$select` - Property-Auswahl
-- `$orderby` - Sortierung (nur eine pro Query)
+- `$filter` - Filter conditions
+- `$select` - Property selection
+- `$orderby` - Sorting (only one per query)
 - `$top` - Limit
-- `$expand` - Navigation Properties laden
-- `$format` - Response-Format (json, atom, xml)
+- `$expand` - Load navigation properties
+- `$format` - Response format (json, atom, xml)
 
-## Beispiel-Models
+## Example Models
 
 ```php
-// Subject (Kontakte/Adressen)
+/* Subject (Contacts/Addresses) */
 class Subject extends AbacusModel
 {
     protected static string $resource = 'Subjects';
 }
 
-// Invoice (Rechnungen)
+/* Invoice */
 class Invoice extends AbacusModel
 {
     protected static string $resource = 'Invoices';
 }
 
-// Article (Artikel)
+/* Article */
 class Article extends AbacusModel
 {
     protected static string $resource = 'Articles';
@@ -299,17 +299,17 @@ class Article extends AbacusModel
 
 ## IDE Support
 
-Das Package generiert automatisch `_ide_helper_abacus.php` mit vollständigen PHPDoc-Annotations:
+The package automatically generates `_ide_helper_abacus.php` with complete PHPDoc annotations:
 
 ```php
 $subject = Subject::find(1);
-$subject->FirstName // ✅ Autocomplete funktioniert!
-$subject->Email     // ✅ Type-Hints verfügbar!
+$subject->FirstName /* ✅ Autocomplete works! */
+$subject->Email     /* ✅ Type-hints available! */
 ```
 
 ### .gitignore
 
-Füge hinzu:
+Add to your `.gitignore`:
 
 ```
 _ide_helper_abacus.php
@@ -319,20 +319,20 @@ _ide_helper_abacus.php
 
 ### 401 Unauthorized
 
-- Prüfe Client ID und Secret in `.env`
-- Prüfe ob API-Zugang aktiviert ist
+- Check Client ID and Secret in `.env`
+- Check if API access is enabled
 
-### Autocomplete funktioniert nicht
+### Autocomplete not working
 
 ```bash
-# IDE Helper neu generieren
+/* Regenerate IDE Helper */
 php artisan abacus:generate-ide-helper
 
-# PHPStorm Cache invalidieren
+/* Invalidate PHPStorm Cache */
 File → Invalidate Caches → Restart
 ```
 
-### Config wird nicht geladen
+### Config not loading
 
 ```bash
 php artisan config:clear
@@ -341,15 +341,15 @@ php artisan config:cache
 
 ## Changelog
 
-Siehe [CHANGELOG.md](CHANGELOG.md)
+See [CHANGELOG.md](CHANGELOG.md)
 
 ## Contributing
 
-Pull Requests sind willkommen!
+Pull Requests are welcome!
 
 ## License
 
-MIT License. Siehe [LICENSE.md](LICENSE.md)
+MIT License. See [LICENSE.md](LICENSE.md)
 
 ## Credits
 
