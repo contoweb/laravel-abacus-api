@@ -1,6 +1,6 @@
 <?php
 
-namespace Contoweb\AbacusOdata;
+namespace Contoweb\AbacusApi;
 
 use Illuminate\Support\Facades\Cache;
 

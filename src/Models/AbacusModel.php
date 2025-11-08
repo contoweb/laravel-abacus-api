@@ -1,10 +1,10 @@
 <?php
 
-namespace Contoweb\AbacusOdata\Models;
+namespace Contoweb\AbacusApi\Models;
 
-use Contoweb\AbacusOdata\AbacusService;
-use Contoweb\AbacusOdata\AbacusQueryBuilder;
-use Contoweb\AbacusOdata\Enums\ODataOperator;
+use Contoweb\AbacusApi\AbacusService;
+use Contoweb\AbacusApi\AbacusQueryBuilder;
+use Contoweb\AbacusApi\Enums\ODataOperator;
 
 abstract class AbacusModel
 {

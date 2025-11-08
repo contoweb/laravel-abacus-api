@@ -1,7 +1,7 @@
-# Abacus REST OData Package for Laravel
+# Abacus REST API Package for Laravel
 
-[![Latest Version](https://img.shields.io/packagist/v/your-vendor/abacus-rest-odata.svg?style=flat-square)](https://packagist.org/packages/your-vendor/abacus-rest-odata)
-[![License](https://img.shields.io/packagist/l/your-vendor/abacus-rest-odata.svg?style=flat-square)](LICENSE.md)
+[![Latest Version](https://img.shields.io/packagist/v/contoweb/laravel-abacus-api.svg?style=flat-square)](https://packagist.org/packages/contoweb/laravel-abacus-api)
+[![License](https://img.shields.io/packagist/l/contoweb/laravel-abacus-api.svg?style=flat-square)](LICENSE.md)
 
 Laravel package für die Abacus REST API mit OData-Unterstützung und Eloquent-ähnlichen Models.
 
@@ -18,7 +18,7 @@ Laravel package für die Abacus REST API mit OData-Unterstützung und Eloquent-�
 ## Installation
 
 ```bash
-composer require your-vendor/abacus-odata
+composer require contoweb/laravel-abacus-api
 ```
 
 ### Config publishen
@@ -47,12 +47,13 @@ php artisan make:abacus-model Subject --resource=Subjects
 ```
 
 Erstellt:
+
 ```php
 <?php
 
 namespace App\Models\Abacus;
 
-use YourVendor\AbacusRestOdata\Models\AbacusModel;
+use Contoweb\AbacusApi\Models\AbacusModel;
 
 class Subject extends AbacusModel
 {
@@ -161,9 +162,9 @@ $subject->delete();
 ### Direkt mit Service arbeiten
 
 ```php
-use YourVendor\AbacusRestOdata\AbacusRestService;
+use Contoweb\AbacusApi\AbacusService;
 
-$service = app(AbacusRestService::class);
+$service = app(AbacusService::class);
 
 // Query
 $result = $service->query('Subjects', [
@@ -201,7 +202,7 @@ php artisan abacus:generate-ide-helper --output=_ide_helper_custom.php
 
 ## Konfiguration
 
-Die Konfigurationsdatei `config/abacus-odata.php`:
+Die Konfigurationsdatei `config/abacus-api.php`:
 
 ```php
 return [
@@ -228,11 +229,11 @@ Füge in deine `composer.json` hinzu für automatische IDE Helper Generierung:
 
 ```json
 {
-    "scripts": {
-        "post-update-cmd": [
-            "@php artisan abacus:generate-ide-helper"
-        ]
-    }
+  "scripts": {
+    "post-update-cmd": [
+      "@php artisan abacus:generate-ide-helper"
+    ]
+  }
 }
 ```
 
@@ -309,6 +310,7 @@ $subject->Email     // ✅ Type-Hints verfügbar!
 ### .gitignore
 
 Füge hinzu:
+
 ```
 _ide_helper_abacus.php
 ```

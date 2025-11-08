@@ -1,15 +1,13 @@
 <?php
 
-namespace Contoweb\AbacusOdata\Console\Commands;
+namespace Contoweb\AbacusApi\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
 
 class GenerateIdeHelperCommand extends Command
 {
     protected $signature = 'abacus:generate-ide-helper
-                          {--url= : Override Swagger JSON URL from config}
                           {--file= : Override Swagger JSON file path from config}
                           {--output= : Override output file from config}';
 
@@ -26,50 +24,33 @@ class GenerateIdeHelperCommand extends Command
 
     public function handle(): int
     {
-        if ( ! config('abacus-odata.ide_helper.enabled')) {
+        if ( ! config('abacus-api.ide_helper.enabled')) {
             $this->info('IDE Helper generation is disabled in config.');
 
             return 0;
         }
 
-        $url        = $this->option('url') ?? config('abacus-odata.ide_helper.swagger_url');
-        $outputFile = base_path($this->option('output') ?? config('abacus-odata.ide_helper.output_file'));
+        $jsonFile   = $this->option('file') ?? config('abacus-api.ide_helper.swagger_json_file');
+        $outputFile = base_path($this->option('output') ?? config('abacus-api.ide_helper.output_file'));
+        $jsonPath   = base_path($jsonFile);
 
         try {
-            /* Fetch or read Swagger JSON */
-            if ($url) {
-                $this->info("Fetching Swagger JSON from: {$url}");
+            /* Read Swagger JSON from file */
+            $this->info("Reading Swagger JSON from file: {$jsonPath}");
 
-                $response = Http::timeout(30)->get($url);
+            if ( ! File::exists($jsonPath)) {
+                $this->error("Swagger JSON file not found: {$jsonPath}");
 
-                if ( ! $response->successful()) {
-                    $this->error("Failed to fetch Swagger JSON: HTTP {$response->status()}");
+                return 1;
+            }
 
-                    return 1;
-                }
+            $jsonContent = File::get($jsonPath);
+            $swagger     = json_decode($jsonContent, true);
 
-                $swagger = $response->json();
-            } else {
-                $jsonFile = $this->option('file') ?? config('abacus-odata.ide_helper.swagger_json_file');
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                $this->error("Invalid JSON in file: " . json_last_error_msg());
 
-                $jsonPath = base_path($jsonFile);
-
-                $this->info("Reading Swagger JSON from file: {$jsonPath}");
-
-                if ( ! File::exists($jsonPath)) {
-                    $this->error("Swagger JSON file not found: {$jsonPath}");
-
-                    return 1;
-                }
-
-                $jsonContent = File::get($jsonPath);
-                $swagger     = json_decode($jsonContent, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    $this->error("Invalid JSON in file: " . json_last_error_msg());
-
-                    return 1;
-                }
+                return 1;
             }
 
             if ( ! isset($swagger['definitions'])) {
@@ -187,7 +168,7 @@ class GenerateIdeHelperCommand extends Command
 
     protected function generateIdeHelper(array $models): string
     {
-        $namespace = config('abacus-odata.models_namespace');
+        $namespace = config('abacus-api.models_namespace');
 
         $lines = [
             '<?php',

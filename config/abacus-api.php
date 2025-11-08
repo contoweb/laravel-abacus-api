@@ -30,7 +30,6 @@ return [
 
     'ide_helper' => [
         'enabled'           => env('ABACUS_IDE_HELPER_ENABLED', true),
-        'swagger_url'       => env('ABACUS_SWAGGER_URL', null),
         'swagger_json_file' => env('ABACUS_SWAGGER_JSON_FILE', 'storage/app/swagger.json'),
         'output_file'       => env('ABACUS_IDE_HELPER_OUTPUT', '_ide_helper_abacus.php'),
     ],
@@ -45,5 +44,20 @@ return [
     */
 
     'models_namespace' => env('ABACUS_MODELS_NAMESPACE', 'App\\Models\\Abacus'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reports Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for Abacus AbaReports (non-OData endpoints)
+    |
+    */
+
+    'reports' => [
+        'poll_interval'     => env('ABACUS_REPORTS_POLL_INTERVAL', 200000), /* Microseconds (0.2 seconds) */
+        'max_poll_attempts' => env('ABACUS_REPORTS_MAX_POLL_ATTEMPTS', 150),
+        'reports_namespace' => env('ABACUS_REPORTS_NAMESPACE', 'App\\Services\\Abacus\\Reports'),
+    ],
 
 ];

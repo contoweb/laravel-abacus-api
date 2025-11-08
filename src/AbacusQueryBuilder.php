@@ -1,8 +1,8 @@
 <?php
 
-namespace Contoweb\AbacusOdata;
+namespace Contoweb\AbacusApi;
 
-use Contoweb\AbacusOdata\Enums\ODataOperator;
+use Contoweb\AbacusApi\Enums\ODataOperator;
 
 class AbacusQueryBuilder
 {

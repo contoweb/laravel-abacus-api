@@ -1,6 +1,6 @@
 {
-    "name": "contoweb/laravel-abacus-odata",
-    "description": "Laravel wrapper for Abacus OData API to consume it in a Laravel way.",
+    "name": "contoweb/laravel-abacus-api",
+    "description": "Laravel wrapper for Abacus REST API to consume it in a Laravel way.",
     "type": "library",
     "keywords": [
         "laravel",
@@ -31,18 +31,18 @@
     },
     "autoload": {
         "psr-4": {
-            "Contoweb\\AbacusOdata\\": "src/"
+            "Contoweb\\AbacusApi\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Contoweb\\AbacusOdata\\Tests\\": "tests/"
+            "Contoweb\\AbacusApi\\Tests\\": "tests/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Contoweb\\AbacusOdata\\AbacusServiceProvider"
+                "Contoweb\\AbacusApi\\AbacusServiceProvider"
             ]
         }
     },

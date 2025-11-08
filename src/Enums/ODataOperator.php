@@ -1,6 +1,6 @@
 <?php
 
-namespace Contoweb\AbacusOdata\Enums;
+namespace Contoweb\AbacusApi\Enums;
 
 /**
  * Abacus OData Query Operators
