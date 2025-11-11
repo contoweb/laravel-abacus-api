@@ -34,7 +34,7 @@ abstract class AbacusModel
      */
     public static function all()
     {
-        return static::query()->getAllPages()->map(fn($item) => new static($item));
+        return static::query()->get()->map(fn($item) => new static($item));
     }
 
     /**
@@ -42,7 +42,7 @@ abstract class AbacusModel
      */
     public static function firstPage()
     {
-        return static::query()->get()->map(fn($item) => new static($item));
+        return static::query()->getFirstPage()->map(fn($item) => new static($item));
     }
 
     /**
