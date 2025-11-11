@@ -6,6 +6,7 @@ use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\Reports\AbacusReportsClient;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class AbacusReportsClientTest extends TestCase
 {
@@ -18,7 +19,7 @@ class AbacusReportsClientTest extends TestCase
         $this->client = new AbacusReportsClient();
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_report_path(): void
     {
         $path = $this->client->reportPath('mandate%2Freport.avx');
@@ -26,7 +27,7 @@ class AbacusReportsClientTest extends TestCase
         $this->assertEquals('/api/abareport/v1/report/mandate%2Freport.avx', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_job_path(): void
     {
         $path = $this->client->jobPath('job-123-abc');
@@ -34,7 +35,7 @@ class AbacusReportsClientTest extends TestCase
         $this->assertEquals('/api/abareport/v1/jobs/job-123-abc', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_job_output_path(): void
     {
         $path = $this->client->jobOutputPath('job-456-def');
@@ -42,7 +43,7 @@ class AbacusReportsClientTest extends TestCase
         $this->assertEquals('/api/abareport/v1/jobs/job-456-def/output', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_submits_report(): void
     {
         Http::fake([
@@ -73,7 +74,7 @@ class AbacusReportsClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_submits_report_with_default_output_type(): void
     {
         Http::fake([
@@ -95,7 +96,7 @@ class AbacusReportsClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_job_status(): void
     {
         Http::fake([
@@ -122,7 +123,7 @@ class AbacusReportsClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_job_output(): void
     {
         Http::fake([
@@ -150,7 +151,7 @@ class AbacusReportsClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_empty_array_for_null_output(): void
     {
         Http::fake([
@@ -167,7 +168,7 @@ class AbacusReportsClientTest extends TestCase
         $this->assertEmpty($result);
     }
 
-    /** @test */
+    #[Test]
     public function it_polls_job_until_complete(): void
     {
         $callCount = 0;
@@ -202,7 +203,7 @@ class AbacusReportsClientTest extends TestCase
         $this->assertEquals(3, $callCount); /* 2 running + 1 finished */
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_when_polling_times_out(): void
     {
         Http::fake([
@@ -222,7 +223,7 @@ class AbacusReportsClientTest extends TestCase
         $this->client->pollJobUntilComplete('job-timeout', 10000, 5);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_on_403_error(): void
     {
         Http::fake([
@@ -243,7 +244,7 @@ class AbacusReportsClientTest extends TestCase
         $this->client->pollJobUntilComplete('job-forbidden', 10000, 10);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_on_500_error(): void
     {
         Http::fake([
@@ -264,7 +265,7 @@ class AbacusReportsClientTest extends TestCase
         $this->client->pollJobUntilComplete('job-error', 10000, 10);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_error_without_title(): void
     {
         Http::fake([
@@ -284,7 +285,7 @@ class AbacusReportsClientTest extends TestCase
         $this->client->pollJobUntilComplete('job-no-title', 10000, 10);
     }
 
-    /** @test */
+    #[Test]
     public function it_stops_polling_when_state_is_not_running(): void
     {
         Http::fake([
@@ -306,7 +307,7 @@ class AbacusReportsClientTest extends TestCase
         Http::assertSentCount(2);
     }
 
-    /** @test */
+    #[Test]
     public function it_submits_report_with_empty_parameters(): void
     {
         Http::fake([
@@ -328,7 +329,7 @@ class AbacusReportsClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_custom_poll_interval(): void
     {
         Http::fake([

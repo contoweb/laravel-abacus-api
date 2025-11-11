@@ -6,6 +6,7 @@ use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\AbacusClient;
 use Contoweb\AbacusApi\AbacusService;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class AbacusServiceIntegrationTest extends TestCase
 {
@@ -19,7 +20,7 @@ class AbacusServiceIntegrationTest extends TestCase
         $this->service = new AbacusService($client);
     }
 
-    /** @test */
+    #[Test]
     public function it_performs_complete_crud_workflow(): void
     {
         Http::fake([
@@ -60,7 +61,7 @@ class AbacusServiceIntegrationTest extends TestCase
         $this->assertTrue($deleted);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_token_refresh_during_workflow(): void
     {
         Http::fake([
@@ -82,7 +83,7 @@ class AbacusServiceIntegrationTest extends TestCase
         $this->assertIsArray($result2);
     }
 
-    /** @test */
+    #[Test]
     public function it_performs_complex_query_workflow(): void
     {
         Http::fake([
@@ -110,7 +111,7 @@ class AbacusServiceIntegrationTest extends TestCase
         $this->assertEquals('Active', $result['value'][0]['Status']);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_pagination_workflow(): void
     {
         Http::fake([
@@ -152,7 +153,7 @@ class AbacusServiceIntegrationTest extends TestCase
         $this->assertArrayNotHasKey('@odata.nextLink', $page3);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_property_access_workflow(): void
     {
         Http::fake([
@@ -175,7 +176,7 @@ class AbacusServiceIntegrationTest extends TestCase
         $this->assertEquals(['value' => 'john@example.com'], $email);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_metadata_caching_workflow(): void
     {
         Http::fake([
@@ -205,7 +206,7 @@ class AbacusServiceIntegrationTest extends TestCase
         Http::assertSentCount(2);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_batch_operations(): void
     {
         Http::fake([

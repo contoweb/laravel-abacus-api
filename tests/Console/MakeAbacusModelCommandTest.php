@@ -4,6 +4,7 @@ namespace Contoweb\AbacusApi\Tests\Console;
 
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\Test;
 
 class MakeAbacusModelCommandTest extends TestCase
 {
@@ -27,7 +28,7 @@ class MakeAbacusModelCommandTest extends TestCase
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_model_file(): void
     {
         $this->artisan('make:abacus-model', ['name' => 'Subject'])
@@ -38,7 +39,7 @@ class MakeAbacusModelCommandTest extends TestCase
         $this->assertFileExists($expectedPath);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_model_with_custom_resource(): void
     {
         $this->artisan('make:abacus-model', [
@@ -53,7 +54,7 @@ class MakeAbacusModelCommandTest extends TestCase
         $this->assertStringContainsString("protected static string \$resource = 'CustomInvoices';", $content);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_plural_resource_by_default(): void
     {
         $this->artisan('make:abacus-model', ['name' => 'Subject'])
@@ -65,7 +66,7 @@ class MakeAbacusModelCommandTest extends TestCase
         $this->assertStringContainsString("protected static string \$resource = 'Subjects';", $content);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_overwriting_existing_model(): void
     {
         /* Create model first time */
@@ -78,7 +79,7 @@ class MakeAbacusModelCommandTest extends TestCase
              ->expectsOutput('Model Duplicate already exists!');
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_correct_namespace(): void
     {
         $this->artisan('make:abacus-model', ['name' => 'TestModel'])
@@ -91,7 +92,7 @@ class MakeAbacusModelCommandTest extends TestCase
         $this->assertStringContainsString('class TestModel extends AbacusModel', $content);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_directory_if_not_exists(): void
     {
         /* Ensure directory doesn't exist */
@@ -105,7 +106,7 @@ class MakeAbacusModelCommandTest extends TestCase
         $this->assertDirectoryExists($this->testModelsPath);
     }
 
-    /** @test */
+    #[Test]
     public function it_generates_valid_php_file(): void
     {
         $this->artisan('make:abacus-model', ['name' => 'ValidModel'])

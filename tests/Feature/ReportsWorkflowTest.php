@@ -8,6 +8,7 @@ use Contoweb\AbacusApi\Reports\AbacusReportsService;
 use Contoweb\AbacusApi\Reports\Contracts\Report;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 /* Test report model for integration testing */
 class SalesReportModel implements \Contoweb\AbacusApi\Reports\Contracts\ReportModel
@@ -52,7 +53,7 @@ class ReportsWorkflowTest extends TestCase
         $this->service = new AbacusReportsService($client);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_complete_report_workflow(): void
     {
         Http::fake([
@@ -112,7 +113,7 @@ class ReportsWorkflowTest extends TestCase
         $this->assertEquals('INV-002', $results[1]->invoice_id);
     }
 
-    /** @test */
+    #[Test]
     public function it_caches_report_results_between_executions(): void
     {
         Http::fake([
@@ -158,7 +159,7 @@ class ReportsWorkflowTest extends TestCase
         Http::assertSentCount(4);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_different_reports_independently(): void
     {
         Http::fake([
@@ -190,7 +191,7 @@ class ReportsWorkflowTest extends TestCase
         $this->assertEquals('S-001', $salesResults[0]->invoice_id);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_report_with_no_parameters(): void
     {
         Http::fake([
@@ -217,7 +218,7 @@ class ReportsWorkflowTest extends TestCase
         $this->assertCount(1, $results);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_large_result_sets(): void
     {
         $largeDataset = [];
@@ -254,7 +255,7 @@ class ReportsWorkflowTest extends TestCase
         $this->assertEquals('INV-1000', $results[999]->invoice_id);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_empty_report_results(): void
     {
         Http::fake([
@@ -279,7 +280,7 @@ class ReportsWorkflowTest extends TestCase
         $this->assertCount(0, $results);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_custom_cache_keys(): void
     {
         Http::fake([
@@ -309,7 +310,7 @@ class ReportsWorkflowTest extends TestCase
         $this->assertTrue(Cache::has('abacus_report:eu-sales-report'));
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_concurrent_report_executions(): void
     {
         Http::fake([

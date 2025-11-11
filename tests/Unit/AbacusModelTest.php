@@ -4,10 +4,10 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\AbacusQueryBuilder;
-use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 /* Test model for testing */
 class TestSubject extends AbacusModel
@@ -29,7 +29,7 @@ class AbacusModelTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_constructs_with_attributes(): void
     {
         $subject = new TestSubject(['Id' => 1, 'Name' => 'John Doe']);
@@ -38,7 +38,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('John Doe', $subject->Name);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_query_builder(): void
     {
         $query = TestSubject::query();
@@ -46,7 +46,7 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
     }
 
-    /** @test */
+    #[Test]
     public function it_finds_entity_by_id(): void
     {
         Http::fake([
@@ -68,7 +68,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('Test Subject', $subject->Name);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_null_when_entity_not_found(): void
     {
         Http::fake([
@@ -86,7 +86,7 @@ class AbacusModelTest extends TestCase
         TestSubject::find(999);
     }
 
-    /** @test */
+    #[Test]
     public function it_starts_where_query(): void
     {
         $query = TestSubject::where('Name', 'eq', 'John');
@@ -94,7 +94,7 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
     }
 
-    /** @test */
+    #[Test]
     public function it_starts_where_query_with_enum_operator(): void
     {
         $query = TestSubject::where('Age', ODataOperator::GREATER_THAN, 18);
@@ -102,7 +102,7 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
     }
 
-    /** @test */
+    #[Test]
     public function it_starts_select_query(): void
     {
         $query = TestSubject::select(['Id', 'Name']);
@@ -110,7 +110,7 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
     }
 
-    /** @test */
+    #[Test]
     public function it_starts_top_query(): void
     {
         $query = TestSubject::top(10);
@@ -118,7 +118,7 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
     }
 
-    /** @test */
+    #[Test]
     public function it_starts_order_by_query(): void
     {
         $query = TestSubject::orderBy('Name', 'desc');
@@ -126,7 +126,7 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
     }
 
-    /** @test */
+    #[Test]
     public function it_starts_expand_query(): void
     {
         $query = TestSubject::expand(['Addresses', 'Contacts']);
@@ -134,7 +134,7 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_entity(): void
     {
         Http::fake([
@@ -159,7 +159,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('New Subject', $subject->Name);
     }
 
-    /** @test */
+    #[Test]
     public function it_saves_new_entity(): void
     {
         Http::fake([
@@ -181,7 +181,7 @@ class AbacusModelTest extends TestCase
         $this->assertFalse($subject->isDirty());
     }
 
-    /** @test */
+    #[Test]
     public function it_saves_existing_entity_with_updates(): void
     {
         Http::fake([
@@ -209,7 +209,7 @@ class AbacusModelTest extends TestCase
         $this->assertFalse($subject->isDirty());
     }
 
-    /** @test */
+    #[Test]
     public function it_updates_entity_with_array(): void
     {
         Http::fake([
@@ -231,7 +231,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('array@example.com', $subject->Email);
     }
 
-    /** @test */
+    #[Test]
     public function it_deletes_entity(): void
     {
         Http::fake([
@@ -248,7 +248,7 @@ class AbacusModelTest extends TestCase
         $this->assertTrue($result);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_false_when_deleting_without_id(): void
     {
         $subject = new TestSubject(['Name' => 'No ID']);
@@ -257,7 +257,7 @@ class AbacusModelTest extends TestCase
         $this->assertFalse($result);
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_attribute(): void
     {
         $subject = new TestSubject(['Name' => 'Test', 'Email' => 'test@example.com']);
@@ -267,7 +267,7 @@ class AbacusModelTest extends TestCase
         $this->assertNull($subject->getAttribute('NonExistent'));
     }
 
-    /** @test */
+    #[Test]
     public function it_sets_attribute(): void
     {
         $subject = new TestSubject(['Name' => 'Original']);
@@ -278,7 +278,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('new@example.com', $subject->Email);
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_all_attributes(): void
     {
         $attributes = ['Id' => 1, 'Name' => 'Test', 'Email' => 'test@example.com'];
@@ -287,7 +287,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals($attributes, $subject->getAttributes());
     }
 
-    /** @test */
+    #[Test]
     public function it_converts_to_array(): void
     {
         $attributes = ['Id' => 1, 'Name' => 'Test'];
@@ -296,7 +296,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals($attributes, $subject->toArray());
     }
 
-    /** @test */
+    #[Test]
     public function it_converts_to_json(): void
     {
         $subject = new TestSubject(['Id' => 1, 'Name' => 'Test']);
@@ -308,7 +308,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('Test', $decoded['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_detects_dirty_state(): void
     {
         $subject = new TestSubject(['Name' => 'Original']);
@@ -321,7 +321,7 @@ class AbacusModelTest extends TestCase
         $this->assertTrue($subject->isDirty('Name'));
     }
 
-    /** @test */
+    #[Test]
     public function it_detects_dirty_specific_attribute(): void
     {
         $subject = new TestSubject(['Name' => 'Original', 'Email' => 'test@example.com']);
@@ -332,7 +332,7 @@ class AbacusModelTest extends TestCase
         $this->assertFalse($subject->isDirty('Email'));
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_dirty_attributes(): void
     {
         $subject = new TestSubject([
@@ -353,7 +353,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('modified@example.com', $dirty['Email']);
     }
 
-    /** @test */
+    #[Test]
     public function it_refreshes_entity_from_api(): void
     {
         Http::fake([
@@ -375,7 +375,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('Fresh Data', $fresh->Name);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_null_when_refreshing_without_id(): void
     {
         $subject = new TestSubject(['Name' => 'No ID']);
@@ -384,7 +384,7 @@ class AbacusModelTest extends TestCase
         $this->assertNull($fresh);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_magic_getter(): void
     {
         $subject = new TestSubject(['Name' => 'Magic', 'Email' => 'magic@example.com']);
@@ -393,7 +393,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('magic@example.com', $subject->Email);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_magic_setter(): void
     {
         $subject = new TestSubject();
@@ -404,7 +404,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('magic@example.com', $subject->Email);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_magic_isset(): void
     {
         $subject = new TestSubject(['Name' => 'Test']);
@@ -413,13 +413,13 @@ class AbacusModelTest extends TestCase
         $this->assertFalse(isset($subject->NonExistent));
     }
 
-    /** @test */
+    #[Test]
     public function it_gets_resource_name(): void
     {
         $this->assertEquals('Subjects', TestSubject::getResource());
     }
 
-    /** @test */
+    #[Test]
     public function it_saves_only_dirty_attributes(): void
     {
         Http::fake([
@@ -453,7 +453,7 @@ class AbacusModelTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_model_instance_when_using_where_first(): void
     {
         Http::fake([
@@ -475,7 +475,7 @@ class AbacusModelTest extends TestCase
         $this->assertEquals('Query Result', $subject->Name);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_model_collection_when_using_where_get(): void
     {
         Http::fake([

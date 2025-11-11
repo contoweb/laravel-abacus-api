@@ -4,40 +4,41 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use PHPUnit\Framework\Attributes\Test;
 
 class ODataOperatorTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_has_equals_operator(): void
     {
         $this->assertEquals('eq', ODataOperator::EQUALS->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_greater_than_operator(): void
     {
         $this->assertEquals('gt', ODataOperator::GREATER_THAN->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_greater_than_or_equal_operator(): void
     {
         $this->assertEquals('ge', ODataOperator::GREATER_THAN_OR_EQUAL->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_less_than_operator(): void
     {
         $this->assertEquals('lt', ODataOperator::LESS_THAN->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_has_less_than_or_equal_operator(): void
     {
         $this->assertEquals('le', ODataOperator::LESS_THAN_OR_EQUAL->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_all_operator_values(): void
     {
         $values = ODataOperator::values();
@@ -51,7 +52,7 @@ class ODataOperatorTest extends TestCase
         $this->assertContains('le', $values);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_valid_operators(): void
     {
         $this->assertTrue(ODataOperator::isValid('eq'));
@@ -61,7 +62,7 @@ class ODataOperatorTest extends TestCase
         $this->assertTrue(ODataOperator::isValid('le'));
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_invalid_operators(): void
     {
         $this->assertFalse(ODataOperator::isValid('invalid'));
@@ -70,7 +71,7 @@ class ODataOperatorTest extends TestCase
         $this->assertFalse(ODataOperator::isValid(''));
     }
 
-    /** @test */
+    #[Test]
     public function it_can_be_used_in_comparisons(): void
     {
         $operator = ODataOperator::EQUALS;
@@ -79,7 +80,7 @@ class ODataOperatorTest extends TestCase
         $this->assertEquals('eq', $operator->value);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_all_cases(): void
     {
         $cases = ODataOperator::cases();
@@ -89,7 +90,7 @@ class ODataOperatorTest extends TestCase
         $this->assertContainsOnlyInstancesOf(ODataOperator::class, $cases);
     }
 
-    /** @test */
+    #[Test]
     public function enum_values_match_odata_standard(): void
     {
         /* Verify that enum values match OData specification */

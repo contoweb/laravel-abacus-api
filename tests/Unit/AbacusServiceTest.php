@@ -7,6 +7,7 @@ use Contoweb\AbacusApi\AbacusClient;
 use Contoweb\AbacusApi\AbacusService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class AbacusServiceTest extends TestCase
 {
@@ -22,7 +23,7 @@ class AbacusServiceTest extends TestCase
         $this->service = new AbacusService($this->client);
     }
 
-    /** @test */
+    #[Test]
     public function it_queries_entities_with_odata_parameters(): void
     {
         Http::fake([
@@ -45,7 +46,7 @@ class AbacusServiceTest extends TestCase
         $this->assertCount(2, $result['value']);
     }
 
-    /** @test */
+    #[Test]
     public function it_queries_entities_without_parameters(): void
     {
         Http::fake([
@@ -66,7 +67,7 @@ class AbacusServiceTest extends TestCase
         $this->assertArrayHasKey('value', $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_queries_with_metadata_response(): void
     {
         Http::fake([
@@ -90,7 +91,7 @@ class AbacusServiceTest extends TestCase
         $this->assertArrayHasKey('value', $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_fetches_next_page_via_next_link(): void
     {
         Http::fake([
@@ -112,7 +113,7 @@ class AbacusServiceTest extends TestCase
         $this->assertEquals('Next Page Item', $result['value'][0]['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_finds_entity_by_id(): void
     {
         Http::fake([
@@ -134,7 +135,7 @@ class AbacusServiceTest extends TestCase
         $this->assertEquals('John Doe', $result['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_finds_entity_with_string_id(): void
     {
         Http::fake([
@@ -154,7 +155,7 @@ class AbacusServiceTest extends TestCase
         $this->assertEquals('Document Title', $result['Title']);
     }
 
-    /** @test */
+    #[Test]
     public function it_finds_entity_property(): void
     {
         Http::fake([
@@ -172,7 +173,7 @@ class AbacusServiceTest extends TestCase
         $this->assertEquals(['value' => 'Doe'], $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_entity(): void
     {
         Http::fake([
@@ -199,7 +200,7 @@ class AbacusServiceTest extends TestCase
         $this->assertEquals('New Subject', $result['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_updates_entity_with_patch(): void
     {
         Http::fake([
@@ -221,7 +222,7 @@ class AbacusServiceTest extends TestCase
         $this->assertEquals('Updated Name', $result['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_replaces_entity_with_put(): void
     {
         Http::fake([
@@ -246,7 +247,7 @@ class AbacusServiceTest extends TestCase
         $this->assertEquals('Completely New', $result['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_deletes_entity(): void
     {
         Http::fake([
@@ -262,7 +263,7 @@ class AbacusServiceTest extends TestCase
         $this->assertTrue($result);
     }
 
-    /** @test */
+    #[Test]
     public function it_lists_entity_ids(): void
     {
         Http::fake([
@@ -285,7 +286,7 @@ class AbacusServiceTest extends TestCase
         $this->assertCount(2, $result['value']);
     }
 
-    /** @test */
+    #[Test]
     public function it_fetches_metadata(): void
     {
         Http::fake([
@@ -307,7 +308,7 @@ class AbacusServiceTest extends TestCase
         $this->assertStringContainsString('edmx:Edmx', $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_caches_metadata_response(): void
     {
         Http::fake([
@@ -333,7 +334,7 @@ class AbacusServiceTest extends TestCase
         Http::assertSentCount(2);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_correct_cache_key_for_metadata(): void
     {
         Http::fake([
@@ -350,7 +351,7 @@ class AbacusServiceTest extends TestCase
         $this->assertTrue(Cache::has($cacheKey));
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_empty_query_parameters(): void
     {
         Http::fake([

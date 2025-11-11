@@ -8,6 +8,7 @@ use Contoweb\AbacusApi\AbacusQueryBuilder;
 use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class AbacusQueryBuilderTest extends TestCase
 {
@@ -22,7 +23,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->service = new AbacusService($this->client);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_simple_where_clause(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -33,7 +34,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals("LastName eq 'Müller'", $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_where_with_enum_operator(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -44,7 +45,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Age gt 18', $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_multiple_where_clauses_with_and(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -56,7 +57,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals("LastName eq 'Müller' and Age gt 18", $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_where_equals_convenience_method(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -67,7 +68,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals("Status eq 'Active'", $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_formats_string_values_with_quotes(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -78,7 +79,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertStringContainsString("'Test String'", $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_escapes_single_quotes_in_string_values(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -89,7 +90,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertStringContainsString("'O''Brien'", $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_formats_boolean_values(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -102,7 +103,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertStringContainsString('IsDeleted eq false', $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_formats_null_values(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -113,7 +114,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertStringContainsString('MiddleName eq null', $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_formats_numeric_values(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -124,7 +125,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Age eq 42', $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_formats_datetime_values(): void
     {
         $date = new \DateTime('2024-01-15 14:30:00');
@@ -136,7 +137,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertStringContainsString('2024-01-15T14:30:00Z', $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_for_invalid_operator(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -146,7 +147,7 @@ class AbacusQueryBuilderTest extends TestCase
         $builder->where('Name', 'invalid', 'Test');
     }
 
-    /** @test */
+    #[Test]
     public function it_supports_all_valid_operators(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Numbers');
@@ -166,7 +167,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertStringContainsString('Field5 ge 5', $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_select_query_with_array(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -177,7 +178,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Id,Name,Email', $query['$select']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_select_query_with_varargs(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -188,7 +189,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Id,Name,Email', $query['$select']);
     }
 
-    /** @test */
+    #[Test]
     public function it_merges_multiple_select_calls(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -200,7 +201,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Id,Name,Email', $query['$select']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_top_query(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -211,7 +212,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals(10, $query['$top']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_limit_query_as_alias_for_top(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -222,7 +223,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals(5, $query['$top']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_take_query_as_alias_for_top(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -233,7 +234,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals(20, $query['$top']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_order_by_ascending(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -244,7 +245,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('LastName asc', $query['$orderby']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_order_by_descending(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -255,7 +256,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('CreatedAt desc', $query['$orderby']);
     }
 
-    /** @test */
+    #[Test]
     public function it_defaults_order_by_to_ascending(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -266,7 +267,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Name asc', $query['$orderby']);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_for_invalid_order_direction(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -276,7 +277,7 @@ class AbacusQueryBuilderTest extends TestCase
         $builder->orderBy('Name', 'invalid');
     }
 
-    /** @test */
+    #[Test]
     public function it_overrides_previous_order_by(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -288,7 +289,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('LastName desc', $query['$orderby']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_expand_query_with_array(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -299,7 +300,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Addresses,Contacts', $query['$expand']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_expand_query_with_varargs(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -310,7 +311,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Addresses,Contacts', $query['$expand']);
     }
 
-    /** @test */
+    #[Test]
     public function it_merges_multiple_expand_calls(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -322,7 +323,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Addresses,Contacts,Orders', $query['$expand']);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_format_query(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -333,7 +334,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('xml', $query['$format']);
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_include_format_when_json(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -344,7 +345,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertArrayNotHasKey('$format', $query);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_for_invalid_format(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -354,7 +355,7 @@ class AbacusQueryBuilderTest extends TestCase
         $builder->format('invalid');
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_complex_query_with_all_parameters(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -377,7 +378,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertStringContainsString('Age gt 18', $query['$filter']);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_get_first_page(): void
     {
         Http::fake([
@@ -400,7 +401,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Test 1', $results[0]['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_get_with_pagination(): void
     {
         Http::fake([
@@ -429,7 +430,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Page 2', $results[1]['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_first(): void
     {
         Http::fake([
@@ -450,7 +451,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('First Item', $result['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_find(): void
     {
         Http::fake([
@@ -471,7 +472,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals('Found Item', $result['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_find_property(): void
     {
         Http::fake([
@@ -490,7 +491,7 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertEquals(['value' => 'John Doe'], $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_chains_multiple_methods_fluently(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');

@@ -11,6 +11,7 @@ use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 /* Test report model */
 class SimpleReportModel implements \Contoweb\AbacusApi\Reports\Contracts\ReportModel
@@ -76,7 +77,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->service = new AbacusReportsService($this->client);
     }
 
-    /** @test */
+    #[Test]
     public function it_sets_parameters(): void
     {
         $result = $this->service->parameter(['param1' => 'value1']);
@@ -84,7 +85,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->assertInstanceOf(AbacusReportsService::class, $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_enables_cache(): void
     {
         $result = $this->service->cache(7200, 'custom-key');
@@ -92,7 +93,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->assertInstanceOf(AbacusReportsService::class, $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_simple_report(): void
     {
         Http::fake([
@@ -122,7 +123,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->assertEquals('Item 1', $results[0]->name);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_report_with_parameters(): void
     {
         Http::fake([
@@ -160,7 +161,7 @@ class AbacusReportsServiceTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_caches_report_results(): void
     {
         Http::fake([
@@ -199,7 +200,7 @@ class AbacusReportsServiceTest extends TestCase
         Http::assertSentCount(4);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_custom_cache_key(): void
     {
         Http::fake([
@@ -228,7 +229,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->assertTrue(Cache::has('abacus_report:my-custom-key'));
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_report_parameters(): void
     {
         Http::fake([
@@ -246,7 +247,7 @@ class AbacusReportsServiceTest extends TestCase
             ->collection($report);
     }
 
-    /** @test */
+    #[Test]
     public function it_passes_validation_with_valid_parameters(): void
     {
         Http::fake([
@@ -278,7 +279,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->assertCount(1, $results);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_on_immediate_error(): void
     {
         Http::fake([
@@ -299,7 +300,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->service->collection($report);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_when_no_job_id_returned(): void
     {
         Http::fake([
@@ -320,7 +321,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->service->collection($report);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_when_final_state_not_finished_success(): void
     {
         Http::fake([
@@ -346,7 +347,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->service->collection($report);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_when_output_record_is_not_array(): void
     {
         Http::fake([
@@ -375,7 +376,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->service->collection($report);
     }
 
-    /** @test */
+    #[Test]
     public function it_resets_state_after_execution(): void
     {
         Http::fake([
@@ -415,7 +416,7 @@ class AbacusReportsServiceTest extends TestCase
         Http::assertSentCount(7);
     }
 
-    /** @test */
+    #[Test]
     public function it_generates_unique_cache_keys_for_different_parameters(): void
     {
         Http::fake([
@@ -456,7 +457,7 @@ class AbacusReportsServiceTest extends TestCase
         Http::assertSentCount(7);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_empty_output_array(): void
     {
         Http::fake([

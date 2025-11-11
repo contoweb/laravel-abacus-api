@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class BaseAbacusClientTest extends TestCase
 {
@@ -21,7 +22,7 @@ class BaseAbacusClientTest extends TestCase
         $this->client = new AbacusClient();
     }
 
-    /** @test */
+    #[Test]
     public function it_constructs_with_config_values(): void
     {
         $client = new AbacusClient();
@@ -30,7 +31,7 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals('test-mandate', $client->getMandate());
     }
 
-    /** @test */
+    #[Test]
     public function it_constructs_with_custom_values(): void
     {
         $client = new AbacusClient(
@@ -45,7 +46,7 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals('custom-mandate', $client->getMandate());
     }
 
-    /** @test */
+    #[Test]
     public function it_prepends_https_to_base_url_if_missing(): void
     {
         $client = new AbacusClient('api.example.com');
@@ -53,7 +54,7 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals('https://api.example.com', $client->getUrl());
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_prepend_https_if_already_present(): void
     {
         $client = new AbacusClient('https://api.example.com');
@@ -61,7 +62,7 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals('https://api.example.com', $client->getUrl());
     }
 
-    /** @test */
+    #[Test]
     public function it_respects_http_protocol(): void
     {
         $client = new AbacusClient('http://api.example.com');
@@ -69,7 +70,7 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals('http://api.example.com', $client->getUrl());
     }
 
-    /** @test */
+    #[Test]
     public function it_fetches_fresh_access_token(): void
     {
         Http::fake([
@@ -90,7 +91,7 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals('test-token-12345', $token);
     }
 
-    /** @test */
+    #[Test]
     public function it_caches_access_token_with_buffer(): void
     {
         Http::fake([
@@ -115,7 +116,7 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals('cached-token', $cachedToken);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_when_token_fetch_fails(): void
     {
         Http::fake([
@@ -132,7 +133,7 @@ class BaseAbacusClientTest extends TestCase
         $method->invoke($this->client);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_when_access_token_missing_in_response(): void
     {
         Http::fake([
@@ -151,7 +152,7 @@ class BaseAbacusClientTest extends TestCase
         $method->invoke($this->client);
     }
 
-    /** @test */
+    #[Test]
     public function it_reuses_cached_access_token(): void
     {
         Http::fake([
@@ -173,7 +174,7 @@ class BaseAbacusClientTest extends TestCase
         Http::assertSentCount(3); /* No additional token request */
     }
 
-    /** @test */
+    #[Test]
     public function it_performs_get_request(): void
     {
         Http::fake([
@@ -199,7 +200,7 @@ class BaseAbacusClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_performs_post_request(): void
     {
         Http::fake([
@@ -224,7 +225,7 @@ class BaseAbacusClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_performs_patch_request(): void
     {
         Http::fake([
@@ -248,7 +249,7 @@ class BaseAbacusClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_performs_put_request(): void
     {
         Http::fake([
@@ -271,7 +272,7 @@ class BaseAbacusClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_performs_delete_request(): void
     {
         Http::fake([
@@ -292,7 +293,7 @@ class BaseAbacusClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_refreshes_token_on_401_response(): void
     {
         Http::fake([
@@ -312,7 +313,7 @@ class BaseAbacusClientTest extends TestCase
         Http::assertSentCount(4);
     }
 
-    /** @test */
+    #[Test]
     public function it_clears_cache_on_401_response(): void
     {
         /* Get cache key first */
@@ -343,7 +344,7 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals('refreshed-token', $cachedToken);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_on_request_failure(): void
     {
         Http::fake([
@@ -359,7 +360,7 @@ class BaseAbacusClientTest extends TestCase
         $this->client->get('/api/entities');
     }
 
-    /** @test */
+    #[Test]
     public function it_includes_accept_json_header(): void
     {
         Http::fake([
@@ -377,7 +378,7 @@ class BaseAbacusClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_generates_unique_cache_key(): void
     {
         $client1 = new AbacusClient('https://api1.example.com', 'mandate1', 'client1');

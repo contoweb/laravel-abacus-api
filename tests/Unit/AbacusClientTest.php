@@ -6,6 +6,7 @@ use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\AbacusClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class AbacusClientTest extends TestCase
 {
@@ -18,7 +19,7 @@ class AbacusClientTest extends TestCase
         $this->client = new AbacusClient();
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_entity_path(): void
     {
         $path = $this->client->entityPath('Subjects');
@@ -26,7 +27,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_entity_path_with_id(): void
     {
         $path = $this->client->entityPathWithId('Subjects', 123);
@@ -34,7 +35,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects(123)', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_entity_path_with_string_id(): void
     {
         $path = $this->client->entityPathWithId('Users', 'abc-def');
@@ -42,7 +43,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/Users(abc-def)', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_entity_property_path(): void
     {
         $path = $this->client->entityPropertyPath('Subjects', 123, 'Name');
@@ -50,7 +51,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects(123)/Name', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_metadata_path(): void
     {
         $path = $this->client->metadataPath();
@@ -58,7 +59,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/$metadata', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_entities_list_path(): void
     {
         $path = $this->client->entitiesPath();
@@ -66,7 +67,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_follows_next_link_for_pagination(): void
     {
         Http::fake([
@@ -94,7 +95,7 @@ class AbacusClientTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_refreshes_token_on_next_link_401(): void
     {
         Http::fake([
@@ -112,7 +113,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals(200, $response->status());
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_correct_mandate_in_paths(): void
     {
         $customClient = new AbacusClient(
@@ -125,7 +126,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/custom-mandate-123/Invoices', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_paths_with_special_characters(): void
     {
         $path = $this->client->entityPath('Special/Resource');
@@ -133,7 +134,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/Special/Resource', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_path_with_numeric_id(): void
     {
         $path = $this->client->entityPathWithId('Orders', 99999);
@@ -141,7 +142,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/Orders(99999)', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_path_with_guid_id(): void
     {
         $guid = '550e8400-e29b-41d4-a716-446655440000';
@@ -150,7 +151,7 @@ class AbacusClientTest extends TestCase
         $this->assertEquals('/api/entity/v1/mandants/test-mandate/Documents(550e8400-e29b-41d4-a716-446655440000)', $path);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_property_path_with_nested_property(): void
     {
         $path = $this->client->entityPropertyPath('Subjects', 42, 'Address/City');

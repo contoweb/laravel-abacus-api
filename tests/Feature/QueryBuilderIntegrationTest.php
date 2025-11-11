@@ -8,6 +8,7 @@ use Contoweb\AbacusApi\AbacusQueryBuilder;
 use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\Test;
 
 class QueryBuilderIntegrationTest extends TestCase
 {
@@ -21,7 +22,7 @@ class QueryBuilderIntegrationTest extends TestCase
         $this->service = new AbacusService($client);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_complex_filtered_query(): void
     {
         Http::fake([
@@ -50,7 +51,7 @@ class QueryBuilderIntegrationTest extends TestCase
         $this->assertEquals('John Doe', $results[0]['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_follows_pagination_automatically(): void
     {
         Http::fake([
@@ -88,7 +89,7 @@ class QueryBuilderIntegrationTest extends TestCase
         $this->assertEquals('Item 5', $results[4]['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_query_with_expand(): void
     {
         Http::fake([
@@ -122,7 +123,7 @@ class QueryBuilderIntegrationTest extends TestCase
         $this->assertArrayHasKey('Contacts', $results[0]);
     }
 
-    /** @test */
+    #[Test]
     public function it_chains_multiple_conditions(): void
     {
         Http::fake([
@@ -161,7 +162,7 @@ class QueryBuilderIntegrationTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_first_result(): void
     {
         Http::fake([
@@ -190,7 +191,7 @@ class QueryBuilderIntegrationTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_find_by_id(): void
     {
         Http::fake([
@@ -212,7 +213,7 @@ class QueryBuilderIntegrationTest extends TestCase
         $this->assertEquals('Found by ID', $result['Name']);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_different_output_formats(): void
     {
         Http::fake([
@@ -235,7 +236,7 @@ class QueryBuilderIntegrationTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_query_without_execution(): void
     {
         $builder = new AbacusQueryBuilder($this->service, 'Subjects');
@@ -261,7 +262,7 @@ class QueryBuilderIntegrationTest extends TestCase
         $this->assertEquals('Addresses', $query['$expand']);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_special_characters_in_values(): void
     {
         Http::fake([
@@ -287,7 +288,7 @@ class QueryBuilderIntegrationTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_multiple_select_and_expand_calls(): void
     {
         Http::fake([

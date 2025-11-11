@@ -4,6 +4,7 @@ namespace Contoweb\AbacusApi\Tests\Console;
 
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\File;
+use PHPUnit\Framework\Attributes\Test;
 
 class MakeAbacusReportCommandTest extends TestCase
 {
@@ -27,7 +28,7 @@ class MakeAbacusReportCommandTest extends TestCase
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_report_file(): void
     {
         $this->artisan('make:abacus-report', ['name' => 'SalesReport'])
@@ -38,7 +39,7 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->assertFileExists($expectedPath);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_report_with_model(): void
     {
         $this->artisan('make:abacus-report', [
@@ -55,7 +56,7 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->assertFileExists($modelPath);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_overwriting_existing_report(): void
     {
         /* Create report first time */
@@ -68,7 +69,7 @@ class MakeAbacusReportCommandTest extends TestCase
              ->expectsOutput('Report DuplicateReport already exists!');
     }
 
-    /** @test */
+    #[Test]
     public function it_skips_model_if_already_exists(): void
     {
         /* Create report with model */
@@ -85,7 +86,7 @@ class MakeAbacusReportCommandTest extends TestCase
           ->expectsOutput('Model SharedModel already exists, skipping model generation.');
     }
 
-    /** @test */
+    #[Test]
     public function it_shows_tip_when_no_model_specified(): void
     {
         $this->artisan('make:abacus-report', ['name' => 'SimpleReport'])
@@ -93,7 +94,7 @@ class MakeAbacusReportCommandTest extends TestCase
              ->expectsOutput('Tip: Use --model=ModelName to generate a report model class.');
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_correct_namespace(): void
     {
         $this->artisan('make:abacus-report', ['name' => 'TestReport'])
@@ -106,7 +107,7 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->assertStringContainsString('class TestReport implements Report', $content);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_directory_if_not_exists(): void
     {
         /* Ensure directory doesn't exist */
@@ -120,7 +121,7 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->assertDirectoryExists($this->testReportsPath);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_models_subdirectory_for_model(): void
     {
         $this->artisan('make:abacus-report', [
@@ -132,7 +133,7 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->assertDirectoryExists($modelsPath);
     }
 
-    /** @test */
+    #[Test]
     public function it_generates_valid_php_files(): void
     {
         $this->artisan('make:abacus-report', [
