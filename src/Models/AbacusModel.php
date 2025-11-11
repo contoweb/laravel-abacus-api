@@ -25,7 +25,7 @@ abstract class AbacusModel
     {
         $service = app(AbacusService::class);
 
-        return new AbacusQueryBuilder($service, static::$resource);
+        return new AbacusQueryBuilder($service, static::$resource, static::class);
     }
 
     /**

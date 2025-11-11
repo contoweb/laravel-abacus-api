@@ -14,11 +14,13 @@ class AbacusQueryBuilder
     protected ?int          $top     = null;
     protected array         $expand  = [];
     protected string        $format  = 'json';
+    protected ?string       $modelClass = null;
 
-    public function __construct(AbacusService $service, string $resource)
+    public function __construct(AbacusService $service, string $resource, ?string $modelClass = null)
     {
-        $this->service  = $service;
-        $this->resource = $resource;
+        $this->service    = $service;
+        $this->resource   = $resource;
+        $this->modelClass = $modelClass;
     }
 
     /**
@@ -158,6 +160,11 @@ class AbacusQueryBuilder
         /* JSON response usually contains 'value' array */
         $data = $result['value'] ?? $result;
 
+        /* Wrap in model instances if model class is set */
+        if ($this->modelClass !== null) {
+            return collect($data)->map(fn($item) => new $this->modelClass($item));
+        }
+
         return collect($data);
     }
 
@@ -187,6 +194,11 @@ class AbacusQueryBuilder
             }
         }
 
+        /* Wrap in model instances if model class is set */
+        if ($this->modelClass !== null) {
+            return collect($allResults)->map(fn($item) => new $this->modelClass($item));
+        }
+
         return collect($allResults);
     }
 
@@ -198,6 +210,7 @@ class AbacusQueryBuilder
         $this->top = 1;
         $result    = $this->get();
 
+        /* get() already wraps in model instances if modelClass is set */
         return $result->first();
     }
 

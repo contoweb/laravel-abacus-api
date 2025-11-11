@@ -452,4 +452,51 @@ class AbacusModelTest extends TestCase
                    !isset($data['Email']); /* Email shouldn't be sent as it's not dirty */
         });
     }
+
+    /** @test */
+    public function it_returns_model_instance_when_using_where_first(): void
+    {
+        Http::fake([
+            '*/oauth/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*' => Http::response([
+                'value' => [
+                    ['Id' => 99, 'Name' => 'Query Result', 'Email' => 'result@example.com'],
+                ],
+            ], 200),
+        ]);
+
+        $subject = TestSubject::where('Name', 'eq', 'Query Result')->first();
+
+        $this->assertInstanceOf(TestSubject::class, $subject);
+        $this->assertEquals(99, $subject->Id);
+        $this->assertEquals('Query Result', $subject->Name);
+    }
+
+    /** @test */
+    public function it_returns_model_collection_when_using_where_get(): void
+    {
+        Http::fake([
+            '*/oauth/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*' => Http::response([
+                'value' => [
+                    ['Id' => 1, 'Name' => 'First'],
+                    ['Id' => 2, 'Name' => 'Second'],
+                ],
+            ], 200),
+        ]);
+
+        $subjects = TestSubject::where('IsActive', 'eq', true)->get();
+
+        $this->assertCount(2, $subjects);
+        $this->assertInstanceOf(TestSubject::class, $subjects->first());
+        $this->assertInstanceOf(TestSubject::class, $subjects->last());
+        $this->assertEquals('First', $subjects->first()->Name);
+        $this->assertEquals('Second', $subjects->last()->Name);
+    }
 }
