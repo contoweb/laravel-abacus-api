@@ -5,6 +5,7 @@ namespace Contoweb\AbacusApi\Models;
 use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\AbacusQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Illuminate\Support\Collection;
 
 abstract class AbacusModel
 {
@@ -20,6 +21,8 @@ abstract class AbacusModel
 
     /**
      * Create query builder
+     *
+     * @return AbacusQueryBuilder<static>
      */
     public static function query(): AbacusQueryBuilder
     {
@@ -31,18 +34,22 @@ abstract class AbacusModel
     /**
      *  Fetch all entities across all pagination pages as Collection
      *  Follows all @odata.nextLink URLs automatically
+     *
+     *  @return Collection<int, static>
      */
-    public static function all()
+    public static function all(): Collection
     {
-        return static::query()->get()->map(fn($item) => new static($item));
+        return static::query()->get();
     }
 
     /**
      * Fetch all entities (first page only) as Collection
+     *
+     * @return Collection<int, static>
      */
-    public static function firstPage()
+    public static function firstPage(): Collection
     {
-        return static::query()->getFirstPage()->map(fn($item) => new static($item));
+        return static::query()->getFirstPage();
     }
 
     /**
@@ -59,6 +66,8 @@ abstract class AbacusModel
      * Start where query
      * Example: Project::where('Id', ODataOperator::EQUALS, 9100)->get()
      * Example: Project::where('Id', 'eq', 9100)->get()
+     *
+     * @return AbacusQueryBuilder<static>
      */
     public static function where(string $field, ODataOperator | string $operator, mixed $value): AbacusQueryBuilder
     {
@@ -67,6 +76,8 @@ abstract class AbacusModel
 
     /**
      * Start select query
+     *
+     * @return AbacusQueryBuilder<static>
      */
     public static function select(array | string $fields): AbacusQueryBuilder
     {
@@ -75,6 +86,8 @@ abstract class AbacusModel
 
     /**
      * Top N Entities
+     *
+     * @return AbacusQueryBuilder<static>
      */
     public static function top(int $limit): AbacusQueryBuilder
     {
@@ -83,6 +96,8 @@ abstract class AbacusModel
 
     /**
      * OrderBy-Query starten
+     *
+     * @return AbacusQueryBuilder<static>
      */
     public static function orderBy(string $field, string $direction = 'asc'): AbacusQueryBuilder
     {
@@ -91,6 +106,8 @@ abstract class AbacusModel
 
     /**
      * Expand Navigation Properties
+     *
+     * @return AbacusQueryBuilder<static>
      */
     public static function expand(array | string $relations): AbacusQueryBuilder
     {

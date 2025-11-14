@@ -67,7 +67,51 @@ class Subject extends AbacusModel
 php artisan abacus:generate-ide-helper
 ```
 
-This automatically generates PHPDoc for all properties from the Abacus Swagger JSON.
+This automatically generates PHPDoc for all properties based on endpoint definition files.
+
+#### How It Works
+
+The command:
+1. Scans your models directory for model classes
+2. For each model, looks for a definition file at `storage/app/abacus/endpoint-definitions/{resource}.json`
+3. Extracts entity schema and generates IDE hints
+
+#### Setting Up Definition Files
+
+1. Download the OpenAPI/Swagger JSON for your endpoints from Abacus. Exapmle: Click button "DOWNLOAD JSON-FILE" on page https://apihub.abacus.ch/apis/2025/entity/products.api
+2. Save them to `storage/app/abacus/endpoint-definitions/`
+3. Name them after your resource (lowercase): `{resource}.json`
+
+**Example:**
+
+```php
+<?php
+
+namespace App\Models\Abacus;
+
+use Contoweb\AbacusApi\Models\AbacusModel;
+
+class Product extends AbacusModel
+{
+    protected static string $resource = 'Products';
+}
+```
+
+Save the Products endpoint definition as: `storage/app/abacus/endpoint-definitions/products.json`
+
+The IDE helper will extract the entity schema (e.g., `ProductData`) from the definition file and generate autocomplete hints for your `Product` model.
+
+#### Fallback to API Metadata
+
+If no local definition files are found, the IDE helper will automatically fetch metadata from the API endpoint. This will generate hints for all available entities.
+
+#### Listing Available Entities
+
+To see all available entity types:
+
+```bash
+php artisan abacus:generate-ide-helper --list
+```
 
 ### 3. Use the Models
 
@@ -190,11 +234,8 @@ php artisan make:abacus-model Subject --resource=Subjects
 ### Generate IDE Helper
 
 ```bash
-/* With default URL from config */
+/* Generate IDE helper from API metadata */
 php artisan abacus:generate-ide-helper
-
-/* With custom URL */
-php artisan abacus:generate-ide-helper --url=https://custom.url/swagger.json
 
 /* With custom output */
 php artisan abacus:generate-ide-helper --output=_ide_helper_custom.php
@@ -215,7 +256,6 @@ return [
 
     'ide_helper' => [
         'enabled' => env('ABACUS_IDE_HELPER_ENABLED', true),
-        'swagger_url' => env('ABACUS_SWAGGER_URL', '...'),
         'output_file' => env('ABACUS_IDE_HELPER_OUTPUT', '_ide_helper_abacus.php'),
     ],
 

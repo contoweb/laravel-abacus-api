@@ -3,7 +3,11 @@
 namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Illuminate\Support\Collection;
 
+/**
+ * @template TypeModel of \Contoweb\AbacusApi\Models\AbacusModel
+ */
 class AbacusQueryBuilder
 {
     protected AbacusService $service;
@@ -27,6 +31,8 @@ class AbacusQueryBuilder
      * Filter with OData operators
      * Example: ->where('LastName', ODataOperator::EQUALS, 'Müller')
      * Example: ->where('LastName', 'eq', 'Müller')
+     *
+     * @return $this
      */
     public function where(string $field, ODataOperator | string $operator, mixed $value)
     {
@@ -152,6 +158,8 @@ class AbacusQueryBuilder
 
     /**
      * Execute query and return results as Collection
+     *
+     * @return Collection<int, TypeModel>
      */
     public function getFirstPage()
     {
@@ -171,6 +179,8 @@ class AbacusQueryBuilder
     /**
      * Execute query and return all paginated results as Collection
      * Follows all @odata.nextLink URLs automatically
+     *
+     * @return Collection<int, TypeModel>
      */
     public function get()
     {
@@ -204,8 +214,10 @@ class AbacusQueryBuilder
 
     /**
      * Return first match
+     *
+     * @return TypeModel|null
      */
-    public function first()
+    public function first(): mixed
     {
         $this->top = 1;
         $result    = $this->get();
