@@ -347,4 +347,23 @@ class AbacusReportsClientTest extends TestCase
 
         $this->assertEquals('Finished', $result['state']);
     }
+
+    #[Test]
+    public function it_deletes_job(): void
+    {
+        Http::fake([
+            '*/oauth/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/jobs/job-delete-123' => Http::response(null, 204),
+        ]);
+
+        $this->client->deleteJob('job-delete-123');
+
+        Http::assertSent(function ($request) {
+            return $request->method() === 'DELETE' &&
+                   str_contains($request->url(), '/jobs/job-delete-123');
+        });
+    }
 }

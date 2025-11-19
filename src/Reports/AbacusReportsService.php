@@ -144,6 +144,9 @@ class AbacusReportsService
         /* Get result JSON */
         $jsonData = $this->client->getJobOutput($jobId);
 
+        /* Close the report session */
+        $this->client->deleteJob($jobId);
+        
         /* Parse and map to models */
 
         return $this->parseAndMapJson($jsonData, $report);

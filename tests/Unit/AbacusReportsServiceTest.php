@@ -173,10 +173,12 @@ class AbacusReportsServiceTest extends TestCase
                 'id' => 'job-cache',
                 'state' => 'Running',
             ], 202),
-            '*/api/abareport/v1/jobs/job-cache' => Http::response([
-                'id' => 'job-cache',
-                'state' => 'FinishedSuccess',
-            ], 200),
+            '*/api/abareport/v1/jobs/job-cache' => Http::sequence()
+                ->push([
+                    'id' => 'job-cache',
+                    'state' => 'FinishedSuccess',
+                ], 200)
+                ->push(null, 204), /* Delete job */
             '*/api/abareport/v1/jobs/job-cache/output' => Http::response([
                 ['Id' => 1, 'Name' => 'Cached'],
             ], 200),
@@ -196,8 +198,8 @@ class AbacusReportsServiceTest extends TestCase
 
         $this->assertEquals($results1, $results2);
 
-        /* Should only submit report once (plus token + status + output) */
-        Http::assertSentCount(4);
+        /* Should only submit report once (token + submit + status + output + delete) */
+        Http::assertSentCount(5);
     }
 
     #[Test]
@@ -388,10 +390,11 @@ class AbacusReportsServiceTest extends TestCase
                 'id' => 'job-reset',
                 'state' => 'Running',
             ], 202),
-            '*/api/abareport/v1/jobs/job-reset' => Http::response([
-                'id' => 'job-reset',
-                'state' => 'FinishedSuccess',
-            ], 200),
+            '*/api/abareport/v1/jobs/job-reset' => Http::sequence()
+                ->push(['id' => 'job-reset', 'state' => 'FinishedSuccess'], 200)
+                ->push(null, 204) /* Delete job 1 */
+                ->push(['id' => 'job-reset', 'state' => 'FinishedSuccess'], 200)
+                ->push(null, 204), /* Delete job 2 */
             '*/api/abareport/v1/jobs/job-reset/output' => Http::response([
                 ['Id' => 1],
             ], 200),
@@ -411,9 +414,9 @@ class AbacusReportsServiceTest extends TestCase
         $this->assertCount(1, $results);
 
         /* Should make new API calls (not use cache from first execution) */
-        /* First execution: token + submit + status + output = 4 */
-        /* Second execution: submit + status + output = 3 (token is cached) */
-        Http::assertSentCount(7);
+        /* First execution: token + submit + status + output + delete = 5 */
+        /* Second execution: submit + status + output + delete = 4 (token is cached) */
+        Http::assertSentCount(9);
     }
 
     #[Test]
@@ -428,10 +431,11 @@ class AbacusReportsServiceTest extends TestCase
                 'id' => 'job-key',
                 'state' => 'Running',
             ], 202),
-            '*/api/abareport/v1/jobs/job-key' => Http::response([
-                'id' => 'job-key',
-                'state' => 'FinishedSuccess',
-            ], 200),
+            '*/api/abareport/v1/jobs/job-key' => Http::sequence()
+                ->push(['id' => 'job-key', 'state' => 'FinishedSuccess'], 200)
+                ->push(null, 204) /* Delete job 1 */
+                ->push(['id' => 'job-key', 'state' => 'FinishedSuccess'], 200)
+                ->push(null, 204), /* Delete job 2 */
             '*/api/abareport/v1/jobs/job-key/output' => Http::response([
                 ['Id' => 1],
             ], 200),
@@ -452,9 +456,9 @@ class AbacusReportsServiceTest extends TestCase
             ->collection($report);
 
         /* Should make separate API calls for different parameters */
-        /* First execution: token + submit + status + output = 4 */
-        /* Second execution: submit + status + output = 3 (token cached) */
-        Http::assertSentCount(7);
+        /* First execution: token + submit + status + output + delete = 5 */
+        /* Second execution: submit + status + output + delete = 4 (token cached) */
+        Http::assertSentCount(9);
     }
 
     #[Test]

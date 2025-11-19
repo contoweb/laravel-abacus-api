@@ -71,6 +71,21 @@ class AbacusReportsClient extends BaseAbacusClient
     }
 
     /**
+     * Delete/close a report job session
+     *
+     * @param string $jobId Job identifier
+     *
+     * @return void
+     * @throws RequestException|ConnectionException
+     */
+    public function deleteJob(string $jobId): void
+    {
+        $path = $this->jobPath($jobId);
+
+        $this->delete($path);
+    }
+
+    /**
      * Poll job until completion
      *
      * @param string $jobId        Job identifier

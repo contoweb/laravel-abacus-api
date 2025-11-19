@@ -80,7 +80,9 @@ class ReportsWorkflowTest extends TestCase
                 ->push([
                     'id' => 'job-workflow-123',
                     'state' => 'FinishedSuccess',
-                ], 200),
+                ], 200)
+                /* Delete job */
+                ->push(null, 204),
             /* Get output */
             '*/api/abareport/v1/jobs/job-workflow-123/output' => Http::response([
                 [
@@ -111,6 +113,12 @@ class ReportsWorkflowTest extends TestCase
         $this->assertEquals('Acme Corp', $results[0]->customer_name);
         $this->assertEquals(1500.00, $results[0]->total_amount);
         $this->assertEquals('INV-002', $results[1]->invoice_id);
+
+        /* Verify that deleteJob was called */
+        Http::assertSent(function ($request) {
+            return $request->method() === 'DELETE' &&
+                   str_contains($request->url(), '/jobs/job-workflow-123');
+        });
     }
 
     #[Test]
@@ -125,10 +133,12 @@ class ReportsWorkflowTest extends TestCase
                 'id' => 'job-cache-456',
                 'state' => 'Running',
             ], 202),
-            '*/api/abareport/v1/jobs/job-cache-456' => Http::response([
-                'id' => 'job-cache-456',
-                'state' => 'FinishedSuccess',
-            ], 200),
+            '*/api/abareport/v1/jobs/job-cache-456' => Http::sequence()
+                ->push([
+                    'id' => 'job-cache-456',
+                    'state' => 'FinishedSuccess',
+                ], 200)
+                ->push(null, 204), /* Delete job */
             '*/api/abareport/v1/jobs/job-cache-456/output' => Http::response([
                 [
                     'InvoiceId' => 'CACHED-001',
@@ -155,8 +165,8 @@ class ReportsWorkflowTest extends TestCase
 
         $this->assertEquals($results1, $results2);
 
-        /* Should only submit report once (plus token + status + output) */
-        Http::assertSentCount(4);
+        /* Should only submit report once (token + submit + status + output + delete) */
+        Http::assertSentCount(5);
     }
 
     #[Test]
@@ -322,10 +332,13 @@ class ReportsWorkflowTest extends TestCase
                 'id' => 'job-concurrent',
                 'state' => 'Running',
             ], 202),
-            '*/api/abareport/v1/jobs/job-concurrent' => Http::response([
-                'id' => 'job-concurrent',
-                'state' => 'FinishedSuccess',
-            ], 200),
+            '*/api/abareport/v1/jobs/job-concurrent' => Http::sequence()
+                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)
+                ->push(null, 204) /* Delete job 1 */
+                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)
+                ->push(null, 204) /* Delete job 2 */
+                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)
+                ->push(null, 204), /* Delete job 3 */
             '*/api/abareport/v1/jobs/job-concurrent/output' => Http::response([
                 ['InvoiceId' => 'C-001', 'CustomerName' => 'Concurrent', 'TotalAmount' => 100, 'Date' => '2024-01-01'],
             ], 200),
@@ -350,9 +363,9 @@ class ReportsWorkflowTest extends TestCase
         $this->assertCount(1, $results2);
         $this->assertCount(1, $results3);
 
-        /* First: token + submit + status + output = 4 */
-        /* Second + Third: submit + status + output = 3 each (token cached) */
-        /* Total: 4 + 3 + 3 = 10 */
-        Http::assertSentCount(10);
+        /* First: token + submit + status + output + delete = 5 */
+        /* Second + Third: submit + status + output + delete = 4 each (token cached) */
+        /* Total: 5 + 4 + 4 = 13 */
+        Http::assertSentCount(13);
     }
 }
