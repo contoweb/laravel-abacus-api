@@ -30,7 +30,6 @@ return [
 
     'ide_helper' => [
         'enabled'           => env('ABACUS_IDE_HELPER_ENABLED', true),
-        'swagger_json_file' => env('ABACUS_SWAGGER_JSON_FILE', 'storage/app/swagger.json'),
         'output_file'       => env('ABACUS_IDE_HELPER_OUTPUT', '_ide_helper_abacus.php'),
     ],
 
