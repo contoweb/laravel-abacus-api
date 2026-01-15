@@ -10,8 +10,6 @@ use Illuminate\Support\Facades\Http;
 
 class AbacusReportsClient extends BaseAbacusClient
 {
-    const API_REPORT_BASE_PATH = '/api/abareport/v1';
-
     /**
      * Submit a report for execution
      *
@@ -124,11 +122,19 @@ class AbacusReportsClient extends BaseAbacusClient
     }
 
     /**
+     * Get the base path for reports API
+     */
+    protected function getReportBasePath(): string
+    {
+        return "/api/abareport/{$this->apiVersion}";
+    }
+
+    /**
      * Build report submission path
      */
     public function reportPath(string $reportName): string
     {
-        return self::API_REPORT_BASE_PATH . '/report/' . $reportName;
+        return $this->getReportBasePath() . '/report/' . $reportName;
     }
 
     /**
@@ -136,7 +142,7 @@ class AbacusReportsClient extends BaseAbacusClient
      */
     public function jobPath(string $jobId): string
     {
-        return self::API_REPORT_BASE_PATH . '/jobs/' . $jobId;
+        return $this->getReportBasePath() . '/jobs/' . $jobId;
     }
 
     /**
@@ -144,6 +150,6 @@ class AbacusReportsClient extends BaseAbacusClient
      */
     public function jobOutputPath(string $jobId): string
     {
-        return self::API_REPORT_BASE_PATH . '/jobs/' . $jobId . '/output';
+        return $this->getReportBasePath() . '/jobs/' . $jobId . '/output';
     }
 }

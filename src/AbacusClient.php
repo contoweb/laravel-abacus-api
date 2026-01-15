@@ -9,8 +9,6 @@ use Illuminate\Http\Client\Response;
 
 class AbacusClient extends BaseAbacusClient
 {
-    const API_ENTITY_BASE_PATH = '/api/entity/v1/mandants';
-
     /**
      * Follow OData nextLink for pagination
      * Accepts full URL from @odata.nextLink
@@ -28,11 +26,19 @@ class AbacusClient extends BaseAbacusClient
     }
 
     /**
+     * Get the base path for entity API
+     */
+    protected function getEntityBasePath(): string
+    {
+        return "/api/entity/{$this->apiVersion}/mandants";
+    }
+
+    /**
      * Create complete entity path
      */
     public function entityPath(string $resource): string
     {
-        return self::API_ENTITY_BASE_PATH . "/{$this->mandate}/{$resource}";
+        return $this->getEntityBasePath() . "/{$this->mandate}/{$resource}";
     }
 
     /**
@@ -40,7 +46,7 @@ class AbacusClient extends BaseAbacusClient
      */
     public function entityPathWithId(string $resource, mixed $id): string
     {
-        return self::API_ENTITY_BASE_PATH . "/{$this->mandate}/{$resource}({$id})";
+        return $this->getEntityBasePath() . "/{$this->mandate}/{$resource}({$id})";
     }
 
     /**
@@ -48,7 +54,7 @@ class AbacusClient extends BaseAbacusClient
      */
     public function entityPropertyPath(string $resource, mixed $id, string $property): string
     {
-        return self::API_ENTITY_BASE_PATH . "/{$this->mandate}/{$resource}({$id})/{$property}";
+        return $this->getEntityBasePath() . "/{$this->mandate}/{$resource}({$id})/{$property}";
     }
 
     /**
@@ -56,7 +62,7 @@ class AbacusClient extends BaseAbacusClient
      */
     public function metadataPath(): string
     {
-        return self::API_ENTITY_BASE_PATH . "/{$this->mandate}/\$metadata";
+        return $this->getEntityBasePath() . "/{$this->mandate}/\$metadata";
     }
 
     /**
@@ -64,6 +70,6 @@ class AbacusClient extends BaseAbacusClient
      */
     public function entitiesPath(): string
     {
-        return self::API_ENTITY_BASE_PATH . "/{$this->mandate}/";
+        return $this->getEntityBasePath() . "/{$this->mandate}/";
     }
 }

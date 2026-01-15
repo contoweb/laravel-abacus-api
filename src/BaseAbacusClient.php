@@ -17,20 +17,20 @@ abstract class BaseAbacusClient
     protected string $mandate;
     protected string $clientId;
     protected string $clientSecret;
-    protected string $tokenEndpoint;
+    protected string $apiVersion;
 
     public function __construct(
         ?string $baseUrl = null,
         ?string $mandate = null,
         ?string $clientId = null,
         ?string $clientSecret = null,
-        ?string $tokenEndpoint = null
+        ?string $apiVersion = null
     ) {
-        $this->baseUrl       = $baseUrl       ?? config('abacus-api.rest_api.url');
-        $this->mandate       = $mandate       ?? config('abacus-api.rest_api.mandate');
-        $this->clientId      = $clientId      ?? config('abacus-api.rest_api.client_id');
-        $this->clientSecret  = $clientSecret  ?? config('abacus-api.rest_api.client_secret');
-        $this->tokenEndpoint = $tokenEndpoint ?? config('abacus-api.rest_api.token_endpoint');
+        $this->baseUrl      = $baseUrl      ?? config('abacus-api.rest_api.url');
+        $this->mandate      = $mandate      ?? config('abacus-api.rest_api.mandate');
+        $this->clientId     = $clientId     ?? config('abacus-api.rest_api.client_id');
+        $this->clientSecret = $clientSecret ?? config('abacus-api.rest_api.client_secret');
+        $this->apiVersion   = $apiVersion   ?? config('abacus-api.rest_api.version');
     }
 
     /*
@@ -83,12 +83,20 @@ abstract class BaseAbacusClient
     }
 
     /*
+     * Get the OAuth token endpoint path
+     */
+    protected function getTokenEndpoint(): string
+    {
+        return "/oauth/oauth2/{$this->apiVersion}/token";
+    }
+
+    /*
      * Force fetch a fresh access token and update cache
      */
     protected function fetchFreshAccessToken(): string
     {
         $response = Http::asForm()
-                        ->post($this->getBaseUrl() . $this->tokenEndpoint, [
+                        ->post($this->getBaseUrl() . $this->getTokenEndpoint(), [
                             'grant_type'    => 'client_credentials',
                             'client_id'     => $this->clientId,
                             'client_secret' => $this->clientSecret,

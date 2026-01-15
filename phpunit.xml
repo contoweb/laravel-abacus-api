@@ -41,6 +41,5 @@
         <env name="ABACUS_REST_API_MANDATE" value="test-mandate"/>
         <env name="ABACUS_REST_API_CLIENT_ID" value="test-client-id"/>
         <env name="ABACUS_REST_API_CLIENT_SECRET" value="test-client-secret"/>
-        <env name="ABACUS_TOKEN_ENDPOINT" value="https://auth.example.com/oauth/token"/>
     </php>
 </phpunit>

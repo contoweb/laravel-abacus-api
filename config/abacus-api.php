@@ -12,11 +12,11 @@ return [
     */
 
     'rest_api' => [
-        'url'            => env('ABACUS_REST_API_URL', 'entity-api1-1.demo.abacus.ch'),
-        'mandate'        => env('ABACUS_REST_API_MANDATE', '7777'),
-        'client_id'      => env('ABACUS_REST_API_CLIENT_ID', ''),
-        'client_secret'  => env('ABACUS_REST_API_CLIENT_SECRET', ''),
-        'token_endpoint' => env('ABACUS_TOKEN_ENDPOINT', '/oauth/oauth2/v1/token'),
+        'url'           => env('ABACUS_REST_API_URL', 'entity-api1-1.demo.abacus.ch'),
+        'mandate'       => env('ABACUS_REST_API_MANDATE', '7777'),
+        'client_id'     => env('ABACUS_REST_API_CLIENT_ID', ''),
+        'client_secret' => env('ABACUS_REST_API_CLIENT_SECRET', ''),
+        'version'       => env('ABACUS_REST_API_VERSION', 'v1'),
     ],
 
     /*
