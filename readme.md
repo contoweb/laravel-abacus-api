@@ -124,6 +124,11 @@ $subjects = Subject::all();
 /* Find a Subject */
 $subject = Subject::find(1);
 
+/* Find a Subject with Expand and Select */
+$subject = Subject::select(['ProductNumber'])
+    ->expand(['StockBatches'])
+    ->find(1);
+
 /* With Filters */
 $subjects = Subject::where('LastName', 'eq', 'Müller')
     ->where('City', 'eq', 'Zürich')

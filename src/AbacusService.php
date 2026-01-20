@@ -53,12 +53,12 @@ class AbacusService
      * Specific entity via primary key
      * GET /api/entity/v1/mandants/{mandate}/Subjects(2)
      */
-    public function find(string $resource, mixed $id): array
+    public function find(string $resource, mixed $id, array $odataParams = []): array
     {
         $path = $this->client->entityPathWithId($resource, $id);
 
         return $this->client
-            ->get($path)
+            ->get($path, $odataParams)
             ->json();
     }
 
