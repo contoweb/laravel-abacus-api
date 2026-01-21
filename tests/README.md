@@ -180,7 +180,7 @@ class MyTest extends TestCase
     public function it_does_something(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),

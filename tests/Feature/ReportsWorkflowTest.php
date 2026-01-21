@@ -57,7 +57,7 @@ class ReportsWorkflowTest extends TestCase
     public function it_executes_complete_report_workflow(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -125,7 +125,7 @@ class ReportsWorkflowTest extends TestCase
     public function it_caches_report_results_between_executions(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -173,7 +173,7 @@ class ReportsWorkflowTest extends TestCase
     public function it_executes_different_reports_independently(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -205,7 +205,7 @@ class ReportsWorkflowTest extends TestCase
     public function it_handles_report_with_no_parameters(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -242,7 +242,7 @@ class ReportsWorkflowTest extends TestCase
         }
 
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -269,7 +269,7 @@ class ReportsWorkflowTest extends TestCase
     public function it_handles_empty_report_results(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -294,7 +294,7 @@ class ReportsWorkflowTest extends TestCase
     public function it_uses_custom_cache_keys(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -324,7 +324,7 @@ class ReportsWorkflowTest extends TestCase
     public function it_handles_concurrent_report_executions(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),

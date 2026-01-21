@@ -382,7 +382,7 @@ class AbacusQueryBuilderTest extends TestCase
     public function it_executes_get_first_page(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -405,7 +405,7 @@ class AbacusQueryBuilderTest extends TestCase
     public function it_executes_get_with_pagination(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -434,7 +434,7 @@ class AbacusQueryBuilderTest extends TestCase
     public function it_executes_first(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -455,7 +455,7 @@ class AbacusQueryBuilderTest extends TestCase
     public function it_executes_find(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -476,7 +476,7 @@ class AbacusQueryBuilderTest extends TestCase
     public function it_executes_find_property(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
