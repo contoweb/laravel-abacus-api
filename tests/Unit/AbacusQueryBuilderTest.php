@@ -503,4 +503,49 @@ class AbacusQueryBuilderTest extends TestCase
 
         $this->assertInstanceOf(AbacusQueryBuilder::class, $result);
     }
+
+    #[Test]
+    public function it_prepares_simple_query_for_batch(): void
+    {
+        $builder = new AbacusQueryBuilder($this->service, 'Products');
+        $builder->where('ProductNumber', 'ge', 200);
+
+        $request = $builder->prepareForBatch();
+
+        $this->assertIsArray($request);
+        $this->assertEquals('GET', $request['method']);
+        $this->assertStringContainsString('/api/entity/v1/mandants/test-mandate/Products', $request['path']);
+        $this->assertStringContainsString('$filter=ProductNumber%20ge%20200', $request['path']);
+        $this->assertNull($request['body']);
+    }
+
+    #[Test]
+    public function it_prepares_complex_query_for_batch(): void
+    {
+        $builder = new AbacusQueryBuilder($this->service, 'Products');
+        $builder->where('ProductNumber', 'ge', 200)
+                ->select(['Id', 'Name'])
+                ->top(10)
+                ->orderBy('Name', 'desc');
+
+        $request = $builder->prepareForBatch();
+
+        $this->assertEquals('GET', $request['method']);
+        $this->assertStringContainsString('$filter=ProductNumber%20ge%20200', $request['path']);
+        $this->assertStringContainsString('$select=Id%2CName', $request['path']);
+        $this->assertStringContainsString('$top=10', $request['path']);
+        $this->assertStringContainsString('$orderby=Name%20desc', $request['path']);
+    }
+
+    #[Test]
+    public function it_prepares_query_without_filters_for_batch(): void
+    {
+        $builder = new AbacusQueryBuilder($this->service, 'SalesOrders');
+        $request = $builder->prepareForBatch();
+
+        $this->assertEquals('GET', $request['method']);
+        $this->assertStringContainsString('/api/entity/v1/mandants/test-mandate/SalesOrders', $request['path']);
+        $this->assertStringNotContainsString('?', $request['path']);
+        $this->assertNull($request['body']);
+    }
 }

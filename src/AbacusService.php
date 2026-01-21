@@ -156,4 +156,20 @@ class AbacusService
                 ->body();
         });
     }
+
+    /**
+     * Get the underlying client instance
+     */
+    public function getClient(): AbacusClient
+    {
+        return $this->client;
+    }
+
+    /**
+     * Create a new batch request
+     */
+    public function batch(): BatchRequest
+    {
+        return new BatchRequest($this->client);
+    }
 }

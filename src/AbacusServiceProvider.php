@@ -19,6 +19,16 @@ class AbacusServiceProvider extends ServiceProvider
             __DIR__ . '/../config/abacus-api.php',
             'abacus-api'
         );
+
+        /* Register AbacusClient as singleton */
+        $this->app->singleton(AbacusClient::class, function ($app) {
+            return new AbacusClient();
+        });
+
+        /* Register AbacusService as singleton */
+        $this->app->singleton(AbacusService::class, function ($app) {
+            return new AbacusService($app->make(AbacusClient::class));
+        });
     }
 
     /**

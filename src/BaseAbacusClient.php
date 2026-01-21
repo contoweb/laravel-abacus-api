@@ -2,6 +2,8 @@
 
 namespace Contoweb\AbacusApi;
 
+use Contoweb\AbacusApi\Batch\MultipartDecoder;
+use Contoweb\AbacusApi\Batch\MultipartEncoder;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
@@ -209,5 +211,31 @@ abstract class BaseAbacusClient
     public function getUrl(): string
     {
         return $this->getBaseUrl();
+    }
+
+    /**
+     * Send batch request with multiple operations
+     *
+     * @param array $requests Array of ['method' => string, 'path' => string, 'body' => array|null]
+     * @return array Array of response results
+     * @throws RequestException|ConnectionException
+     */
+    public function sendBatch(array $requests): array
+    {
+        /* Encode requests into multipart/mixed format */
+        $body = MultipartEncoder::encode($requests);
+
+        /* Send batch request */
+        $batchPath = $this->getEntityBasePath() . '/' . $this->mandate . '/$batch';
+
+        $response = $this->callWithTokenRefresh(function () use ($body, $batchPath) {
+            return Http::withToken($this->getAccessToken())
+                ->timeout(30)
+                ->withBody($body, MultipartEncoder::getContentType())
+                ->post($this->getBaseUrl() . $batchPath);
+        })->throw();
+
+        /* Decode multipart response */
+        return MultipartDecoder::decode($response->body(), MultipartEncoder::getBoundary());
     }
 }

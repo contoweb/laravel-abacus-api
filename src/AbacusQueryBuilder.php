@@ -315,4 +315,33 @@ class AbacusQueryBuilder
     {
         return $this->buildODataQuery();
     }
+
+    /**
+     * Prepare this query for batch request
+     * Returns array structure for BatchRequest->addRequest()
+     *
+     * @return array{method: string, path: string, body: array|null}
+     */
+    public function prepareForBatch(): array
+    {
+        $path = $this->service->getClient()->entityPath($this->resource);
+        $odataParams = $this->buildODataQuery();
+
+        /* Build full path with query string */
+        if (!empty($odataParams)) {
+            $queryParts = [];
+            foreach ($odataParams as $key => $value) {
+                /* Encode value with %20 for spaces, but keep $ unencoded in keys */
+                $encodedValue = str_replace('+', '%20', urlencode($value));
+                $queryParts[] = $key . '=' . $encodedValue;
+            }
+            $path .= '?' . implode('&', $queryParts);
+        }
+
+        return [
+            'method' => 'GET',
+            'path' => $path,
+            'body' => null,
+        ];
+    }
 }
