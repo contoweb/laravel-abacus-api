@@ -47,7 +47,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_submits_report(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -78,7 +78,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_submits_report_with_default_output_type(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -100,7 +100,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_gets_job_status(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -127,7 +127,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_gets_job_output(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -155,7 +155,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_returns_empty_array_for_null_output(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -174,7 +174,7 @@ class AbacusReportsClientTest extends TestCase
         $callCount = 0;
 
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -207,7 +207,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_throws_exception_when_polling_times_out(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -227,7 +227,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_throws_exception_on_403_error(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -248,7 +248,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_throws_exception_on_500_error(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -269,7 +269,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_handles_error_without_title(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -289,7 +289,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_stops_polling_when_state_is_not_running(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -311,7 +311,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_submits_report_with_empty_parameters(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -333,7 +333,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_uses_custom_poll_interval(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -352,7 +352,7 @@ class AbacusReportsClientTest extends TestCase
     public function it_deletes_job(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),

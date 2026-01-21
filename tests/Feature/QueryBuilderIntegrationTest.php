@@ -26,7 +26,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_executes_complex_filtered_query(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -55,7 +55,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_follows_pagination_automatically(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -93,7 +93,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_executes_query_with_expand(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -127,7 +127,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_chains_multiple_conditions(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -166,7 +166,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_handles_first_result(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -195,7 +195,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_handles_find_by_id(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -217,7 +217,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_handles_different_output_formats(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -266,7 +266,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_handles_special_characters_in_values(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -292,7 +292,7 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_handles_multiple_select_and_expand_calls(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
