@@ -24,7 +24,7 @@ class AbacusServiceIntegrationTest extends TestCase
     public function it_performs_complete_crud_workflow(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -65,7 +65,7 @@ class AbacusServiceIntegrationTest extends TestCase
     public function it_handles_token_refresh_during_workflow(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::sequence()
+            '*/oauth/oauth2/v1/token'=> Http::sequence()
                 ->push(['access_token' => 'token-1', 'expires_in' => 3600], 200)  /* Initial token */
                 ->push(['access_token' => 'token-2', 'expires_in' => 3600], 200), /* Refreshed token */
             '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::sequence()
@@ -87,7 +87,7 @@ class AbacusServiceIntegrationTest extends TestCase
     public function it_performs_complex_query_workflow(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -115,7 +115,7 @@ class AbacusServiceIntegrationTest extends TestCase
     public function it_handles_pagination_workflow(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -157,7 +157,7 @@ class AbacusServiceIntegrationTest extends TestCase
     public function it_handles_property_access_workflow(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -180,7 +180,7 @@ class AbacusServiceIntegrationTest extends TestCase
     public function it_handles_metadata_caching_workflow(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -210,7 +210,7 @@ class AbacusServiceIntegrationTest extends TestCase
     public function it_handles_batch_operations(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),

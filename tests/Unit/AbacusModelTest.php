@@ -22,7 +22,7 @@ class AbacusModelTest extends TestCase
         parent::setUp();
 
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -50,7 +50,7 @@ class AbacusModelTest extends TestCase
     public function it_finds_entity_by_id(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -72,7 +72,7 @@ class AbacusModelTest extends TestCase
     public function it_returns_null_when_entity_not_found(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -138,7 +138,7 @@ class AbacusModelTest extends TestCase
     public function it_creates_entity(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -163,7 +163,7 @@ class AbacusModelTest extends TestCase
     public function it_saves_new_entity(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -185,7 +185,7 @@ class AbacusModelTest extends TestCase
     public function it_saves_existing_entity_with_updates(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -213,7 +213,7 @@ class AbacusModelTest extends TestCase
     public function it_updates_entity_with_array(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -235,7 +235,7 @@ class AbacusModelTest extends TestCase
     public function it_deletes_entity(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -357,7 +357,7 @@ class AbacusModelTest extends TestCase
     public function it_refreshes_entity_from_api(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -423,7 +423,7 @@ class AbacusModelTest extends TestCase
     public function it_saves_only_dirty_attributes(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -457,7 +457,7 @@ class AbacusModelTest extends TestCase
     public function it_returns_model_instance_when_using_where_first(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -479,7 +479,7 @@ class AbacusModelTest extends TestCase
     public function it_returns_model_collection_when_using_where_get(): void
     {
         Http::fake([
-            '*/oauth/token' => Http::response([
+            '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
