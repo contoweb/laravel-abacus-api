@@ -124,7 +124,8 @@ $subjects = Subject::all();
 /* Find a Subject */
 $subject = Subject::find(1);
 
-/* Find a Subject with Expand and Select */
+/* Find a Subject with Expand and Select. 
+The find method must be called last */
 $subject = Subject::select(['ProductNumber'])
     ->expand(['StockBatches'])
     ->find(1);
