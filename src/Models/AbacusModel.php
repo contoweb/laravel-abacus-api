@@ -59,7 +59,15 @@ abstract class AbacusModel
     {
         $result = static::query()->find($id);
 
-        return $result ? new static($result) : null;
+        if ($result === null) {
+            return null;
+        }
+
+        if (is_array($result)) {
+            return new static($result);
+        }
+
+        return $result;
     }
 
     /**

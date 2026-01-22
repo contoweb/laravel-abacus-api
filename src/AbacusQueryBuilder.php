@@ -228,10 +228,18 @@ class AbacusQueryBuilder
 
     /**
      * Fetch entity via primary key
+     *
+     * @return TypeModel|array
      */
     public function find($id)
     {
-        return $this->service->find($this->resource, $id);
+        $result = $this->service->find($this->resource, $id, $this->buildODataQuery());
+
+        if ($this->modelClass !== null) {
+            return new $this->modelClass($result);
+        }
+
+        return $result;
     }
 
     /**
