@@ -10,13 +10,40 @@ use Illuminate\Support\Collection;
 abstract class AbacusModel
 {
     protected static string $resource;
-    protected array         $attributes = [];
-    protected array         $original   = [];
+    protected static string|array $primaryKey = 'Id';
+    protected array $attributes = [];
+    protected array $original   = [];
 
     public function __construct(array $attributes = [])
     {
         $this->attributes = $attributes;
         $this->original   = $attributes;
+    }
+
+    /**
+     * Get the primary key field(s) for this model
+     *
+     * @return string|array
+     */
+    public static function getPrimaryKey(): string|array
+    {
+        return static::$primaryKey;
+    }
+
+    /**
+     * Check if this model has a single primary key
+     */
+    public static function hasSinglePrimaryKey(): bool
+    {
+        return is_string(static::$primaryKey);
+    }
+
+    /**
+     * Check if this model has a composite primary key
+     */
+    public static function hasCompositePrimaryKey(): bool
+    {
+        return is_array(static::$primaryKey);
     }
 
     /**
@@ -54,6 +81,8 @@ abstract class AbacusModel
 
     /**
      * Find entity via primary key
+     *
+     * @param mixed $id Single value for simple keys, array for composite keys
      */
     public static function find(mixed $id): ?static
     {
@@ -123,62 +152,54 @@ abstract class AbacusModel
     }
 
     /**
-     * Create entity
+     * Create entity (supports batch mode)
      */
     public static function create(array $attributes): static
     {
-        $service = app(AbacusService::class);
-        $result  = $service->create(static::$resource, $attributes);
+        $result = static::query()->post($attributes);
+
+        if ($result instanceof static) {
+            return $result;
+        }
 
         return new static($result);
     }
 
     /**
-     * Save entity (create or update)
+     * Delete entity by ID (supports batch mode)
+     *
+     * @example Single key: Customers::delete(210)
+     * @example Composite key: StockBatches::delete(['BatchNumber' => '123', 'ProductId' => 456])
+     *
+     * @param mixed $id Single value for simple keys, array for composite keys
+     * @return bool
      */
-    public function save(): static
+    public static function delete(mixed $id): bool
     {
-        $service = app(AbacusService::class);
-
-        if (isset($this->attributes['Id'])) {
-            $result           = $service->update(static::$resource, $this->attributes['Id'], $this->getDirty());
-            $this->attributes = array_merge($this->attributes, $result);
-        } else {
-            $result           = $service->create(static::$resource, $this->attributes);
-            $this->attributes = $result;
-        }
-
-        $this->original = $this->attributes;
-
-        return $this;
+        return static::query()->id($id)->delete();
     }
 
     /**
-     * Update entity
+     * Update entity by ID (supports batch mode)
+     * Supports chaining with select() and expand()
+     *
+     * @example Simple: Customers::update(210, ['Name' => 'Test'])
+     * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
+     * @example Chained: Customers::select(['Id', 'Name'])->update(210, ['Name' => 'Test'])
+     *
+     * @param mixed $id Single value for simple keys, array for composite keys
+     * @param array $data Data to update
+     * @return static
      */
-    public function update(array $attributes = []): static
+    public static function update(mixed $id, array $data): static
     {
-        if ( ! empty($attributes)) {
-            foreach ($attributes as $key => $value) {
-                $this->setAttribute($key, $value);
-            }
+        $result = static::query()->update($id, $data);
+
+        if ($result instanceof static) {
+            return $result;
         }
 
-        return $this->save();
-    }
-
-    /**
-     * Delete entity
-     */
-    public function delete(): bool
-    {
-        if ( ! isset($this->attributes['Id'])) {
-            return false;
-        }
-
-        $service = app(AbacusService::class);
-
-        return $service->delete(static::$resource, $this->attributes['Id']);
+        return new static($result);
     }
 
     /**
@@ -211,54 +232,6 @@ abstract class AbacusModel
     public function toArray(): array
     {
         return $this->attributes;
-    }
-
-    /**
-     * Return model as JSON
-     */
-    public function toJson(int $options = 0): string
-    {
-        return json_encode($this->attributes, $options);
-    }
-
-    /**
-     * Check if attributes have changed
-     */
-    public function isDirty(?string $key = null): bool
-    {
-        if ($key !== null) {
-            return ($this->attributes[$key] ?? null) !== ($this->original[$key] ?? null);
-        }
-
-        return $this->attributes !== $this->original;
-    }
-
-    /**
-     * Get changed attributes
-     */
-    public function getDirty(): array
-    {
-        $dirty = [];
-
-        foreach ($this->attributes as $key => $value) {
-            if ($this->isDirty($key)) {
-                $dirty[$key] = $value;
-            }
-        }
-
-        return $dirty;
-    }
-
-    /**
-     * Restore original attributes
-     */
-    public function fresh(): ?static
-    {
-        if ( ! isset($this->attributes['Id'])) {
-            return null;
-        }
-
-        return static::find($this->attributes['Id']);
     }
 
     /**

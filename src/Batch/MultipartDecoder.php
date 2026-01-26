@@ -15,17 +15,22 @@ class MultipartDecoder
     {
         $results = [];
 
+        $responseBody = str_replace("\r\n", "\n", $responseBody);
+
         /* Split by boundary */
-        $parts = explode('--' . $boundary, $responseBody);
+        $delimiter = '--' . $boundary;
+        $parts = explode($delimiter, $responseBody);
 
         foreach ($parts as $part) {
             /* Skip empty parts and closing boundary */
             $part = trim($part);
-            if (empty($part) || $part === '--') {
+
+            if (empty($part) || $part === '--' || str_starts_with($part, '--')) {
                 continue;
             }
 
             $result = self::parseResponsePart($part);
+
             if ($result !== null) {
                 $results[] = $result;
             }
@@ -42,14 +47,14 @@ class MultipartDecoder
     protected static function parseResponsePart(string $part): ?array
     {
         /* Split multipart headers from HTTP response */
-        $sections = preg_split("/\r?\n\r?\n/", $part, 3);
+        $sections = preg_split("/\n\n/", $part, 3);
 
-        if (count($sections) < 2) {
+        if (count($sections) < 3) {
             return null;
         }
 
-        $httpResponse = $sections[1] ?? '';
-        $httpBody = $sections[2] ?? '';
+        $httpResponse = $sections[1];
+        $httpBody = $sections[2];
 
         /* Parse HTTP status line */
         $lines = explode("\n", trim($httpResponse));
@@ -60,7 +65,7 @@ class MultipartDecoder
         }
 
         $statusCode = (int) $matches[1];
-        $statusText = $matches[2] ?? '';
+        $statusText = trim($matches[2]);
 
         /* Parse headers */
         $headers = [];
@@ -70,7 +75,7 @@ class MultipartDecoder
                 break;
             }
 
-            if (strpos($line, ':') !== false) {
+            if (str_contains($line, ':')) {
                 [$key, $value] = explode(':', $line, 2);
                 $headers[trim($key)] = trim($value);
             }

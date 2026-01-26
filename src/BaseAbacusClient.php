@@ -4,9 +4,11 @@ namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Batch\MultipartDecoder;
 use Contoweb\AbacusApi\Batch\MultipartEncoder;
+use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
@@ -75,7 +77,7 @@ abstract class BaseAbacusClient
      */
     protected function getAccessToken(): string
     {
-        $cachedToken = Cache::get($this->getCacheKey());
+        $cachedToken = Cache::get(encrypt($this->getCacheKey()));
 
         if ($cachedToken !== null) {
             return $cachedToken;
@@ -112,7 +114,7 @@ abstract class BaseAbacusClient
         $tokenLifetime = (int)$response->json('expires_in');
 
         /* Cache token with 10 second buffer before expiration */
-        Cache::put($this->getCacheKey(), $accessToken, $tokenLifetime - 10);
+        Cache::put($this->getCacheKey(), encrypt($accessToken), $tokenLifetime - 10);
 
         return $accessToken;
     }
@@ -217,10 +219,10 @@ abstract class BaseAbacusClient
      * Send batch request with multiple operations
      *
      * @param array $requests Array of ['method' => string, 'path' => string, 'body' => array|null]
-     * @return array Array of response results
+     * @return Collection<int, BatchResponseDto>
      * @throws RequestException|ConnectionException
      */
-    public function sendBatch(array $requests): array
+    public function sendBatch(array $requests): Collection
     {
         /* Encode requests into multipart/mixed format */
         $body = MultipartEncoder::encode($requests);
@@ -235,7 +237,14 @@ abstract class BaseAbacusClient
                 ->post($this->getBaseUrl() . $batchPath);
         })->throw();
 
+        $contentType = $response->getHeader('Content-Type');
+
+        preg_match('/boundary=(.+)$/', $contentType[0], $matches);
+        $boundary = trim($matches[1]);
+
         /* Decode multipart response */
-        return MultipartDecoder::decode($response->body(), MultipartEncoder::getBoundary());
+        $results = MultipartDecoder::decode($response->body(), $boundary);
+
+        return collect($results)->map(fn($result) => BatchResponseDto::fromArray($result));
     }
 }

@@ -2,6 +2,11 @@
 
 namespace Contoweb\AbacusApi;
 
+use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Collection;
+
 class BatchRequest
 {
     protected BaseAbacusClient $client;
@@ -22,9 +27,7 @@ class BatchRequest
     {
         /* Validate request structure */
         if (!isset($request['method']) || !isset($request['path'])) {
-            throw new \InvalidArgumentException(
-                'Request must contain "method" and "path" keys'
-            );
+            throw new \InvalidArgumentException('Request must contain "method" and "path" keys');
         }
 
         /* Ensure body key exists (can be null) */
@@ -40,9 +43,11 @@ class BatchRequest
     /**
      * Send the batch request and return results
      *
-     * @return array Array of response results
+     * @return Collection<int, BatchResponseDto>
+     * @throws ConnectionException
+     * @throws RequestException
      */
-    public function send(): array
+    public function send(): Collection
     {
         if (empty($this->requests)) {
             throw new \RuntimeException('No requests added to batch');
