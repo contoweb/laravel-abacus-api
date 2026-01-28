@@ -4,6 +4,7 @@ namespace Contoweb\AbacusApi\Models;
 
 use Contoweb\AbacusApi\AbacusClient;
 use Contoweb\AbacusApi\AbacusQueryBuilder;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -34,7 +35,28 @@ abstract class AbacusModel
     }
 
     /**
-     *  Fetch all entities across all pagination pages as Collection
+     * Set the maximum number of pages to retrieve when cursor pagination is enabled
+     *
+     * @param int $limit
+     * @return AbacusQueryBuilder
+     */
+    public static function pages(int $limit): AbacusQueryBuilder
+    {
+        return static::query()->pages($limit);
+    }
+
+    /**
+     * Enable automatic pagination through OData nextLink
+     *
+     * @return AbacusQueryBuilder
+     */
+    public static function cursor(): AbacusQueryBuilder
+    {
+        return static::query()->cursor();
+    }
+
+    /**
+     * Execute query and return all paginated results as Collection
      *
      * @return Collection<int, static>
      * @throws ConnectionException
@@ -43,6 +65,27 @@ abstract class AbacusModel
     public static function all(): Collection
     {
         return static::query()->get();
+    }
+
+    /**
+     * Execute query and return all paginated results as Collection
+     *
+     * @throws RequestException
+     * @throws ConnectionException
+     */
+    public static function get(): Collection
+    {
+        return static::query()->get();
+    }
+
+    /**
+     * Prepare a get operation as batch request item
+     *
+     * @return BatchRequestItem
+     */
+    public static function getAsBatch(): BatchRequestItem
+    {
+        return static::query()->getAsBatch();
     }
 
     /**
@@ -61,11 +104,18 @@ abstract class AbacusModel
             return null;
         }
 
-        if (is_array($result)) {
-            return new static($result);
-        }
-
         return $result;
+    }
+
+    /**
+     *  Prepare a find operation as batch request item
+     *
+     * @param int|array $id
+     * @return BatchRequestItem
+     */
+    public static function findAsBatch(int|array $id): BatchRequestItem
+    {
+        return static::query()->findAsBatch($id);
     }
 
     /**
@@ -127,13 +177,18 @@ abstract class AbacusModel
      */
     public static function create(array $attributes): static
     {
-        $result = static::query()->create($attributes);
+        return static::query()->create($attributes);
+    }
 
-        if ($result instanceof static) {
-            return $result;
-        }
-
-        return new static($result);
+    /**
+     * Prepare a create operation as batch request item
+     *
+     * @param array $data
+     * @return BatchRequestItem
+     */
+    public static function createAsBatch(array $data): BatchRequestItem
+    {
+        return static::query()->createAsBatch($data);
     }
 
     /**
@@ -148,32 +203,46 @@ abstract class AbacusModel
      */
     public static function delete(int|array $id): void
     {
-        static::query()->id($id)->delete();
+        static::query()->delete($id);
+    }
+
+    /**
+     * Prepare a delete operation as batch request item
+     *
+     * @param int|array $id
+     * @return void
+     */
+    public static function deleteAsBatch(int|array $id): void
+    {
+        static::query()->deleteAsBatch($id);
     }
 
     /**
      * Update entity by ID
-     * Supports chaining with select() and expand()
      *
      * @param int|array $id Single value for simple keys, array for composite keys
      * @param array $data Data to update
      * @return static
      * @throws ConnectionException
      * @throws RequestException
-     * @example Chained: Customers::select(['Id', 'Name'])->update(210, ['Name' => 'Test'])
-     *
      * @example Simple: Customers::update(210, ['Name' => 'Test'])
      * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
      */
     public static function update(int|array $id, array $data): static
     {
-        $result = static::query()->update($id, $data);
+        return static::query()->update($id, $data);
+    }
 
-        if ($result instanceof static) {
-            return $result;
-        }
-
-        return new static($result);
+    /**
+     * Prepare a update operation as batch request item
+     *
+     * @param int|array $id
+     * @param array $data
+     * @return BatchRequestItem
+     */
+    public function updateAsBatch(int|array $id, array $data): BatchRequestItem
+    {
+        return static::query()->updateAsBatch($id, $data);
     }
 
     /**

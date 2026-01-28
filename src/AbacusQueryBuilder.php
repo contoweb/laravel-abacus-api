@@ -42,9 +42,9 @@ class AbacusQueryBuilder
      * Set entity ID (simple or composite)
      *
      * @param mixed $id Single value for simple keys, array for composite keys
-     * @return $this
+     * @return void
      */
-    public function id(int|array $id): static
+    private function id(int|array $id): void
     {
         if (is_array($id)) {
             $this->compositeKey = $id;
@@ -53,12 +53,10 @@ class AbacusQueryBuilder
             $this->entityId = $id;
             $this->compositeKey = [];
         }
-
-        return $this;
     }
 
     /**
-     * Sets the number of next link pages to follow
+     * Set the maximum number of pages to retrieve when cursor pagination is enabled
      *
      * @param int $limit
      * @return $this
@@ -70,7 +68,7 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Enables next link following
+     * Enable automatic pagination through OData nextLink
      *
      * @return $this
      */
@@ -141,7 +139,7 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Alias für top() (Laravel-like)
+     * Alias for top() (Laravel-like)
      */
     public function limit(int $limit): static
     {
@@ -149,7 +147,7 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Alias für top() (Laravel-like)
+     * Alias for top() (Laravel-like)
      */
     public function take(int $limit): static
     {
@@ -210,7 +208,7 @@ class AbacusQueryBuilder
         }
 
         if ($this->cursor) {
-            for ($i = 0; $i < $this->pages; ++$i) {
+            for ($i = 1; $i < $this->pages; ++$i) {
                 if (!isset($response['@odata.nextLink'])) {
                     break;
                 }
@@ -228,7 +226,12 @@ class AbacusQueryBuilder
         return collect($allResults)->map(fn($item) => new $this->modelClass($item));
     }
 
-    public function getLazy(): BatchRequestItem
+    /**
+     * Prepare a get operation as batch request item
+     *
+     * @return BatchRequestItem
+     */
+    public function getAsBatch(): BatchRequestItem
     {
         $path = $this->client->entityPath($this->resource);
         $odataParams = $this->buildODataQuery();
@@ -277,7 +280,13 @@ class AbacusQueryBuilder
         return new $this->modelClass($result);
     }
 
-    public function findLazy(int|array $id): BatchRequestItem
+    /**
+     * Prepare a find operation as batch request item
+     *
+     * @param int|array $id
+     * @return BatchRequestItem
+     */
+    public function findAsBatch(int|array $id): BatchRequestItem
     {
         $this->id($id);
 
@@ -311,7 +320,13 @@ class AbacusQueryBuilder
         return new $this->modelClass($response);
     }
 
-    public function createLazy(array $data): BatchRequestItem
+    /**
+     * Prepare a create operation as batch request item
+     *
+     * @param array $data
+     * @return BatchRequestItem
+     */
+    public function createAsBatch(array $data): BatchRequestItem
     {
         $path = $this->client->entityPath($this->resource);
         $odataParams = $this->buildODataQuery();
@@ -331,13 +346,20 @@ class AbacusQueryBuilder
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function delete(): void
+    public function delete(int|array $id): void
     {
+        $this->id($id);
         $path = $this->buildPathWithId();
         $this->client->delete($path);
     }
 
-    public function deleteLazy(int|array $id): BatchRequestItem
+    /**
+     * Prepare a delete operation as batch request item
+     *
+     * @param int|array $id
+     * @return BatchRequestItem
+     */
+    public function deleteAsBatch(int|array $id): BatchRequestItem
     {
         $this->id($id);
         $path = $this->buildPathWithId();
@@ -352,14 +374,12 @@ class AbacusQueryBuilder
 
     /**
      * Update an entity
-     * Supports chaining with select() and expand()
      *
      * @param int|array $id Single value for simple keys, array for composite keys
      * @param array $data Request body data
      * @return TypeModel|array The updated entity
      * @throws ConnectionException
      * @throws RequestException
-     * @example Chained: Model::select(['Id', 'Name'])->update(210, ['Name' => 'Test'])
      * @example Simple: Model::update(210, ['Name' => 'Test'])
      */
     public function update(int|array $id, array $data)
@@ -374,7 +394,14 @@ class AbacusQueryBuilder
         return new $this->modelClass($result);
     }
 
-    public function updateLazy(array $id, array $data): BatchRequestItem
+    /**
+     * Prepare a batch operation as batch request item
+     *
+     * @param int|array $id
+     * @param array $data
+     * @return BatchRequestItem
+     */
+    public function updateAsBatch(int|array $id, array $data): BatchRequestItem
     {
         $this->id($id);
         $path = $this->buildPathWithId();
@@ -388,6 +415,8 @@ class AbacusQueryBuilder
     }
 
     /**
+     * Execute query and return all paginated results as Collection
+     *
      * @throws RequestException
      * @throws ConnectionException
      */
@@ -446,7 +475,7 @@ class AbacusQueryBuilder
     /**
      * Assemble OData query parameters for list queries
      */
-    protected function buildODataQuery(): array
+    private function buildODataQuery(): array
     {
         $query = [];
 
@@ -486,7 +515,7 @@ class AbacusQueryBuilder
     /**
      * Format values for OData
      */
-    protected function formatValue(mixed $value): string
+    private function formatValue(mixed $value): string
     {
         if (is_string($value)) {
             /* Escape single quotes */
