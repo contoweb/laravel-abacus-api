@@ -59,4 +59,17 @@ return [
         'reports_namespace' => env('ABACUS_REPORTS_NAMESPACE', 'App\\Services\\Abacus\\Reports'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Query Builder Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for the Query Builder
+    |
+    */
+
+    'query_builder' => [
+        'max_next_link_page_resolving' => env('ABACUS_QUERY_BUILDER_MAX_PAGE_RESOLVING', 5)
+    ]
+
 ];

@@ -2,15 +2,16 @@
 
 namespace Contoweb\AbacusApi\Models;
 
-use Contoweb\AbacusApi\AbacusService;
+use Contoweb\AbacusApi\AbacusClient;
 use Contoweb\AbacusApi\AbacusQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 
 abstract class AbacusModel
 {
     protected static string $resource;
-    protected static string|array $primaryKey = 'Id';
     protected array $attributes = [];
     protected array $original   = [];
 
@@ -21,48 +22,23 @@ abstract class AbacusModel
     }
 
     /**
-     * Get the primary key field(s) for this model
-     *
-     * @return string|array
-     */
-    public static function getPrimaryKey(): string|array
-    {
-        return static::$primaryKey;
-    }
-
-    /**
-     * Check if this model has a single primary key
-     */
-    public static function hasSinglePrimaryKey(): bool
-    {
-        return is_string(static::$primaryKey);
-    }
-
-    /**
-     * Check if this model has a composite primary key
-     */
-    public static function hasCompositePrimaryKey(): bool
-    {
-        return is_array(static::$primaryKey);
-    }
-
-    /**
      * Create query builder
      *
      * @return AbacusQueryBuilder<static>
      */
     public static function query(): AbacusQueryBuilder
     {
-        $service = app(AbacusService::class);
+        $client = app(AbacusClient::class);
 
-        return new AbacusQueryBuilder($service, static::$resource, static::class);
+        return new AbacusQueryBuilder($client, static::$resource, static::class);
     }
 
     /**
      *  Fetch all entities across all pagination pages as Collection
-     *  Follows all @odata.nextLink URLs automatically
      *
-     *  @return Collection<int, static>
+     * @return Collection<int, static>
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public static function all(): Collection
     {
@@ -70,21 +46,14 @@ abstract class AbacusModel
     }
 
     /**
-     * Fetch all entities (first page only) as Collection
-     *
-     * @return Collection<int, static>
-     */
-    public static function firstPage(): Collection
-    {
-        return static::query()->getFirstPage();
-    }
-
-    /**
      * Find entity via primary key
      *
-     * @param mixed $id Single value for simple keys, array for composite keys
+     * @param int|array $id Single value for simple keys, array for composite keys
+     * @return AbacusModel|null
+     * @throws ConnectionException
+     * @throws RequestException
      */
-    public static function find(mixed $id): ?static
+    public static function find(int|array $id): ?static
     {
         $result = static::query()->find($id);
 
@@ -101,7 +70,6 @@ abstract class AbacusModel
 
     /**
      * Start where query
-     * Example: Project::where('Id', ODataOperator::EQUALS, 9100)->get()
      * Example: Project::where('Id', 'eq', 9100)->get()
      *
      * @return AbacusQueryBuilder<static>
@@ -152,11 +120,14 @@ abstract class AbacusModel
     }
 
     /**
-     * Create entity (supports batch mode)
+     * Create entity
+     *
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public static function create(array $attributes): static
     {
-        $result = static::query()->post($attributes);
+        $result = static::query()->create($attributes);
 
         if ($result instanceof static) {
             return $result;
@@ -166,32 +137,35 @@ abstract class AbacusModel
     }
 
     /**
-     * Delete entity by ID (supports batch mode)
+     * Delete entity by ID
      *
+     * @param int|array $id Single value for simple keys, array for composite keys
+     * @return void
+     * @throws ConnectionException
+     * @throws RequestException
      * @example Single key: Customers::delete(210)
      * @example Composite key: StockBatches::delete(['BatchNumber' => '123', 'ProductId' => 456])
-     *
-     * @param mixed $id Single value for simple keys, array for composite keys
-     * @return bool
      */
-    public static function delete(mixed $id): bool
+    public static function delete(int|array $id): void
     {
-        return static::query()->id($id)->delete();
+        static::query()->id($id)->delete();
     }
 
     /**
-     * Update entity by ID (supports batch mode)
+     * Update entity by ID
      * Supports chaining with select() and expand()
+     *
+     * @param int|array $id Single value for simple keys, array for composite keys
+     * @param array $data Data to update
+     * @return static
+     * @throws ConnectionException
+     * @throws RequestException
+     * @example Chained: Customers::select(['Id', 'Name'])->update(210, ['Name' => 'Test'])
      *
      * @example Simple: Customers::update(210, ['Name' => 'Test'])
      * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
-     * @example Chained: Customers::select(['Id', 'Name'])->update(210, ['Name' => 'Test'])
-     *
-     * @param mixed $id Single value for simple keys, array for composite keys
-     * @param array $data Data to update
-     * @return static
      */
-    public static function update(mixed $id, array $data): static
+    public static function update(int|array $id, array $data): static
     {
         $result = static::query()->update($id, $data);
 

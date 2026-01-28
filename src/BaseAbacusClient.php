@@ -141,10 +141,11 @@ abstract class BaseAbacusClient
      *
      * @throws RequestException|ConnectionException
      */
-    public function get(string $path, array $query = []): Response
+    public function get(string $path, $odataParams = []): Response
     {
-        return $this->callWithTokenRefresh(function () use ($path, $query) {
-            return $this->client()->get($path, $query);
+        return $this->callWithTokenRefresh(function () use ($path, $odataParams) {
+
+            return $this->client()->get($path, $odataParams);
         })->throw();
     }
 
@@ -153,9 +154,14 @@ abstract class BaseAbacusClient
      *
      * @throws RequestException|ConnectionException
      */
-    public function post(string $path, array $data = []): Response
+    public function post(string $path, array $data = [], $odataParams = []): Response
     {
-        return $this->callWithTokenRefresh(function () use ($path, $data) {
+        return $this->callWithTokenRefresh(function () use ($path, $data, $odataParams) {
+
+            if (!empty($odataParams)) {
+                $path .= '?' . $this->buildQueryString($odataParams);
+            }
+
             return $this->client()->post($path, $data);
         })->throw();
     }
@@ -165,9 +171,14 @@ abstract class BaseAbacusClient
      *
      * @throws RequestException|ConnectionException
      */
-    public function patch(string $path, array $data = []): Response
+    public function patch(string $path, array $data = [], $odataParams = []): Response
     {
-        return $this->callWithTokenRefresh(function () use ($path, $data) {
+        return $this->callWithTokenRefresh(function () use ($path, $data, $odataParams) {
+
+            if (!empty($odataParams)) {
+                $path .= '?' . $this->buildQueryString($odataParams);
+            }
+
             return $this->client()->patch($path, $data);
         })->throw();
     }
@@ -177,9 +188,14 @@ abstract class BaseAbacusClient
      *
      * @throws RequestException|ConnectionException
      */
-    public function put(string $path, array $data = []): Response
+    public function put(string $path, array $data = [], $odataParams = []): Response
     {
-        return $this->callWithTokenRefresh(function () use ($path, $data) {
+        return $this->callWithTokenRefresh(function () use ($path, $data, $odataParams) {
+
+            if (!empty($odataParams)) {
+                $path .= '?' . $this->buildQueryString($odataParams);
+            }
+
             return $this->client()->put($path, $data);
         })->throw();
     }
@@ -230,12 +246,17 @@ abstract class BaseAbacusClient
         })->throw();
     }
 
-        preg_match('/boundary=(.+)$/', $contentType[0], $matches);
-        $boundary = trim($matches[1]);
+    /**
+     * Build query string from parameters
+     */
+    public function buildQueryString(array $params): string
+    {
+        $queryParts = [];
+        foreach ($params as $key => $value) {
+            $encodedValue = str_replace('+', '%20', urlencode((string)$value));
+            $queryParts[] = $key . '=' . $encodedValue;
+        }
 
-        /* Decode multipart response */
-        $results = MultipartDecoder::decode($response->body(), $boundary);
-
-        return collect($results)->map(fn($result) => BatchResponseDto::fromArray($result));
+        return implode('&', $queryParts);
     }
 }

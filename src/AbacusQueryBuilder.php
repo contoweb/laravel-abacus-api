@@ -15,24 +15,27 @@ use InvalidArgumentException;
  */
 class AbacusQueryBuilder
 {
-    protected AbacusService $service;
+    protected AbacusClient  $client;
     protected string        $resource;
     protected array         $filters = [];
     protected array         $selects = [];
     protected ?string       $orderBy = null;
-    protected ?int          $top     = null;
-    protected array         $expand  = [];
-    protected string        $format  = 'json';
-    protected ?string       $modelClass = null;
+    protected ?int          $top = null;
+    protected array         $expand = [];
+    protected string        $format = 'json';
+    protected string        $modelClass;
     protected mixed         $entityId = null;
     protected array         $compositeKey = [];
-    protected ?array        $body = null;
+    public int              $pages;
+    public bool             $cursor;
 
-    public function __construct(AbacusService $service, string $resource, ?string $modelClass = null)
+    public function __construct(AbacusClient $client, string $resource, string $modelClass)
     {
-        $this->service    = $service;
-        $this->resource   = $resource;
+        $this->client = $client;
+        $this->resource = $resource;
         $this->modelClass = $modelClass;
+        $this->pages = config('abacus-api.query_builder.max_next_link_page_resolving') ?? 0;
+        $this->cursor = false;
     }
 
     /**
@@ -41,7 +44,7 @@ class AbacusQueryBuilder
      * @param mixed $id Single value for simple keys, array for composite keys
      * @return $this
      */
-    public function id(mixed $id): static
+    public function id(int|array $id): static
     {
         if (is_array($id)) {
             $this->compositeKey = $id;
@@ -55,11 +58,26 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Check if an entity ID (simple or composite) is set
+     * Sets the number of next link pages to follow
+     *
+     * @param int $limit
+     * @return $this
      */
-    public function hasEntityId(): bool
+    public function pages(int $limit): static
     {
-        return $this->entityId !== null || !empty($this->compositeKey);
+        $this->pages = $limit;
+        return $this;
+    }
+
+    /**
+     * Enables next link following
+     *
+     * @return $this
+     */
+    public function cursor(): static
+    {
+        $this->cursor = true;
+        return $this;
     }
 
     /**
@@ -69,7 +87,7 @@ class AbacusQueryBuilder
      *
      * @return $this
      */
-    public function where(string $field, ODataOperator | string $operator, mixed $value): static
+    public function where(string $field, ODataOperator|string $operator, mixed $value): static
     {
         /* Convert enum to string value */
         $operatorValue = $operator instanceof ODataOperator ? $operator->value : $operator;
@@ -77,13 +95,13 @@ class AbacusQueryBuilder
         /* Supported operators: eq, ge, gt, le, lt */
         $allowedOperators = ['eq', 'lt', 'gt', 'le', 'ge'];
 
-        if ( ! in_array($operatorValue, $allowedOperators)) {
-            throw new \InvalidArgumentException(
+        if (!in_array($operatorValue, $allowedOperators)) {
+            throw new InvalidArgumentException(
                 "Operator '{$operatorValue}' not supported. Allowed: " . implode(', ', $allowedOperators)
             );
         }
 
-        $formattedValue  = $this->formatValue($value);
+        $formattedValue = $this->formatValue($value);
         $this->filters[] = "{$field} {$operatorValue} {$formattedValue}";
 
         return $this;
@@ -92,7 +110,7 @@ class AbacusQueryBuilder
     /**
      * Convenience method for equality
      */
-    public function whereEquals(string $field, mixed $value)
+    public function whereEquals(string $field, mixed $value): static
     {
         return $this->where($field, 'eq', $value);
     }
@@ -101,7 +119,7 @@ class AbacusQueryBuilder
      * $select - Query only specific properties
      * Example: ->select(['LastName', 'AddressNumber'])
      */
-    public function select(array | string $fields): static
+    public function select(array|string $fields): static
     {
         $this->selects = array_merge(
             $this->selects,
@@ -145,8 +163,8 @@ class AbacusQueryBuilder
      */
     public function orderBy(string $field, string $direction = 'asc'): static
     {
-        if ( ! in_array(strtolower($direction), ['asc', 'desc'])) {
-            throw new \InvalidArgumentException("Direction must be 'asc' or 'desc'");
+        if (!in_array(strtolower($direction), ['asc', 'desc'])) {
+            throw new InvalidArgumentException("Direction must be 'asc' or 'desc'");
         }
 
         $this->orderBy = "{$field} " . strtolower($direction);
@@ -158,7 +176,7 @@ class AbacusQueryBuilder
      * $expand - Expand navigation properties
      * Example: ->expand('Addresses') or ->expand(['Addresses', 'Contacts'])
      */
-    public function expand(array | string $relations): static
+    public function expand(array|string $relations): static
     {
         $this->expand = array_merge(
             $this->expand,
@@ -169,84 +187,46 @@ class AbacusQueryBuilder
     }
 
     /**
-     * $format - Change response format (json, atom, xml)
-     * Default: json
-     */
-    public function format(string $format): static
-    {
-        if ( ! in_array($format, ['json', 'atom', 'xml'])) {
-            throw new \InvalidArgumentException("Format must be 'json', 'atom' or 'xml'");
-        }
-
-        $this->format = $format;
-
-        return $this;
-    }
-
-    /**
-     * Execute query and return results as Collection
-     *
-     * @return Collection<int, TypeModel>
-     */
-    public function getFirstPage(): Collection
-    {
-        $result = $this->service->query($this->resource, $this->buildODataQuery());
-
-        /* JSON response usually contains 'value' array */
-        $data = $result['value'] ?? $result;
-
-        /* Wrap in model instances if model class is set */
-        if ($this->modelClass !== null) {
-            return collect($data)->map(fn($item) => new $this->modelClass($item));
-        }
-
-        return collect($data);
-    }
-
-    /**
      * Execute query and return all paginated results as Collection
-     * Follows all @odata.nextLink URLs automatically
-     *
-     * In batch mode, collects the query instead of executing it.
      *
      * @return Collection<int, TypeModel>
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public function get(): Collection
     {
-        /* In batch mode, collect query instead of executing */
-        if (BatchCollector::isActive()) {
-            BatchCollector::getCurrent()->addQuery(
-                $this->hasEntityId() ? $this->prepareForBatchGetSingle() : $this->prepareForBatch(),
-                $this->modelClass
-            );
-
-            return collect();
-        }
-        
         $allResults = [];
 
+        $path = $this->client->entityPath($this->resource);
+
         /* Fetch first page */
-        $response = $this->service->queryWithMetadata($this->resource, $this->buildODataQuery());
+        $response = $this->client
+            ->get($path, $this->buildODataQuery())
+            ->json();
 
         /* Collect results of first page */
         if (isset($response['value'])) {
             $allResults = array_merge($allResults, $response['value']);
         }
 
-        /* Fetch all remaining pages */
-        while (isset($response['@odata.nextLink'])) {
-            \Log::debug('Fetching next page: ' . $response['@odata.nextLink']);
-            $response = $this->service->getNextPage($response['@odata.nextLink']);
+        if ($this->cursor) {
+            for ($i = 0; $i < $this->pages; ++$i) {
+                if (!isset($response['@odata.nextLink'])) {
+                    break;
+                }
 
-            if (isset($response['value'])) {
-                $allResults = array_merge($allResults, $response['value']);
+                $response = $this->client
+                    ->getNextLink($response['@odata.nextLink'])
+                    ->json();
+
+                if (isset($response['value'])) {
+                    $allResults = array_merge($allResults, $response['value']);
+                }
             }
         }
 
-        /* Wrap in model instances if model class is set */
-        if ($this->modelClass !== null) {
-            return collect($allResults)->map(fn($item) => new $this->modelClass($item));
-        }
+        return collect($allResults)->map(fn($item) => new $this->modelClass($item));
+    }
 
     public function getLazy(): BatchRequestItem
     {
@@ -265,11 +245,13 @@ class AbacusQueryBuilder
      * Return first match
      *
      * @return TypeModel|null
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public function first(): mixed
     {
         $this->top = 1;
-        $result    = $this->get();
+        $result = $this->get();
 
         /* get() already wraps in model instances if modelClass is set */
         return $result->first();
@@ -278,31 +260,22 @@ class AbacusQueryBuilder
     /**
      * Fetch entity via primary key
      *
-     * In batch mode, collects the query instead of executing it.
-     *
-     * @return TypeModel|array
+     * @param int|array $id
+     * @return TypeModel
+     * @throws ConnectionException
+     * @throws RequestException
      */
-    public function find($id)
+    public function find(int|array $id)
     {
-        /* Set the ID */
         $this->id($id);
+        $path = $this->buildPathWithId();
 
-        /* In batch mode, collect query instead of executing */
-        if (BatchCollector::isActive()) {
-            BatchCollector::getCurrent()->addQuery(
-                $this->prepareForBatchFind($id),
-                $this->modelClass
-            );
+        $result = $this->client
+            ->get($path, $this->buildODataQuery())
+            ->json();
 
-            return $this->modelClass !== null ? new $this->modelClass([]) : [];
-        }
-
-        $this->validateGetWithId();
-        $result = $this->executeGetSingle();
-
-        if ($this->modelClass !== null) {
-            return new $this->modelClass($result);
-        }
+        return new $this->modelClass($result);
+    }
 
     public function findLazy(int|array $id): BatchRequestItem
     {
@@ -320,27 +293,22 @@ class AbacusQueryBuilder
 
     /**
      * Execute a POST request (create entity)
-     * Valid query methods: select(), expand(), format()
+     * Valid query methods: select(), expand()
      *
      * @param array $data Request body data
      * @return TypeModel|array The created entity
-     * @throws InvalidQueryCombinationException
+     * @throws ConnectionException
+     * @throws RequestException
      */
-    public function post(array $data): mixed
+    public function create(array $data): mixed
     {
-        $this->body = $data;
-        $this->validatePostCombination();
+        $path = $this->client->entityPath($this->resource);
 
-        if (BatchCollector::isActive()) {
-            BatchCollector::getCurrent()->addQuery(
-                $this->prepareForBatchPost(),
-                $this->modelClass
-            );
+        $response = $this->client
+            ->post($path, $data, $this->buildODataQuery())
+            ->json();
 
-            return $this->modelClass ? new $this->modelClass([]) : [];
-        }
-
-        return $this->executePost();
+        return new $this->modelClass($response);
     }
 
     public function createLazy(array $data): BatchRequestItem
@@ -357,17 +325,17 @@ class AbacusQueryBuilder
 
     /**
      * Execute a DELETE request
-     * No query methods allowed except format()
      * Requires: ID set via id()
      *
-     * @return bool Success status
-     * @throws InvalidQueryCombinationException
-     * @throws MissingEntityIdentifierException
+     * @return void Success status
+     * @throws ConnectionException
+     * @throws RequestException
      */
-    public function delete(): bool
+    public function delete(): void
     {
-        $this->validateDeleteCombination();
-        $this->validateEntityIdentifier('DELETE');
+        $path = $this->buildPathWithId();
+        $this->client->delete($path);
+    }
 
     public function deleteLazy(int|array $id): BatchRequestItem
     {
@@ -383,55 +351,28 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Update an entity (combines id() and patch())
+     * Update an entity
      * Supports chaining with select() and expand()
      *
-     * @example Simple: Model::update(210, ['Name' => 'Test'])
-     * @example Chained: Model::select(['Id', 'Name'])->update(210, ['Name' => 'Test'])
-     *
-     * @param mixed $id Single value for simple keys, array for composite keys
+     * @param int|array $id Single value for simple keys, array for composite keys
      * @param array $data Request body data
      * @return TypeModel|array The updated entity
-     * @throws InvalidQueryCombinationException
-     * @throws MissingEntityIdentifierException
+     * @throws ConnectionException
+     * @throws RequestException
+     * @example Chained: Model::select(['Id', 'Name'])->update(210, ['Name' => 'Test'])
+     * @example Simple: Model::update(210, ['Name' => 'Test'])
      */
-    public function update(mixed $id, array $data): mixed
+    public function update(int|array $id, array $data)
     {
         $this->id($id);
-
-        return $this->patch($data);
-    }
-
-    /**
-     * Execute POST request
-     */
-    protected function executePost(): mixed
-    {
-        $path = $this->service->getClient()->entityPath($this->resource);
-        $result = $this->service->getClient()
-            ->post($path, $this->body)
-            ->json();
-
-        if ($this->modelClass !== null) {
-            return new $this->modelClass($result);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Execute PATCH request
-     */
-    protected function executePatch(): mixed
-    {
         $path = $this->buildPathWithId();
-        $result = $this->service->getClient()
-            ->patch($path, $this->body)
+
+        $result = $this->client
+            ->patch($path, $data, $this->buildODataQuery())
             ->json();
 
-        if ($this->modelClass !== null) {
-            return new $this->modelClass($result);
-        }
+        return new $this->modelClass($result);
+    }
 
     public function updateLazy(array $id, array $data): BatchRequestItem
     {
@@ -458,9 +399,9 @@ class AbacusQueryBuilder
     /**
      * Build the full path with entity ID (simple or composite)
      */
-    protected function buildPathWithId(): string
+    private function buildPathWithId(): string
     {
-        $basePath = $this->service->getClient()->entityPath($this->resource);
+        $basePath = $this->client->entityPath($this->resource);
 
         return $basePath . '(' . $this->buildEntityIdSegment() . ')';
     }
@@ -472,7 +413,7 @@ class AbacusQueryBuilder
      * @example Simple: "123"
      * @example Composite: "BatchNumber='5436',BatchSequenceNumber=0,ProductId=12276,VariantId=0"
      */
-    protected function buildEntityIdSegment(): string
+    private function buildEntityIdSegment(): string
     {
         if (!empty($this->compositeKey)) {
             $parts = [];
@@ -488,104 +429,18 @@ class AbacusQueryBuilder
     }
 
     /**
-     * Prepare a find-by-ID query for batch request
-     *
-     * @return array{method: string, path: string, body: array|null}
-     */
-    protected function prepareForBatchFind($id): array
-    {
-        /* Temporarily set the ID if not already set */
-        if (!$this->hasEntityId()) {
-            $this->id($id);
-        }
-
-        return $this->prepareForBatchGetSingle();
-    }
-
-    /**
-     * Prepare GET single entity for batch request
-     *
-     * @return array{method: string, path: string, body: array|null}
-     */
-    protected function prepareForBatchGetSingle(): array
-    {
-        $path = $this->buildPathWithId();
-        $odataParams = $this->buildODataQueryForSingleEntity();
-
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->buildQueryString($odataParams);
-        }
-
-        return [
-            'method' => 'GET',
-            'path' => $path,
-            'body' => null,
-        ];
-    }
-
-    /**
-     * Prepare POST request for batch
-     *
-     * @return array{method: string, path: string, body: array|null}
-     */
-    protected function prepareForBatchPost(): array
-    {
-        $path = $this->service->getClient()->entityPath($this->resource);
-        $odataParams = $this->buildODataQueryForPost();
-
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->buildQueryString($odataParams);
-        }
-
-        return [
-            'method' => 'POST',
-            'path' => $path,
-            'body' => $this->body,
-        ];
-    }
-
-    /**
-     * Prepare PATCH request for batch
-     *
-     * @return array{method: string, path: string, body: array|null}
-     */
-    protected function prepareForBatchPatch(): array
-    {
-        $path = $this->buildPathWithId();
-        $odataParams = $this->buildODataQueryForPatch();
-
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->buildQueryString($odataParams);
-        }
-
-        return [
-            'method' => 'PATCH',
-            'path' => $path,
-            'body' => $this->body,
-        ];
-    }
-
-    /**
-     * Prepare DELETE request for batch
-     *
-     * @return array{method: string, path: string, body: array|null}
-     */
-    protected function prepareForBatchDelete(): array
-    {
-        return [
-            'method' => 'DELETE',
-            'path' => $this->buildPathWithId(),
-            'body' => null,
-        ];
-    }
-
-    /**
      * Fetch specific property of an entity
      * Example: Subjects::query()->findProperty(2, 'LastName')
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public function findProperty($id, string $property)
     {
-        return $this->service->findProperty($this->resource, $id, $property);
+        $path = $this->client->entityPropertyPath($this->resource, $id, $property);
+
+        return $this->client
+            ->get($path)
+            ->json();
     }
 
     /**
@@ -596,12 +451,12 @@ class AbacusQueryBuilder
         $query = [];
 
         // $filter
-        if ( ! empty($this->filters)) {
+        if (!empty($this->filters)) {
             $query['$filter'] = implode(' and ', $this->filters);
         }
 
         // $select
-        if ( ! empty($this->selects)) {
+        if (!empty($this->selects)) {
             $query['$select'] = implode(',', $this->selects);
         }
 
@@ -616,7 +471,7 @@ class AbacusQueryBuilder
         }
 
         // $expand
-        if ( ! empty($this->expand)) {
+        if (!empty($this->expand)) {
             $query['$expand'] = implode(',', $this->expand);
         }
 
@@ -626,61 +481,6 @@ class AbacusQueryBuilder
         }
 
         return $query;
-    }
-
-    /**
-     * Build OData query params valid for single entity GET
-     * Only select and expand are allowed
-     */
-    protected function buildODataQueryForSingleEntity(): array
-    {
-        $query = [];
-
-        if (!empty($this->selects)) {
-            $query['$select'] = implode(',', $this->selects);
-        }
-
-        if (!empty($this->expand)) {
-            $query['$expand'] = implode(',', $this->expand);
-        }
-
-        if ($this->format !== 'json') {
-            $query['$format'] = $this->format;
-        }
-
-        return $query;
-    }
-
-    /**
-     * Build OData query params valid for POST
-     * select and expand are allowed
-     */
-    protected function buildODataQueryForPost(): array
-    {
-        return $this->buildODataQueryForSingleEntity();
-    }
-
-    /**
-     * Build OData query params valid for PATCH
-     * select and expand are allowed
-     */
-    protected function buildODataQueryForPatch(): array
-    {
-        return $this->buildODataQueryForSingleEntity();
-    }
-
-    /**
-     * Build query string from parameters
-     */
-    protected function buildQueryString(array $params): string
-    {
-        $queryParts = [];
-        foreach ($params as $key => $value) {
-            $encodedValue = str_replace('+', '%20', urlencode((string)$value));
-            $queryParts[] = $key . '=' . $encodedValue;
-        }
-
-        return implode('&', $queryParts);
     }
 
     /**
@@ -714,168 +514,5 @@ class AbacusQueryBuilder
     public function toODataQuery(): array
     {
         return $this->buildODataQuery();
-    }
-
-    /**
-     * Validate query combination for POST requests
-     * POST allows: select, expand, format
-     * POST forbids: filter, orderBy, top, entityId
-     *
-     * @throws InvalidQueryCombinationException
-     */
-    protected function validatePostCombination(): void
-    {
-        $invalid = [];
-
-        if (!empty($this->filters)) {
-            $invalid[] = 'filter';
-        }
-        if ($this->orderBy !== null) {
-            $invalid[] = 'orderBy';
-        }
-        if ($this->top !== null) {
-            $invalid[] = 'top';
-        }
-        if ($this->hasEntityId()) {
-            $invalid[] = 'entity ID';
-        }
-
-        if (!empty($invalid)) {
-            throw InvalidQueryCombinationException::forMethod('POST', implode(', ', $invalid));
-        }
-    }
-
-    /**
-     * Validate query combination for PATCH requests
-     * PATCH allows: select, expand, format, entityId (required)
-     * PATCH forbids: filter, orderBy, top
-     *
-     * @throws InvalidQueryCombinationException
-     */
-    protected function validatePatchCombination(): void
-    {
-        $invalid = [];
-
-        if (!empty($this->filters)) {
-            $invalid[] = 'filter';
-        }
-        if ($this->orderBy !== null) {
-            $invalid[] = 'orderBy';
-        }
-        if ($this->top !== null) {
-            $invalid[] = 'top';
-        }
-
-        if (!empty($invalid)) {
-            throw InvalidQueryCombinationException::forMethod('PATCH', implode(', ', $invalid));
-        }
-    }
-
-    /**
-     * Validate query combination for DELETE requests
-     * DELETE allows: format, entityId (required)
-     * DELETE forbids: filter, orderBy, top, select, expand
-     *
-     * @throws InvalidQueryCombinationException
-     */
-    protected function validateDeleteCombination(): void
-    {
-        $invalid = [];
-
-        if (!empty($this->filters)) {
-            $invalid[] = 'filter';
-        }
-        if (!empty($this->selects)) {
-            $invalid[] = 'select';
-        }
-        if (!empty($this->expand)) {
-            $invalid[] = 'expand';
-        }
-        if ($this->orderBy !== null) {
-            $invalid[] = 'orderBy';
-        }
-        if ($this->top !== null) {
-            $invalid[] = 'top';
-        }
-
-        if (!empty($invalid)) {
-            throw InvalidQueryCombinationException::forMethod('DELETE', implode(', ', $invalid));
-        }
-    }
-
-    /**
-     * Validate query combination for GET with entity ID
-     * GET with ID allows: select, expand, format
-     * GET with ID forbids: filter, orderBy, top
-     *
-     * @throws InvalidQueryCombinationException
-     */
-    protected function validateGetWithId(): void
-    {
-        $invalid = [];
-
-        if (!empty($this->filters)) {
-            $invalid[] = 'filter';
-        }
-        if ($this->orderBy !== null) {
-            $invalid[] = 'orderBy';
-        }
-        if ($this->top !== null) {
-            $invalid[] = 'top';
-        }
-
-        if (!empty($invalid)) {
-            throw InvalidQueryCombinationException::forMethod('GET (single entity)', implode(', ', $invalid));
-        }
-    }
-
-    /**
-     * Validate that an entity ID is set for operations that require it
-     *
-     * @throws MissingEntityIdentifierException
-     */
-    protected function validateEntityIdentifier(string $httpMethod): void
-    {
-        if (!$this->hasEntityId()) {
-            throw MissingEntityIdentifierException::forMethod($httpMethod);
-        }
-    }
-
-    /**
-     * Execute GET request for single entity
-     *
-     * @return array The entity data
-     */
-    protected function executeGetSingle(): array
-    {
-        $path = $this->buildPathWithId();
-        $odataParams = $this->buildODataQueryForSingleEntity();
-
-        return $this->service->getClient()
-            ->get($path, $odataParams)
-            ->json();
-    }
-
-    /**
-     * Prepare this query for batch request (list query)
-     * Returns array structure for BatchRequest->addRequest()
-     *
-     * @return array{method: string, path: string, body: array|null}
-     */
-    public function prepareForBatch(): array
-    {
-        $path = $this->service->getClient()->entityPath($this->resource);
-        $odataParams = $this->buildODataQuery();
-
-        /* Build full path with query string */
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->buildQueryString($odataParams);
-        }
-
-        return [
-            'method' => 'GET',
-            'path' => $path,
-            'body' => null,
-        ];
     }
 }
