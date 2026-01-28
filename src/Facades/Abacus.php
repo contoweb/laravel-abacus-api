@@ -3,11 +3,11 @@
 namespace Contoweb\AbacusApi\Facades;
 
 use Contoweb\AbacusApi\AbacusService;
-use Contoweb\AbacusApi\BatchRequest;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static BatchRequest batch()
+ * @method static BatchRequestItem batch()
  * @method static array query(string $resource, array $odataParams = [])
  * @method static array queryWithMetadata(string $resource, array $odataParams = [])
  * @method static array getNextPage(string $nextLink)

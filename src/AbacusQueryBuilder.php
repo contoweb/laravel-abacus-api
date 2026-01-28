@@ -2,12 +2,13 @@
 
 namespace Contoweb\AbacusApi;
 
-use Contoweb\AbacusApi\Batch\BatchCollector;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
-use Contoweb\AbacusApi\Exceptions\InvalidQueryCombinationException;
-use Contoweb\AbacusApi\Exceptions\MissingEntityIdentifierException;
 use Contoweb\AbacusApi\Models\AbacusModel;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 /**
  * @template TypeModel of AbacusModel
@@ -247,7 +248,17 @@ class AbacusQueryBuilder
             return collect($allResults)->map(fn($item) => new $this->modelClass($item));
         }
 
-        return collect($allResults);
+    public function getLazy(): BatchRequestItem
+    {
+        $path = $this->client->entityPath($this->resource);
+        $odataParams = $this->buildODataQuery();
+
+        /* Build full path with query string */
+        if (!empty($odataParams)) {
+            $path .= '?' . $this->client->buildQueryString($odataParams);
+        }
+
+        return new BatchRequestItem($this->modelClass, 'GET', $path, null);
     }
 
     /**
@@ -293,7 +304,18 @@ class AbacusQueryBuilder
             return new $this->modelClass($result);
         }
 
-        return $result;
+    public function findLazy(int|array $id): BatchRequestItem
+    {
+        $this->id($id);
+
+        $path = $this->buildPathWithId();
+        $odataParams = $this->buildODataQuery();
+
+        if (!empty($odataParams)) {
+            $path .= '?' . $this->client->buildQueryString($odataParams);
+        }
+
+        return new BatchRequestItem($this->modelClass, 'GET', $path, null);
     }
 
     /**
@@ -321,32 +343,16 @@ class AbacusQueryBuilder
         return $this->executePost();
     }
 
-    /**
-     * Execute a PATCH request (update entity)
-     * Valid query methods: select(), expand(), format()
-     * Requires: ID set via id()
-     *
-     * @param array $data Request body data
-     * @return TypeModel|array The updated entity
-     * @throws InvalidQueryCombinationException
-     * @throws MissingEntityIdentifierException
-     */
-    public function patch(array $data): mixed
+    public function createLazy(array $data): BatchRequestItem
     {
-        $this->body = $data;
-        $this->validatePatchCombination();
-        $this->validateEntityIdentifier('PATCH');
+        $path = $this->client->entityPath($this->resource);
+        $odataParams = $this->buildODataQuery();
 
-        if (BatchCollector::isActive()) {
-            BatchCollector::getCurrent()->addQuery(
-                $this->prepareForBatchPatch(),
-                $this->modelClass
-            );
-
-            return $this->modelClass ? new $this->modelClass([]) : [];
+        if (!empty($odataParams)) {
+            $path .= '?' . $this->client->buildQueryString($odataParams);
         }
 
-        return $this->executePatch();
+        return new BatchRequestItem($this->modelClass, 'POST', $path, $data);
     }
 
     /**
@@ -363,16 +369,17 @@ class AbacusQueryBuilder
         $this->validateDeleteCombination();
         $this->validateEntityIdentifier('DELETE');
 
-        if (BatchCollector::isActive()) {
-            BatchCollector::getCurrent()->addQuery(
-                $this->prepareForBatchDelete(),
-                null
-            );
+    public function deleteLazy(int|array $id): BatchRequestItem
+    {
+        $this->id($id);
+        $path = $this->buildPathWithId();
+        $odataParams = $this->buildODataQuery();
 
-            return true;
+        if (!empty($odataParams)) {
+            $path .= '?' . $this->client->buildQueryString($odataParams);
         }
 
-        return $this->executeDelete();
+        return new BatchRequestItem($this->modelClass, 'DELETE', $path, null);
     }
 
     /**
@@ -426,18 +433,26 @@ class AbacusQueryBuilder
             return new $this->modelClass($result);
         }
 
-        return $result;
+    public function updateLazy(array $id, array $data): BatchRequestItem
+    {
+        $this->id($id);
+        $path = $this->buildPathWithId();
+        $odataParams = $this->buildODataQuery();
+
+        if (!empty($odataParams)) {
+            $path .= '?' . $this->client->buildQueryString($odataParams);
+        }
+
+        return new BatchRequestItem($this->modelClass, 'PATCH', $path, $data);
     }
 
     /**
-     * Execute DELETE request
+     * @throws RequestException
+     * @throws ConnectionException
      */
-    protected function executeDelete(): bool
+    public function all(): Collection
     {
-        $path = $this->buildPathWithId();
-        $this->service->getClient()->delete($path);
-
-        return true;
+        return $this->get();
     }
 
     /**

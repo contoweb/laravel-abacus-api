@@ -2,16 +2,13 @@
 
 namespace Contoweb\AbacusApi;
 
-use Contoweb\AbacusApi\Batch\MultipartDecoder;
 use Contoweb\AbacusApi\Batch\MultipartEncoder;
-use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 abstract class BaseAbacusClient
 {
@@ -218,26 +215,20 @@ abstract class BaseAbacusClient
     /**
      * Send batch request with multiple operations
      *
-     * @param array $requests Array of ['method' => string, 'path' => string, 'body' => array|null]
-     * @return Collection<int, BatchResponseDto>
-     * @throws RequestException|ConnectionException
+     * @param string $path
+     * @param string $body
+     * @return Response
+     * @throws ConnectionException
+     * @throws RequestException
      */
-    public function sendBatch(array $requests): Collection
+    public function sendBatch(string $path, string $body): Response
     {
-        /* Encode requests into multipart/mixed format */
-        $body = MultipartEncoder::encode($requests);
-
-        /* Send batch request */
-        $batchPath = $this->getEntityBasePath() . '/' . $this->mandate . '/$batch';
-
-        $response = $this->callWithTokenRefresh(function () use ($body, $batchPath) {
-            return Http::withToken($this->getAccessToken())
-                ->timeout(30)
+        return $this->callWithTokenRefresh(function () use ($body, $path) {
+            return $this->client()
                 ->withBody($body, MultipartEncoder::getContentType())
-                ->post($this->getBaseUrl() . $batchPath);
+                ->post($path);
         })->throw();
-
-        $contentType = $response->getHeader('Content-Type');
+    }
 
         preg_match('/boundary=(.+)$/', $contentType[0], $matches);
         $boundary = trim($matches[1]);

@@ -72,4 +72,9 @@ class AbacusClient extends BaseAbacusClient
     {
         return $this->getEntityBasePath() . "/{$this->mandate}/";
     }
+
+    public function batchPath(): string
+    {
+        return $this->getEntityBasePath() . "/{$this->mandate}/\$batch";
+    }
 }

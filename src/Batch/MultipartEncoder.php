@@ -9,7 +9,7 @@ class MultipartEncoder
     /**
      * Encode array of requests into multipart/mixed format
      *
-     * @param array $requests Array of ['method' => string, 'path' => string, 'body' => array|null]
+     * @param BatchRequestItem[] $requests
      * @return string
      */
     public static function encode(array $requests): string
@@ -47,11 +47,11 @@ class MultipartEncoder
     /**
      * Encode a single request into multipart format
      */
-    protected static function encodeRequest(array $request): string
+    protected static function encodeRequest(BatchRequestItem $request): string
     {
-        $method = strtoupper($request['method']);
-        $path = $request['path'];
-        $body = $request['body'] ?? null;
+        $method = strtoupper($request->method);
+        $path = $request->path;
+        $body = $request->body ?? null;
 
         /* Start with multipart headers */
         $part = "Content-Type: application/http\r\n";

@@ -2,9 +2,8 @@
 
 namespace Contoweb\AbacusApi;
 
-use Closure;
-use Contoweb\AbacusApi\Batch\BatchCollector;
-use Contoweb\AbacusApi\Batch\PendingBatchRequest;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
+use Contoweb\AbacusApi\Batch\BatchRequest;
 use Illuminate\Support\Facades\Cache;
 
 class AbacusService
@@ -161,66 +160,13 @@ class AbacusService
     }
 
     /**
-     * Get the underlying client instance
-     */
-    public function getClient(): AbacusClient
-    {
-        return $this->client;
-    }
-
-    /**
      * Create a new batch request
      *
-     * Without callback: Returns a BatchRequest for manual request building
-     * With callback: Collects queries executed within the callback and returns a PendingBatchRequest
-     *
-     * @param Closure $callback Callback that executes queries to be batched
-     * @return PendingBatchRequest
-     *
-     * @example Without callback (manual mode):
-     * ```php
-     * $batch = Abacus::batch();
-     * $batch->addRequest($query->prepareForBatch());
-     * $results = $batch->send();
-     * ```
-     *
-     * @example With callback (automatic collection):
-     * ```php
-     * $results = Abacus::batch(function () {
-     *     Product::where('Id', 'eq', 1)->get();
-     *     Product::where('Id', 'eq', 2)->get();
-     * })->send();
-     *
-     * $firstResult = $results[0];
-     * $secondResult = $results[1];
-     * ```
+     * @param BatchRequestItem ...$requests
+     * @return BatchRequest
      */
-    public function batch(Closure $callback): PendingBatchRequest
+    public function batch(BatchRequestItem ...$requests): BatchRequest
     {
-        /* With callback: Collect queries automatically */
-        $collector = new BatchCollector();
-        BatchCollector::setCurrent($collector);
-
-        try {
-            $callback();
-        } finally {
-            /* Always clear the collector, even if callback throws */
-            BatchCollector::setCurrent(null);
-        }
-
-        $queries = $collector->getQueries();
-
-        /* If no queries collected, return empty result */
-        if (empty($queries)) {
-            return new PendingBatchRequest(new BatchRequest($this->client), []);
-        }
-
-        /* Build batch request from collected queries */
-        $batchRequest = new BatchRequest($this->client);
-        foreach ($queries as $query) {
-            $batchRequest->addRequest($query['request']);
-        }
-
-        return new PendingBatchRequest($batchRequest, $queries);
+        return new BatchRequest($this->client, ...$requests);
     }
 }
