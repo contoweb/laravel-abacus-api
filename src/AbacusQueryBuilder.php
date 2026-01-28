@@ -28,6 +28,7 @@ class AbacusQueryBuilder
     protected array         $compositeKey = [];
     public int              $pages;
     public bool             $cursor;
+    protected ?\Closure     $pageCallback = null;
 
     public function __construct(AbacusClient $client, string $resource, string $modelClass)
     {
@@ -75,6 +76,31 @@ class AbacusQueryBuilder
     public function cursor(): static
     {
         $this->cursor = true;
+        return $this;
+    }
+
+    /**
+     * Enable automatic pagination with a callback for each page
+     * Useful for processing large datasets without loading everything into memory
+     * Note: Automatically enables cursor pagination
+     *
+     * @param callable $callback Callback function receiving (Collection $items, int $pageNumber)
+     * @return $this
+     *
+     * @example
+     * Subject::pages(100)
+     *     ->cursorWithCallback(function($items, $pageNumber) {
+     *         foreach ($items as $item) {
+     *             $this->processItem($item);
+     *         }
+     *         Log::info("Processed page {$pageNumber} with {$items->count()} items");
+     *     })
+     *     ->get();
+     */
+    public function cursorWithCallback(callable $callback): static
+    {
+        $this->cursor = true;
+        $this->pageCallback = $callback;
         return $this;
     }
 
@@ -208,16 +234,33 @@ class AbacusQueryBuilder
         }
 
         if ($this->cursor) {
+            $pageNumber = 1;
+            
+            /* Call callback for first page if provided */
+            if ($this->pageCallback !== null && isset($response['value'])) {
+                $pageItems = collect($response['value'])->map(fn($item) => new $this->modelClass($item));
+                call_user_func($this->pageCallback, $pageItems, $pageNumber);
+            }
+
             for ($i = 1; $i < $this->pages; ++$i) {
                 if (!isset($response['@odata.nextLink'])) {
                     break;
                 }
 
+                $pageNumber++;
+                
                 $response = $this->client
                     ->getNextLink($response['@odata.nextLink'])
                     ->json();
 
                 if (isset($response['value'])) {
+                    $pageItems = collect($response['value'])->map(fn($item) => new $this->modelClass($item));
+                    
+                    /* Call callback for each page if provided */
+                    if ($this->pageCallback !== null) {
+                        call_user_func($this->pageCallback, $pageItems, $pageNumber);
+                    }
+                    
                     $allResults = array_merge($allResults, $response['value']);
                 }
             }

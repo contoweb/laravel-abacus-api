@@ -56,6 +56,17 @@ abstract class AbacusModel
     }
 
     /**
+     * Enable automatic pagination with a callback for each page
+     *
+     * @param callable $callback Callback function receiving (Collection $items, int $pageNumber)
+     * @return AbacusQueryBuilder
+     */
+    public static function cursorWithCallback(callable $callback): AbacusQueryBuilder
+    {
+        return static::query()->cursorWithCallback($callback);
+    }
+
+    /**
      * Execute query and return all paginated results as Collection
      *
      * @return Collection<int, static>

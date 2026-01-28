@@ -548,4 +548,104 @@ class AbacusQueryBuilderTest extends TestCase
         $this->assertStringNotContainsString('?', $request['path']);
         $this->assertNull($request['body']);
     }
+
+    #[Test]
+    public function it_calls_callback_for_each_page_during_cursor_pagination(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
+                'value' => [
+                    ['Id' => 1, 'Name' => 'Item 1'],
+                    ['Id' => 2, 'Name' => 'Item 2'],
+                ],
+                '@odata.nextLink' => 'https://api.example.com/page2',
+            ], 200),
+            'https://api.example.com/page2' => Http::response([
+                'value' => [
+                    ['Id' => 3, 'Name' => 'Item 3'],
+                ],
+                '@odata.nextLink' => 'https://api.example.com/page3',
+            ], 200),
+            'https://api.example.com/page3' => Http::response([
+                'value' => [
+                    ['Id' => 4, 'Name' => 'Item 4'],
+                ],
+            ], 200),
+        ]);
+
+        $callbackCalls = [];
+
+        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
+        $results = $builder
+            ->pages(10)
+            ->cursorWithCallback(function ($items, $pageNumber) use (&$callbackCalls) {
+                $callbackCalls[] = [
+                    'page' => $pageNumber,
+                    'count' => $items->count(),
+                    'items' => $items->pluck('Name')->toArray(),
+                ];
+            })
+            ->get();
+
+        /* Assert callback was called 3 times (one for each page) */
+        $this->assertCount(3, $callbackCalls);
+
+        /* Assert page 1 */
+        $this->assertEquals(1, $callbackCalls[0]['page']);
+        $this->assertEquals(2, $callbackCalls[0]['count']);
+        $this->assertEquals(['Item 1', 'Item 2'], $callbackCalls[0]['items']);
+
+        /* Assert page 2 */
+        $this->assertEquals(2, $callbackCalls[1]['page']);
+        $this->assertEquals(1, $callbackCalls[1]['count']);
+        $this->assertEquals(['Item 3'], $callbackCalls[1]['items']);
+
+        /* Assert page 3 */
+        $this->assertEquals(3, $callbackCalls[2]['page']);
+        $this->assertEquals(1, $callbackCalls[2]['count']);
+        $this->assertEquals(['Item 4'], $callbackCalls[2]['items']);
+
+        /* Assert all items are still returned */
+        $this->assertCount(4, $results);
+    }
+
+    #[Test]
+    public function it_calls_callback_without_pagination_for_single_page(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*' => Http::response([
+                'value' => [
+                    ['Id' => 1, 'Name' => 'Single Item'],
+                ],
+            ], 200),
+        ]);
+
+        $callbackCalls = [];
+
+        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
+        $results = $builder
+            ->cursorWithCallback(function ($items, $pageNumber) use (&$callbackCalls) {
+                $callbackCalls[] = [
+                    'page' => $pageNumber,
+                    'count' => $items->count(),
+                ];
+            })
+            ->get();
+
+        /* Assert callback was called once */
+        $this->assertCount(1, $callbackCalls);
+        $this->assertEquals(1, $callbackCalls[0]['page']);
+        $this->assertEquals(1, $callbackCalls[0]['count']);
+
+        /* Assert result */
+        $this->assertCount(1, $results);
+    }
 }

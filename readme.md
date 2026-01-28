@@ -154,6 +154,48 @@ $subject->delete();
 
 ## Usage
 
+### Cursor Pagination
+
+Handle large datasets efficiently using OData's `@odata.nextLink` pagination:
+
+```php
+/* Basic cursor pagination - loads all pages into memory */
+$subjects = Subject::cursor()
+    ->pages(100)  // Max 100 pages
+    ->get();
+
+/* Process items page-by-page without loading everything into memory */
+Subject::pages(100)
+    ->cursorWithCallback(function($items, $pageNumber) {
+        // Process each page as it's loaded
+        foreach ($items as $item) {
+            DB::table('processed')->insert([
+                'item_id' => $item->Id,
+                'processed_at' => now(),
+            ]);
+        }
+        
+        Log::info("Processed page {$pageNumber}: {$items->count()} items");
+    })
+    ->get();
+```
+
+**When to use `cursorWithCallback()`:**
+- Processing large datasets (10,000+ records)
+- Memory-intensive operations
+- Long-running batch jobs
+- Real-time progress logging
+
+**Note:** `cursorWithCallback()` automatically enables cursor pagination, so calling `cursor()` is optional.
+
+**Configuration:**
+```php
+// config/abacus-api.php
+'query_builder' => [
+    'max_next_link_page_resolving' => 5  // Default page limit
+]
+```
+
 ### Query Builder
 
 ```php
@@ -174,15 +216,31 @@ Subject::orderBy('LastName', 'desc')
 Subject::top(10)->get();
 
 /* Expand Navigation Properties */
-Subject::with('Addresses')->get();
+Subject::expand('Addresses')->get();
 
 /* Combined */
 Subject::where('City', 'eq', 'Zürich')
     ->select(['FirstName', 'LastName', 'Email'])
     ->orderBy('LastName', 'asc')
-    ->with('Addresses')
+    ->expand('Addresses')
     ->top(5)
     ->get();
+
+/* Cursor Pagination - Process large datasets page by page */
+Subject::pages(100)
+    ->cursorWithCallback(function($items, $pageNumber) {
+        foreach ($items as $subject) {
+            // Process each item immediately
+            $this->processSubject($subject);
+        }
+        Log::info("Processed page {$pageNumber} with {$items->count()} subjects");
+    })
+    ->get();
+
+/* Cursor Pagination - Load all pages into memory */
+Subject::cursor()
+    ->pages(50)
+    ->get(); // Returns Collection of all items
 ```
 
 ### CRUD Operations
