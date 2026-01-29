@@ -94,8 +94,7 @@ trait HasODataQueryMethods
      *
      * @return array<string, mixed>
      */
-    public
-    function toODataQuery(): array
+    public function toODataQuery(): array
     {
         return $this->queryState->toODataQuery();
     }

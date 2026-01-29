@@ -3,20 +3,12 @@
 namespace Contoweb\AbacusApi\Facades;
 
 use Contoweb\AbacusApi\AbacusService;
+use Contoweb\AbacusApi\Batch\BatchRequest;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static BatchRequestItem batch()
- * @method static array query(string $resource, array $odataParams = [])
- * @method static array queryWithMetadata(string $resource, array $odataParams = [])
- * @method static array getNextPage(string $nextLink)
- * @method static array find(string $resource, mixed $id, array $odataParams = [])
- * @method static mixed findProperty(string $resource, mixed $id, string $property)
- * @method static array create(string $resource, array $data)
- * @method static array update(string $resource, mixed $id, array $data)
- * @method static array replace(string $resource, mixed $id, array $data)
- * @method static bool delete(string $resource, mixed $id)
+ * @method static BatchRequest batch(BatchRequestItem ...$requests)
  * @method static array listEntityIds()
  * @method static string metadata()
  *

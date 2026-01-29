@@ -277,23 +277,23 @@ use Contoweb\AbacusApi\Facades\Abacus;
 
 /* Basic usage */
 $results = Abacus::batch(
-    Customer::findAsBatch(123),
-    Product::where('Price', 'gt', 100)->getAsBatch(),
-    Order::createAsBatch(['CustomerId' => 456, 'Total' => 99.99])
+    Customer::batch()->find(123),
+    Product::batch()->where('Price', 'gt', 100)->get(),
+    Order::batch()->create(['CustomerId' => 456, 'Total' => 99.99])
 )->send();
 
 /* Mixed CRUD operations */
 $results = Abacus::batch(
-    Customer::findAsBatch(100),
-    Order::createAsBatch(['CustomerId' => 200, 'Total' => 99.99]),
-    Customer::updateAsBatch(100, ['Status' => 'Active']),
-    Product::deleteAsBatch(999)
+    Customer::batch()->find(100),
+    Order::batch()->create(['CustomerId' => 200, 'Total' => 99.99]),
+    Customer::batch()->update(100, ['Status' => 'Active']),
+    Product::batch()->delete(999)
 )->send();
 
 /* Composite keys */
 $results = Abacus::batch(
-    StockBatch::findAsBatch(['BatchNumber' => '5436', 'ProductId' => 12276]),
-    StockBatch::updateAsBatch(
+    StockBatch::batch()->find(['BatchNumber' => '5436', 'ProductId' => 12276]),
+    StockBatch::batch()->update(
         ['BatchNumber' => '5436', 'ProductId' => 12276],
         ['Remark' => 'Updated']
     )

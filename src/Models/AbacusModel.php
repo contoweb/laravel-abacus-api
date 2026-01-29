@@ -35,6 +35,11 @@ abstract class AbacusModel
         return new AbacusODataQueryBuilder($client, static::$resource, static::class);
     }
 
+    /**
+     * Create batch query builder
+     *
+     * @return AbacusODataBatchQueryBuilder<static>
+     */
     public static function batch(): AbacusODataBatchQueryBuilder
     {
         $client = app(AbacusODataClient::class);

@@ -22,6 +22,12 @@ class AbacusODataBatchQueryBuilder
         $this->queryState = new ODataQueryState();
     }
 
+    public function all(): BatchRequestItem
+    {
+        $path = $this->client->entityPath($this->resource);
+
+        return new BatchRequestItem($this->modelClass, 'GET', $path, null);
+    }
     /**
      * Prepare a get operation as batch request item
      *

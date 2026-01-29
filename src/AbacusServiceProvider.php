@@ -6,7 +6,6 @@ use Contoweb\AbacusApi\Console\Commands\GenerateIdeHelperCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusModelCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusReportCommand;
 use Illuminate\Support\ServiceProvider;
-use RuntimeException;
 
 class AbacusServiceProvider extends ServiceProvider
 {
@@ -49,24 +48,6 @@ class AbacusServiceProvider extends ServiceProvider
                 MakeAbacusModelCommand::class,
                 MakeAbacusReportCommand::class,
             ]);
-        }
-
-        $this->app->booted(function () {
-            $this->validateConfiguration();
-        });
-    }
-
-    private function validateConfiguration(): void
-    {
-        $required = ['url', 'mandate', 'client_id', 'client_secret'];
-        foreach ($required as $key) {
-            $value = config("abacus-api.rest_api.{$key}");
-            if (empty($value)) {
-                throw new RuntimeException(
-                    "Abacus API configuration 'rest_api.{$key}' is not set. " .
-                    "Please check your .env file."
-                );
-            }
         }
     }
 }
