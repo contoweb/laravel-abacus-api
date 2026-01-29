@@ -2,6 +2,8 @@
 
 namespace Contoweb\AbacusApi\Batch;
 
+use InvalidArgumentException;
+
 class MultipartDecoder
 {
     /**
@@ -13,6 +15,10 @@ class MultipartDecoder
      */
     public static function decode(string $responseBody, string $boundary): array
     {
+        if (empty($boundary)) {
+            throw new InvalidArgumentException('Boundary cannot be empty');
+        }
+
         $results = [];
 
         $responseBody = str_replace("\r\n", "\n", $responseBody);
