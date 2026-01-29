@@ -2,7 +2,7 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\AbacusQueryBuilder;
+use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Contoweb\AbacusApi\Tests\TestCase;
@@ -50,7 +50,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::query();
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -98,7 +98,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::where('Name', 'eq', 'John');
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -106,7 +106,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::where('Age', ODataOperator::GREATER_THAN, 18);
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -114,7 +114,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::select(['Id', 'Name']);
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -122,7 +122,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::top(10);
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -130,7 +130,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::orderBy('Name', 'desc');
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -138,7 +138,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::expand(['Addresses', 'Contacts']);
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]

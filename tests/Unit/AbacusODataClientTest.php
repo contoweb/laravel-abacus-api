@@ -3,20 +3,20 @@
 namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\Tests\TestCase;
-use Contoweb\AbacusApi\AbacusClient;
+use Contoweb\AbacusApi\AbacusODataClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
-class AbacusClientTest extends TestCase
+class AbacusODataClientTest extends TestCase
 {
-    protected AbacusClient $client;
+    protected AbacusODataClient $client;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->client = new AbacusClient();
+        $this->client = new AbacusODataClient();
     }
 
     #[Test]
@@ -116,7 +116,7 @@ class AbacusClientTest extends TestCase
     #[Test]
     public function it_uses_correct_mandate_in_paths(): void
     {
-        $customClient = new AbacusClient(
+        $customClient = new AbacusODataClient(
             'https://api.example.com',
             'custom-mandate-123'
         );

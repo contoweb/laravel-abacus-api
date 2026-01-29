@@ -2,7 +2,7 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\AbacusClient;
+use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -10,13 +10,13 @@ use PHPUnit\Framework\Attributes\Test;
 
 class TokenCachingTest extends TestCase
 {
-    protected AbacusClient $client;
+    protected AbacusODataClient $client;
 
     protected function setUp(): void
     {
         parent::setUp();
         Cache::flush();
-        $this->client = new AbacusClient();
+        $this->client = new AbacusODataClient();
     }
 
     #[Test]
@@ -62,8 +62,8 @@ class TokenCachingTest extends TestCase
     #[Test]
     public function it_handles_cache_key_correctly(): void
     {
-        $client1 = new AbacusClient('api1.example.com', 'mandate1', 'client1', 'secret1');
-        $client2 = new AbacusClient('api2.example.com', 'mandate2', 'client2', 'secret2');
+        $client1 = new AbacusODataClient('api1.example.com', 'mandate1', 'client1', 'secret1');
+        $client2 = new AbacusODataClient('api2.example.com', 'mandate2', 'client2', 'secret2');
 
         $reflection = new \ReflectionClass($client1);
         $method = $reflection->getMethod('getCacheKey');

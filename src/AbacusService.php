@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Cache;
 
 class AbacusService
 {
-    protected AbacusClient $client;
+    protected AbacusODataClient $client;
 
-    public function __construct(AbacusClient $client)
+    public function __construct(AbacusODataClient $client)
     {
         $this->client = $client;
     }

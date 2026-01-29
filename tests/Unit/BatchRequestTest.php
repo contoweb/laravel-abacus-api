@@ -2,7 +2,7 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\AbacusClient;
+use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\Batch\BatchRequest;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
@@ -12,12 +12,12 @@ use PHPUnit\Framework\Attributes\Test;
 
 class BatchRequestTest extends TestCase
 {
-    protected AbacusClient $client;
+    protected AbacusODataClient $client;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = new AbacusClient();
+        $this->client = new AbacusODataClient();
     }
 
     #[Test]

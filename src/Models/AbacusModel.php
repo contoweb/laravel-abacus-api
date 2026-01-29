@@ -2,8 +2,8 @@
 
 namespace Contoweb\AbacusApi\Models;
 
-use Contoweb\AbacusApi\AbacusClient;
-use Contoweb\AbacusApi\AbacusQueryBuilder;
+use Contoweb\AbacusApi\AbacusODataClient;
+use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Illuminate\Http\Client\ConnectionException;
@@ -15,33 +15,33 @@ abstract class AbacusModel
     protected static string $resource;
     protected static string|array $primaryKey = 'Id';
     protected array $attributes = [];
-    protected array $original   = [];
+    protected array $original = [];
 
     public function __construct(array $attributes = [])
     {
         $this->attributes = $attributes;
-        $this->original   = $attributes;
+        $this->original = $attributes;
     }
 
     /**
      * Create query builder
      *
-     * @return AbacusQueryBuilder<static>
+     * @return AbacusODataQueryBuilder<static>
      */
-    public static function query(): AbacusQueryBuilder
+    public static function query(): AbacusODataQueryBuilder
     {
-        $client = app(AbacusClient::class);
+        $client = app(AbacusODataClient::class);
 
-        return new AbacusQueryBuilder($client, static::$resource, static::class);
+        return new AbacusODataQueryBuilder($client, static::$resource, static::class);
     }
 
     /**
      * Set the maximum number of pages to retrieve when cursor pagination is enabled
      *
      * @param int $limit
-     * @return AbacusQueryBuilder
+     * @return AbacusODataQueryBuilder
      */
-    public static function pages(int $limit): AbacusQueryBuilder
+    public static function pages(int $limit): AbacusODataQueryBuilder
     {
         return static::query()->pages($limit);
     }
@@ -49,9 +49,9 @@ abstract class AbacusModel
     /**
      * Enable automatic pagination through OData nextLink
      *
-     * @return AbacusQueryBuilder
+     * @return AbacusODataQueryBuilder
      */
-    public static function cursor(): AbacusQueryBuilder
+    public static function cursor(): AbacusODataQueryBuilder
     {
         return static::query()->cursor();
     }
@@ -60,9 +60,9 @@ abstract class AbacusModel
      * Enable automatic pagination with a callback for each page
      *
      * @param callable $callback Callback function receiving (Collection $items, int $pageNumber)
-     * @return AbacusQueryBuilder
+     * @return AbacusODataQueryBuilder
      */
-    public static function cursorWithCallback(callable $callback): AbacusQueryBuilder
+    public static function cursorWithCallback(callable $callback): AbacusODataQueryBuilder
     {
         return static::query()->cursorWithCallback($callback);
     }
@@ -82,6 +82,7 @@ abstract class AbacusModel
     /**
      * Execute query and return all paginated results as Collection
      *
+     * @return Collection<static>
      * @throws RequestException
      * @throws ConnectionException
      */
@@ -103,40 +104,34 @@ abstract class AbacusModel
     /**
      * Find entity via primary key
      *
-     * @param int|array $id Single value for simple keys, array for composite keys
-     * @return AbacusModel|null
+     * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
+     * @return AbacusModel
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function find(int|array $id): ?static
+    public static function find(int|string|array $idOrCriteria): static
     {
-        $result = static::query()->find($id);
-
-        if ($result === null) {
-            return null;
-        }
-
-        return $result;
+        return static::query()->find($idOrCriteria);
     }
 
     /**
      *  Prepare a find operation as batch request item
      *
-     * @param int|array $id
+     * @param int|string|array<string, int|string> $idOrCriteria
      * @return BatchRequestItem
      */
-    public static function findAsBatch(int|array $id): BatchRequestItem
+    public static function findAsBatch(int|string|array $idOrCriteria): BatchRequestItem
     {
-        return static::query()->findAsBatch($id);
+        return static::query()->findAsBatch($idOrCriteria);
     }
 
     /**
      * Start where query
      * Example: Project::where('Id', 'eq', 9100)->get()
      *
-     * @return AbacusQueryBuilder<static>
+     * @return AbacusODataQueryBuilder<static>
      */
-    public static function where(string $field, ODataOperator | string $operator, mixed $value): AbacusQueryBuilder
+    public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusODataQueryBuilder
     {
         return static::query()->where($field, $operator, $value);
     }
@@ -144,9 +139,9 @@ abstract class AbacusModel
     /**
      * Start select query
      *
-     * @return AbacusQueryBuilder<static>
+     * @return AbacusODataQueryBuilder<static>
      */
-    public static function select(array | string $fields): AbacusQueryBuilder
+    public static function select(array|string $fields): AbacusODataQueryBuilder
     {
         return static::query()->select($fields);
     }
@@ -154,9 +149,9 @@ abstract class AbacusModel
     /**
      * Top N Entities
      *
-     * @return AbacusQueryBuilder<static>
+     * @return AbacusODataQueryBuilder<static>
      */
-    public static function top(int $limit): AbacusQueryBuilder
+    public static function top(int $limit): AbacusODataQueryBuilder
     {
         return static::query()->top($limit);
     }
@@ -164,9 +159,9 @@ abstract class AbacusModel
     /**
      * OrderBy-Query starten
      *
-     * @return AbacusQueryBuilder<static>
+     * @return AbacusODataQueryBuilder<static>
      */
-    public static function orderBy(string $field, string $direction = 'asc'): AbacusQueryBuilder
+    public static function orderBy(string $field, string $direction = 'asc'): AbacusODataQueryBuilder
     {
         return static::query()->orderBy($field, $direction);
     }
@@ -174,9 +169,9 @@ abstract class AbacusModel
     /**
      * Expand Navigation Properties
      *
-     * @return AbacusQueryBuilder<static>
+     * @return AbacusODataQueryBuilder<static>
      */
-    public static function expand(array | string $relations): AbacusQueryBuilder
+    public static function expand(array|string $relations): AbacusODataQueryBuilder
     {
         return static::query()->expand($relations);
     }
@@ -184,18 +179,19 @@ abstract class AbacusModel
     /**
      * Create entity
      *
+     * @param array<string, int|string> $data
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function create(array $attributes): static
+    public static function create(array $data): static
     {
-        return static::query()->create($attributes);
+        return static::query()->create($data);
     }
 
     /**
      * Prepare a create operation as batch request item
      *
-     * @param array $data
+     * @param array<string, int|string> $data
      * @return BatchRequestItem
      */
     public static function createAsBatch(array $data): BatchRequestItem
@@ -206,55 +202,55 @@ abstract class AbacusModel
     /**
      * Delete entity by ID
      *
-     * @param int|array $id Single value for simple keys, array for composite keys
+     * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
      * @return void
      * @throws ConnectionException
      * @throws RequestException
      * @example Single key: Customers::delete(210)
      * @example Composite key: StockBatches::delete(['BatchNumber' => '123', 'ProductId' => 456])
      */
-    public static function delete(int|array $id): void
+    public static function delete(int|string|array $idOrCriteria): void
     {
-        static::query()->delete($id);
+        static::query()->delete($idOrCriteria);
     }
 
     /**
      * Prepare a delete operation as batch request item
      *
-     * @param int|array $id
+     * @param int|string|array<string, int|string> $idOrCriteria
      * @return BatchRequestItem
      */
-    public static function deleteAsBatch(int|array $id): BatchRequestItem
+    public static function deleteAsBatch(int|string|array $idOrCriteria): BatchRequestItem
     {
-        return static::query()->deleteAsBatch($id);
+        return static::query()->deleteAsBatch($idOrCriteria);
     }
 
     /**
      * Update entity by ID
      *
-     * @param int|array $id Single value for simple keys, array for composite keys
-     * @param array $data Data to update
+     * @param int|string|array<string, int|array> $idOrCriteria Single value for simple keys, array for composite keys
+     * @param array<string, int|string> $data Data to update
      * @return static
      * @throws ConnectionException
      * @throws RequestException
      * @example Simple: Customers::update(210, ['Name' => 'Test'])
      * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
      */
-    public static function update(int|array $id, array $data): static
+    public static function update(int|string|array $idOrCriteria, array $data): static
     {
-        return static::query()->update($id, $data);
+        return static::query()->update($idOrCriteria, $data);
     }
 
     /**
      * Prepare a update operation as batch request item
      *
-     * @param int|array $id
-     * @param array $data
+     * @param int|string|array<string|string, int|string> $idOrCriteria
+     * @param array<string, int|string> $data
      * @return BatchRequestItem
      */
-    public static function updateAsBatch(int|array $id, array $data): BatchRequestItem
+    public static function updateAsBatch(int|string|array $idOrCriteria, array $data): BatchRequestItem
     {
-        return static::query()->updateAsBatch($id, $data);
+        return static::query()->updateAsBatch($idOrCriteria, $data);
     }
 
     /**

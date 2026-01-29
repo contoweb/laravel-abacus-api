@@ -2,7 +2,7 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\AbacusClient;
+use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Batch\BatchRequest;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
@@ -14,14 +14,14 @@ use PHPUnit\Framework\Attributes\Test;
 class AbacusServiceTest extends TestCase
 {
     protected AbacusService $service;
-    protected AbacusClient $client;
+    protected AbacusODataClient $client;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         Cache::flush();
-        $this->client = new AbacusClient();
+        $this->client = new AbacusODataClient();
         $this->service = new AbacusService($this->client);
     }
 
@@ -248,14 +248,14 @@ class AbacusServiceTest extends TestCase
         
         $client = $property->getValue($this->service);
 
-        $this->assertInstanceOf(AbacusClient::class, $client);
+        $this->assertInstanceOf(AbacusODataClient::class, $client);
         $this->assertSame($this->client, $client);
     }
 
     #[Test]
     public function it_can_be_instantiated_with_custom_client(): void
     {
-        $customClient = new AbacusClient(
+        $customClient = new AbacusODataClient(
             'https://custom.api.com',
             'custom-mandate',
             'custom-client-id',
@@ -279,7 +279,7 @@ class AbacusServiceTest extends TestCase
         $service = app(AbacusService::class);
 
         $this->assertInstanceOf(AbacusService::class, $service);
-        $this->assertInstanceOf(AbacusClient::class, app(AbacusClient::class));
+        $this->assertInstanceOf(AbacusODataClient::class, app(AbacusODataClient::class));
     }
 
     /**

@@ -3,7 +3,7 @@
 namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\Tests\TestCase;
-use Contoweb\AbacusApi\AbacusClient;
+use Contoweb\AbacusApi\AbacusODataClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
@@ -12,20 +12,20 @@ use PHPUnit\Framework\Attributes\Test;
 
 class BaseAbacusClientTest extends TestCase
 {
-    protected AbacusClient $client;
+    protected AbacusODataClient $client;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         Cache::flush();
-        $this->client = new AbacusClient();
+        $this->client = new AbacusODataClient();
     }
 
     #[Test]
     public function it_constructs_with_config_values(): void
     {
-        $client = new AbacusClient();
+        $client = new AbacusODataClient();
 
         $this->assertEquals('https://api.example.com', $client->getUrl());
         $this->assertEquals('test-mandate', $client->getMandate());
@@ -34,7 +34,7 @@ class BaseAbacusClientTest extends TestCase
     #[Test]
     public function it_constructs_with_custom_values(): void
     {
-        $client = new AbacusClient(
+        $client = new AbacusODataClient(
             'https://custom-api.example.com',
             'custom-mandate',
             'custom-client-id',
@@ -49,7 +49,7 @@ class BaseAbacusClientTest extends TestCase
     #[Test]
     public function it_prepends_https_to_base_url_if_missing(): void
     {
-        $client = new AbacusClient('api.example.com');
+        $client = new AbacusODataClient('api.example.com');
 
         $this->assertEquals('https://api.example.com', $client->getUrl());
     }
@@ -57,7 +57,7 @@ class BaseAbacusClientTest extends TestCase
     #[Test]
     public function it_does_not_prepend_https_if_already_present(): void
     {
-        $client = new AbacusClient('https://api.example.com');
+        $client = new AbacusODataClient('https://api.example.com');
 
         $this->assertEquals('https://api.example.com', $client->getUrl());
     }
@@ -65,7 +65,7 @@ class BaseAbacusClientTest extends TestCase
     #[Test]
     public function it_respects_http_protocol(): void
     {
-        $client = new AbacusClient('http://api.example.com');
+        $client = new AbacusODataClient('http://api.example.com');
 
         $this->assertEquals('http://api.example.com', $client->getUrl());
     }
@@ -385,8 +385,8 @@ class BaseAbacusClientTest extends TestCase
     #[Test]
     public function it_generates_unique_cache_key(): void
     {
-        $client1 = new AbacusClient('https://api1.example.com', 'mandate1', 'client1');
-        $client2 = new AbacusClient('https://api2.example.com', 'mandate2', 'client2');
+        $client1 = new AbacusODataClient('https://api1.example.com', 'mandate1', 'client1');
+        $client2 = new AbacusODataClient('https://api2.example.com', 'mandate2', 'client2');
 
         $reflection = new \ReflectionClass($client1);
         $method = $reflection->getMethod('getCacheKey');
