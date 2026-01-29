@@ -2,9 +2,9 @@
 
 namespace Contoweb\AbacusApi\Models;
 
+use Contoweb\AbacusApi\AbacusODataBatchQueryBuilder;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
-use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -33,6 +33,13 @@ abstract class AbacusModel
         $client = app(AbacusODataClient::class);
 
         return new AbacusODataQueryBuilder($client, static::$resource, static::class);
+    }
+
+    public static function batch(): AbacusODataBatchQueryBuilder
+    {
+        $client = app(AbacusODataClient::class);
+
+        return new AbacusODataBatchQueryBuilder($client, static::$resource, static::class);
     }
 
     /**
@@ -92,16 +99,6 @@ abstract class AbacusModel
     }
 
     /**
-     * Prepare a get operation as batch request item
-     *
-     * @return BatchRequestItem
-     */
-    public static function getAsBatch(): BatchRequestItem
-    {
-        return static::query()->getAsBatch();
-    }
-
-    /**
      * Find entity via primary key
      *
      * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
@@ -112,17 +109,6 @@ abstract class AbacusModel
     public static function find(int|string|array $idOrCriteria): static
     {
         return static::query()->find($idOrCriteria);
-    }
-
-    /**
-     *  Prepare a find operation as batch request item
-     *
-     * @param int|string|array<string, int|string> $idOrCriteria
-     * @return BatchRequestItem
-     */
-    public static function findAsBatch(int|string|array $idOrCriteria): BatchRequestItem
-    {
-        return static::query()->findAsBatch($idOrCriteria);
     }
 
     /**
@@ -189,17 +175,6 @@ abstract class AbacusModel
     }
 
     /**
-     * Prepare a create operation as batch request item
-     *
-     * @param array<string, int|string> $data
-     * @return BatchRequestItem
-     */
-    public static function createAsBatch(array $data): BatchRequestItem
-    {
-        return static::query()->createAsBatch($data);
-    }
-
-    /**
      * Delete entity by ID
      *
      * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
@@ -212,17 +187,6 @@ abstract class AbacusModel
     public static function delete(int|string|array $idOrCriteria): void
     {
         static::query()->delete($idOrCriteria);
-    }
-
-    /**
-     * Prepare a delete operation as batch request item
-     *
-     * @param int|string|array<string, int|string> $idOrCriteria
-     * @return BatchRequestItem
-     */
-    public static function deleteAsBatch(int|string|array $idOrCriteria): BatchRequestItem
-    {
-        return static::query()->deleteAsBatch($idOrCriteria);
     }
 
     /**
@@ -239,18 +203,6 @@ abstract class AbacusModel
     public static function update(int|string|array $idOrCriteria, array $data): static
     {
         return static::query()->update($idOrCriteria, $data);
-    }
-
-    /**
-     * Prepare a update operation as batch request item
-     *
-     * @param int|string|array<string|string, int|string> $idOrCriteria
-     * @param array<string, int|string> $data
-     * @return BatchRequestItem
-     */
-    public static function updateAsBatch(int|string|array $idOrCriteria, array $data): BatchRequestItem
-    {
-        return static::query()->updateAsBatch($idOrCriteria, $data);
     }
 
     /**

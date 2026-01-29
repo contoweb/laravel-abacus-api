@@ -40,10 +40,18 @@ class BatchResponseDto
     }
 
     /**
-     * Get error message
+     * Get HTTP error status text
      */
     public function getError(): ?string
     {
-        return $this->error ?? $this->body['error']['message'] ?? null;
+        return $this->error ?? null;
+    }
+
+    /**
+     * Get detailed API error message from response body
+     */
+    public function getErrorMessage(): ?string
+    {
+        return $this->body['error']['message'] ?? null;
     }
 }
