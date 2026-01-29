@@ -112,7 +112,8 @@ class BaseAbacusClientTest extends TestCase
         $cacheKeyMethod->setAccessible(true);
         $cacheKey = $cacheKeyMethod->invoke($this->client);
 
-        $cachedToken = Cache::get($cacheKey);
+        $cachedEncryptedToken = Cache::get($cacheKey);
+        $cachedToken = decrypt($cachedEncryptedToken);
         $this->assertEquals('cached-token', $cachedToken);
     }
 
@@ -323,7 +324,9 @@ class BaseAbacusClientTest extends TestCase
         $cacheKey = $cacheKeyMethod->invoke($this->client);
 
         /* Manually cache an old token */
-        Cache::put($cacheKey, 'old-expired-token', 3600);
+        $oldExpiredToken = 'old-expired-token';
+        $oldEncryptedToken = encrypt($oldExpiredToken);
+        Cache::put($cacheKey, $oldEncryptedToken, 3600);
 
         Http::fake([
             '*/oauth/oauth2/v1/token'=> Http::response([
@@ -340,7 +343,8 @@ class BaseAbacusClientTest extends TestCase
         $this->assertEquals(200, $response->status());
 
         /* Verify cache was cleared and updated */
-        $cachedToken = Cache::get($cacheKey);
+        $encryptedCachedToken = Cache::get($cacheKey);
+        $cachedToken = decrypt($encryptedCachedToken);
         $this->assertEquals('refreshed-token', $cachedToken);
     }
 

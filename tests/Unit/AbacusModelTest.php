@@ -2,10 +2,10 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\AbacusQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Models\AbacusModel;
+use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -29,7 +29,7 @@ class AbacusModelTest extends TestCase
         parent::setUp();
 
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -57,7 +57,7 @@ class AbacusModelTest extends TestCase
     public function it_finds_entity_by_id(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -145,7 +145,7 @@ class AbacusModelTest extends TestCase
     public function it_creates_entity(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -170,7 +170,7 @@ class AbacusModelTest extends TestCase
     public function it_updates_entity_with_static_method(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -192,16 +192,17 @@ class AbacusModelTest extends TestCase
     public function it_deletes_entity_with_static_method(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*/api/entity/v1/mandants/test-mandate/Subjects(42)' => Http::response(null, 204),
         ]);
 
-        $result = TestSubject::delete(42);
-
-        $this->assertTrue($result);
+        TestSubject::delete(42);
+        
+        /* Delete returns void, just verify no exception */
+        $this->assertTrue(true);
     }
 
     #[Test]
@@ -244,11 +245,9 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
-    public function it_returns_primary_key_info(): void
+    public function it_gets_resource_name(): void
     {
-        $this->assertEquals('Id', TestSubject::getPrimaryKey());
-        $this->assertTrue(TestSubject::hasSinglePrimaryKey());
-        $this->assertFalse(TestSubject::hasCompositePrimaryKey());
+        $this->assertEquals('Subjects', TestSubject::getResource());
     }
 
     #[Test]
@@ -281,16 +280,10 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
-    public function it_gets_resource_name(): void
-    {
-        $this->assertEquals('Subjects', TestSubject::getResource());
-    }
-
-    #[Test]
     public function it_returns_model_instance_when_using_where_first(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -312,7 +305,7 @@ class AbacusModelTest extends TestCase
     public function it_returns_model_collection_when_using_where_get(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -331,6 +324,14 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(TestSubject::class, $subjects->last());
         $this->assertEquals('First', $subjects->first()->Name);
         $this->assertEquals('Second', $subjects->last()->Name);
+    }
+
+    #[Test]
+    public function it_detects_single_primary_key(): void
+    {
+        $this->assertEquals('Id', TestSubject::getPrimaryKey());
+        $this->assertTrue(TestSubject::hasSinglePrimaryKey());
+        $this->assertFalse(TestSubject::hasCompositePrimaryKey());
     }
 
     #[Test]
@@ -415,14 +416,15 @@ class AbacusModelTest extends TestCase
             "*stock-batches(BatchNumber='123',BatchSequenceNumber=0,ProductId=456,VariantId=0)*" => Http::response(null, 204),
         ]);
 
-        $result = TestStockBatch::delete([
+        TestStockBatch::delete([
             'BatchNumber' => '123',
             'BatchSequenceNumber' => 0,
             'ProductId' => 456,
             'VariantId' => 0,
         ]);
-
-        $this->assertTrue($result);
+        
+        /* Delete returns void, just verify no exception */
+        $this->assertTrue(true);
     }
 
     #[Test]

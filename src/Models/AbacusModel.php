@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 abstract class AbacusModel
 {
     protected static string $resource;
+    protected static string|array $primaryKey = 'Id';
     protected array $attributes = [];
     protected array $original   = [];
 
@@ -221,11 +222,11 @@ abstract class AbacusModel
      * Prepare a delete operation as batch request item
      *
      * @param int|array $id
-     * @return void
+     * @return BatchRequestItem
      */
-    public static function deleteAsBatch(int|array $id): void
+    public static function deleteAsBatch(int|array $id): BatchRequestItem
     {
-        static::query()->deleteAsBatch($id);
+        return static::query()->deleteAsBatch($id);
     }
 
     /**
@@ -251,7 +252,7 @@ abstract class AbacusModel
      * @param array $data
      * @return BatchRequestItem
      */
-    public function updateAsBatch(int|array $id, array $data): BatchRequestItem
+    public static function updateAsBatch(int|array $id, array $data): BatchRequestItem
     {
         return static::query()->updateAsBatch($id, $data);
     }
@@ -318,5 +319,35 @@ abstract class AbacusModel
     public static function getResource(): string
     {
         return static::$resource;
+    }
+
+    /**
+     * Get the primary key(s) for the model
+     *
+     * @return string|array Single key name or array of key names for composite keys
+     */
+    public static function getPrimaryKey(): string|array
+    {
+        return static::$primaryKey;
+    }
+
+    /**
+     * Determine if the model has a single primary key
+     *
+     * @return bool
+     */
+    public static function hasSinglePrimaryKey(): bool
+    {
+        return is_string(static::$primaryKey);
+    }
+
+    /**
+     * Determine if the model has a composite primary key
+     *
+     * @return bool
+     */
+    public static function hasCompositePrimaryKey(): bool
+    {
+        return is_array(static::$primaryKey);
     }
 }

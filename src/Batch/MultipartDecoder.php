@@ -49,12 +49,12 @@ class MultipartDecoder
         /* Split multipart headers from HTTP response */
         $sections = preg_split("/\n\n/", $part, 3);
 
-        if (count($sections) < 3) {
+        if (count($sections) < 2) {
             return null;
         }
 
         $httpResponse = $sections[1];
-        $httpBody = $sections[2];
+        $httpBody = $sections[2] ?? null;
 
         /* Parse HTTP status line */
         $lines = explode("\n", trim($httpResponse));

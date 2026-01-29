@@ -74,10 +74,11 @@ abstract class BaseAbacusClient
      */
     protected function getAccessToken(): string
     {
-        $cachedToken = Cache::get(encrypt($this->getCacheKey()));
+        $cacheKey = $this->getCacheKey();
+        $encryptedToken = Cache::get($cacheKey);
 
-        if ($cachedToken !== null) {
-            return $cachedToken;
+        if ($encryptedToken !== null) {
+            return $this->decryptToken($encryptedToken);
         }
 
         return $this->fetchFreshAccessToken();
@@ -111,7 +112,11 @@ abstract class BaseAbacusClient
         $tokenLifetime = (int)$response->json('expires_in');
 
         /* Cache token with 10 second buffer before expiration */
-        Cache::put($this->getCacheKey(), encrypt($accessToken), $tokenLifetime - 10);
+        Cache::put(
+            $this->getCacheKey(),
+            $this->encryptToken($accessToken),
+            $tokenLifetime - 10
+        );
 
         return $accessToken;
     }
@@ -258,5 +263,21 @@ abstract class BaseAbacusClient
         }
 
         return implode('&', $queryParts);
+    }
+
+    /**
+     * Encrypt access token for caching
+     */
+    protected function encryptToken(string $token): string
+    {
+        return encrypt($token);
+    }
+
+    /**
+     * Decrypt access token from cache
+     */
+    protected function decryptToken(string $encryptedToken): string
+    {
+        return decrypt($encryptedToken);
     }
 }
