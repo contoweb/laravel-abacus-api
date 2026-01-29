@@ -7,13 +7,14 @@ Laravel package for the Abacus REST API with OData support and Eloquent-like mod
 
 ## Features
 
-✅ **Eloquent-like API** - Familiar Laravel syntax
-✅ **OData Support** - Filter, Select, OrderBy, Top, Expand
-✅ **Type-Safe** - Full PHPDoc support
-✅ **IDE Autocomplete** - Automatic IDE Helper generation
-✅ **CRUD Operations** - Create, Read, Update, Delete
-✅ **Query Builder** - Fluent interface for complex queries
-✅ **Testable** - Easy mocking with Laravel HTTP Fake
+- **Eloquent-like API** - Familiar Laravel syntax
+- **OData Support** - Filter, Select, OrderBy, Top, Expand
+- **Type-Safe** - Full PHPDoc support
+- **IDE Autocomplete** - Automatic IDE Helper generation
+- **CRUD Operations** - Create, Read, Update, Delete
+- **Batch Requests** - Multiple operations in a single HTTP request
+- **Query Builder** - Fluent interface for complex queries
+- **Testable** - Easy mocking with Laravel HTTP Fake
 
 ## Installation
 
@@ -145,11 +146,10 @@ $subject = Subject::create([
 ]);
 
 /* Update */
-$subject->Email = 'new@example.com';
-$subject->save();
+Subject::update(1, ['Email' => 'new@example.com']);
 
 /* Delete */
-$subject->delete();
+$subject->delete(1);
 ```
 
 ## Usage
@@ -265,6 +265,44 @@ $subject->update(['Email' => 'new@example.com']);
 
 /* Delete */
 $subject->delete();
+```
+
+### Batch Requests
+
+Execute multiple operations in a single HTTP request to reduce network overhead.
+
+**IMPORTANT:** Batch requests are NOT transactional. If Operation 2 fails, Operation 1 remains persisted.
+```php
+use Contoweb\AbacusApi\Facades\Abacus;
+
+/* Basic usage */
+$results = Abacus::batch(
+    Customer::findAsBatch(123),
+    Product::where('Price', 'gt', 100)->getAsBatch(),
+    Order::createAsBatch(['CustomerId' => 456, 'Total' => 99.99])
+)->send();
+
+/* Mixed CRUD operations */
+$results = Abacus::batch(
+    Customer::findAsBatch(100),
+    Order::createAsBatch(['CustomerId' => 200, 'Total' => 99.99]),
+    Customer::updateAsBatch(100, ['Status' => 'Active']),
+    Product::deleteAsBatch(999)
+)->send();
+
+/* Composite keys */
+$results = Abacus::batch(
+    StockBatch::findAsBatch(['BatchNumber' => '5436', 'ProductId' => 12276]),
+    StockBatch::updateAsBatch(
+        ['BatchNumber' => '5436', 'ProductId' => 12276],
+        ['Remark' => 'Updated']
+    )
+)->send();
+
+/* Filter successful results */
+$successfulModels = $results
+    ->filter(fn($result) => $result->isSuccess())
+    ->map(fn($result) => $result->getModel());
 ```
 
 ### Working Directly with the Service

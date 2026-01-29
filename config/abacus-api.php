@@ -14,8 +14,8 @@ return [
     'rest_api' => [
         'url'           => env('ABACUS_REST_API_URL', 'entity-api1-1.demo.abacus.ch'),
         'mandate'       => env('ABACUS_REST_API_MANDATE', '7777'),
-        'client_id'     => env('ABACUS_REST_API_CLIENT_ID', ''),
-        'client_secret' => env('ABACUS_REST_API_CLIENT_SECRET', ''),
+        'client_id'     => env('ABACUS_REST_API_CLIENT_ID'),
+        'client_secret' => env('ABACUS_REST_API_CLIENT_SECRET'),
         'version'       => env('ABACUS_REST_API_VERSION', 'v1'),
     ],
 
