@@ -116,4 +116,16 @@ class AbacusODataBatchQueryBuilder
 
         return new BatchRequestItem($this->modelClass, 'PATCH', $path, $data);
     }
+
+    /**
+     * Prepare a get operation and return the first result
+     *
+     * @return BatchRequestItem
+     */
+    public function first(): BatchRequestItem
+    {
+        $this->queryState->top(1);
+
+        return $this->get();
+    }
 }

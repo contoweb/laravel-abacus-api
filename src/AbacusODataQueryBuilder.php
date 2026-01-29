@@ -241,4 +241,20 @@ class AbacusODataQueryBuilder
             ->get($path)
             ->json();
     }
+
+    /**
+     * Execute query and return first result
+     *
+     * @return AbacusModel|null
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public function first(): ?AbacusModel
+    {
+        $this->queryState->top(1);
+
+        $results = $this->get();
+
+        return $results->first();
+    }
 }
