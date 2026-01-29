@@ -2,10 +2,10 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\Tests\TestCase;
-use Contoweb\AbacusApi\AbacusQueryBuilder;
+use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Models\AbacusModel;
+use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -15,6 +15,13 @@ class TestSubject extends AbacusModel
     protected static string $resource = 'Subjects';
 }
 
+/* Test model with composite primary key */
+class TestStockBatch extends AbacusModel
+{
+    protected static string $resource = 'stock-batches';
+    protected static string|array $primaryKey = ['BatchNumber', 'BatchSequenceNumber', 'ProductId', 'VariantId'];
+}
+
 class AbacusModelTest extends TestCase
 {
     protected function setUp(): void
@@ -22,7 +29,7 @@ class AbacusModelTest extends TestCase
         parent::setUp();
 
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -43,14 +50,14 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::query();
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
     public function it_finds_entity_by_id(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -91,7 +98,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::where('Name', 'eq', 'John');
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -99,7 +106,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::where('Age', ODataOperator::GREATER_THAN, 18);
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -107,7 +114,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::select(['Id', 'Name']);
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -115,7 +122,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::top(10);
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -123,7 +130,7 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::orderBy('Name', 'desc');
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
@@ -131,14 +138,14 @@ class AbacusModelTest extends TestCase
     {
         $query = TestSubject::expand(['Addresses', 'Contacts']);
 
-        $this->assertInstanceOf(AbacusQueryBuilder::class, $query);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
     }
 
     #[Test]
     public function it_creates_entity(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -160,101 +167,42 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
-    public function it_saves_new_entity(): void
+    public function it_updates_entity_with_static_method(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects' => Http::response([
-                'Id' => 200,
-                'Name' => 'Saved Subject',
-            ], 201),
-        ]);
-
-        $subject = new TestSubject(['Name' => 'Saved Subject']);
-        $result = $subject->save();
-
-        $this->assertInstanceOf(TestSubject::class, $result);
-        $this->assertEquals(200, $subject->Id);
-        $this->assertFalse($subject->isDirty());
-    }
-
-    #[Test]
-    public function it_saves_existing_entity_with_updates(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(50)' => Http::response([
-                'Id' => 50,
-                'Name' => 'Updated Name',
-                'Email' => 'old@example.com',
-            ], 200),
-        ]);
-
-        $subject = new TestSubject([
-            'Id' => 50,
-            'Name' => 'Old Name',
-            'Email' => 'old@example.com',
-        ]);
-
-        $subject->Name = 'Updated Name';
-        $subject->save();
-
-        $this->assertEquals('Updated Name', $subject->Name);
-        $this->assertFalse($subject->isDirty());
-    }
-
-    #[Test]
-    public function it_updates_entity_with_array(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*/api/entity/v1/mandants/test-mandate/Subjects(75)' => Http::response([
                 'Id' => 75,
-                'Name' => 'Array Updated',
-                'Email' => 'array@example.com',
+                'Name' => 'Updated Name',
+                'Email' => 'updated@example.com',
             ], 200),
         ]);
 
-        $subject = new TestSubject(['Id' => 75, 'Name' => 'Original']);
-        $subject->update(['Name' => 'Array Updated', 'Email' => 'array@example.com']);
+        $subject = TestSubject::update(75, ['Name' => 'Updated Name', 'Email' => 'updated@example.com']);
 
-        $this->assertEquals('Array Updated', $subject->Name);
-        $this->assertEquals('array@example.com', $subject->Email);
+        $this->assertInstanceOf(TestSubject::class, $subject);
+        $this->assertEquals('Updated Name', $subject->Name);
+        $this->assertEquals('updated@example.com', $subject->Email);
     }
 
     #[Test]
-    public function it_deletes_entity(): void
+    public function it_deletes_entity_with_static_method(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*/api/entity/v1/mandants/test-mandate/Subjects(42)' => Http::response(null, 204),
         ]);
 
-        $subject = new TestSubject(['Id' => 42, 'Name' => 'To Delete']);
-        $result = $subject->delete();
-
-        $this->assertTrue($result);
-    }
-
-    #[Test]
-    public function it_returns_false_when_deleting_without_id(): void
-    {
-        $subject = new TestSubject(['Name' => 'No ID']);
-        $result = $subject->delete();
-
-        $this->assertFalse($result);
+        TestSubject::delete(42);
+        
+        /* Delete returns void, just verify no exception */
+        $this->assertTrue(true);
     }
 
     #[Test]
@@ -297,91 +245,9 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
-    public function it_converts_to_json(): void
+    public function it_gets_resource_name(): void
     {
-        $subject = new TestSubject(['Id' => 1, 'Name' => 'Test']);
-        $json = $subject->toJson();
-
-        $this->assertJson($json);
-        $decoded = json_decode($json, true);
-        $this->assertEquals(1, $decoded['Id']);
-        $this->assertEquals('Test', $decoded['Name']);
-    }
-
-    #[Test]
-    public function it_detects_dirty_state(): void
-    {
-        $subject = new TestSubject(['Name' => 'Original']);
-
-        $this->assertFalse($subject->isDirty());
-
-        $subject->Name = 'Modified';
-
-        $this->assertTrue($subject->isDirty());
-        $this->assertTrue($subject->isDirty('Name'));
-    }
-
-    #[Test]
-    public function it_detects_dirty_specific_attribute(): void
-    {
-        $subject = new TestSubject(['Name' => 'Original', 'Email' => 'test@example.com']);
-
-        $subject->Name = 'Modified';
-
-        $this->assertTrue($subject->isDirty('Name'));
-        $this->assertFalse($subject->isDirty('Email'));
-    }
-
-    #[Test]
-    public function it_gets_dirty_attributes(): void
-    {
-        $subject = new TestSubject([
-            'Id' => 1,
-            'Name' => 'Original',
-            'Email' => 'original@example.com',
-        ]);
-
-        $subject->Name = 'Modified';
-        $subject->Email = 'modified@example.com';
-
-        $dirty = $subject->getDirty();
-
-        $this->assertArrayHasKey('Name', $dirty);
-        $this->assertArrayHasKey('Email', $dirty);
-        $this->assertArrayNotHasKey('Id', $dirty);
-        $this->assertEquals('Modified', $dirty['Name']);
-        $this->assertEquals('modified@example.com', $dirty['Email']);
-    }
-
-    #[Test]
-    public function it_refreshes_entity_from_api(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(42)' => Http::response([
-                'Id' => 42,
-                'Name' => 'Fresh Data',
-                'Email' => 'fresh@example.com',
-            ], 200),
-        ]);
-
-        $subject = new TestSubject(['Id' => 42, 'Name' => 'Stale']);
-        $fresh = $subject->fresh();
-
-        $this->assertInstanceOf(TestSubject::class, $fresh);
-        $this->assertEquals('Fresh Data', $fresh->Name);
-    }
-
-    #[Test]
-    public function it_returns_null_when_refreshing_without_id(): void
-    {
-        $subject = new TestSubject(['Name' => 'No ID']);
-        $fresh = $subject->fresh();
-
-        $this->assertNull($fresh);
+        $this->assertEquals('Subjects', TestSubject::getResource());
     }
 
     #[Test]
@@ -414,50 +280,10 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
-    public function it_gets_resource_name(): void
-    {
-        $this->assertEquals('Subjects', TestSubject::getResource());
-    }
-
-    #[Test]
-    public function it_saves_only_dirty_attributes(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(10)' => Http::response([
-                'Id' => 10,
-                'Name' => 'Updated',
-                'Email' => 'unchanged@example.com',
-            ], 200),
-        ]);
-
-        $subject = new TestSubject([
-            'Id' => 10,
-            'Name' => 'Original',
-            'Email' => 'unchanged@example.com',
-        ]);
-
-        $subject->Name = 'Updated';
-
-        /* Only Name should be sent to API */
-        $subject->save();
-
-        Http::assertSent(function ($request) {
-            $data = $request->data();
-            return isset($data['Name']) &&
-                   $data['Name'] === 'Updated' &&
-                   !isset($data['Email']); /* Email shouldn't be sent as it's not dirty */
-        });
-    }
-
-    #[Test]
     public function it_returns_model_instance_when_using_where_first(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -479,7 +305,7 @@ class AbacusModelTest extends TestCase
     public function it_returns_model_collection_when_using_where_get(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -498,5 +324,126 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(TestSubject::class, $subjects->last());
         $this->assertEquals('First', $subjects->first()->Name);
         $this->assertEquals('Second', $subjects->last()->Name);
+    }
+
+    #[Test]
+    public function it_detects_single_primary_key(): void
+    {
+        $this->assertEquals('Id', TestSubject::getPrimaryKey());
+        $this->assertTrue(TestSubject::hasSinglePrimaryKey());
+        $this->assertFalse(TestSubject::hasCompositePrimaryKey());
+    }
+
+    #[Test]
+    public function it_detects_composite_primary_key(): void
+    {
+        $this->assertEquals(
+            ['BatchNumber', 'BatchSequenceNumber', 'ProductId', 'VariantId'],
+            TestStockBatch::getPrimaryKey()
+        );
+        $this->assertFalse(TestStockBatch::hasSinglePrimaryKey());
+        $this->assertTrue(TestStockBatch::hasCompositePrimaryKey());
+    }
+
+    #[Test]
+    public function it_finds_entity_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            "*stock-batches(BatchNumber='123',BatchSequenceNumber=0,ProductId=456,VariantId=0)*" => Http::response([
+                'BatchNumber' => '123',
+                'BatchSequenceNumber' => 0,
+                'ProductId' => 456,
+                'VariantId' => 0,
+                'ExpirationDate1' => '2024-12-31',
+            ], 200),
+        ]);
+
+        $batch = TestStockBatch::find([
+            'BatchNumber' => '123',
+            'BatchSequenceNumber' => 0,
+            'ProductId' => 456,
+            'VariantId' => 0,
+        ]);
+
+        $this->assertInstanceOf(TestStockBatch::class, $batch);
+        $this->assertEquals('123', $batch->BatchNumber);
+        $this->assertEquals(456, $batch->ProductId);
+    }
+
+    #[Test]
+    public function it_updates_entity_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            "*stock-batches(BatchNumber='123',BatchSequenceNumber=0,ProductId=456,VariantId=0)*" => Http::response([
+                'BatchNumber' => '123',
+                'BatchSequenceNumber' => 0,
+                'ProductId' => 456,
+                'VariantId' => 0,
+                'Remark1' => 'Updated remark',
+            ], 200),
+        ]);
+
+        $batch = TestStockBatch::update(
+            [
+                'BatchNumber' => '123',
+                'BatchSequenceNumber' => 0,
+                'ProductId' => 456,
+                'VariantId' => 0,
+            ],
+            ['Remark1' => 'Updated remark']
+        );
+
+        $this->assertInstanceOf(TestStockBatch::class, $batch);
+        $this->assertEquals('Updated remark', $batch->Remark1);
+    }
+
+    #[Test]
+    public function it_deletes_entity_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            "*stock-batches(BatchNumber='123',BatchSequenceNumber=0,ProductId=456,VariantId=0)*" => Http::response(null, 204),
+        ]);
+
+        TestStockBatch::delete([
+            'BatchNumber' => '123',
+            'BatchSequenceNumber' => 0,
+            'ProductId' => 456,
+            'VariantId' => 0,
+        ]);
+        
+        /* Delete returns void, just verify no exception */
+        $this->assertTrue(true);
+    }
+
+    #[Test]
+    public function it_updates_with_select_chaining(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/test-mandate/Subjects(100)*' => Http::response([
+                'Id' => 100,
+                'Name' => 'Chained Update',
+            ], 200),
+        ]);
+
+        $subject = TestSubject::select(['Id', 'Name'])->update(100, ['Name' => 'Chained Update']);
+
+        $this->assertInstanceOf(TestSubject::class, $subject);
+        $this->assertEquals('Chained Update', $subject->Name);
     }
 }

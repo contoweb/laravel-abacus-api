@@ -3,13 +3,19 @@
 namespace Contoweb\AbacusApi\Tests;
 
 use Contoweb\AbacusApi\AbacusServiceProvider;
+use Contoweb\AbacusApi\Tests\Helpers\WithEncryption;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
+    use WithEncryption;
+
     protected function setUp(): void
     {
         parent::setUp();
+        
+        /* Set up encryption for all tests */
+        $this->setUpEncryption();
     }
 
     protected function getPackageProviders($app): array

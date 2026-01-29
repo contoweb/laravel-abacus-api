@@ -3,159 +3,400 @@
 namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\Tests\TestCase;
-use Contoweb\AbacusApi\AbacusClient;
+use Contoweb\AbacusApi\AbacusODataClient;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
 class AbacusClientTest extends TestCase
 {
-    protected AbacusClient $client;
+    protected AbacusODataClient $client;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->client = new AbacusClient();
+        Cache::flush();
+        $this->client = new AbacusODataClient();
     }
 
     #[Test]
-    public function it_builds_entity_path(): void
+    public function it_constructs_with_config_values(): void
     {
-        $path = $this->client->entityPath('Subjects');
+        $client = new AbacusODataClient();
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects', $path);
+        $this->assertEquals('https://api.example.com', $client->getUrl());
+        $this->assertEquals('test-mandate', $client->getMandate());
     }
 
     #[Test]
-    public function it_builds_entity_path_with_id(): void
+    public function it_constructs_with_custom_values(): void
     {
-        $path = $this->client->entityPathWithId('Subjects', 123);
+        $client = new AbacusODataClient(
+            'https://custom-api.example.com',
+            'custom-mandate',
+            'custom-client-id',
+            'custom-secret',
+            '/custom/token'
+        );
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects(123)', $path);
+        $this->assertEquals('https://custom-api.example.com', $client->getUrl());
+        $this->assertEquals('custom-mandate', $client->getMandate());
     }
 
     #[Test]
-    public function it_builds_entity_path_with_string_id(): void
+    public function it_prepends_https_to_base_url_if_missing(): void
     {
-        $path = $this->client->entityPathWithId('Users', 'abc-def');
+        $client = new AbacusODataClient('api.example.com');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Users(abc-def)', $path);
+        $this->assertEquals('https://api.example.com', $client->getUrl());
     }
 
     #[Test]
-    public function it_builds_entity_property_path(): void
+    public function it_does_not_prepend_https_if_already_present(): void
     {
-        $path = $this->client->entityPropertyPath('Subjects', 123, 'Name');
+        $client = new AbacusODataClient('https://api.example.com');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects(123)/Name', $path);
+        $this->assertEquals('https://api.example.com', $client->getUrl());
     }
 
     #[Test]
-    public function it_builds_metadata_path(): void
+    public function it_respects_http_protocol(): void
     {
-        $path = $this->client->metadataPath();
+        $client = new AbacusODataClient('http://api.example.com');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/$metadata', $path);
+        $this->assertEquals('http://api.example.com', $client->getUrl());
     }
 
     #[Test]
-    public function it_builds_entities_list_path(): void
+    public function it_fetches_fresh_access_token(): void
     {
-        $path = $this->client->entitiesPath();
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'test-token-12345',
+                'expires_in' => 3600,
+                'token_type' => 'Bearer',
+            ], 200),
+        ]);
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/', $path);
+        /* Use reflection to call protected method */
+        $reflection = new \ReflectionClass($this->client);
+        $method = $reflection->getMethod('fetchFreshAccessToken');
+        $method->setAccessible(true);
+
+        $token = $method->invoke($this->client);
+
+        $this->assertEquals('test-token-12345', $token);
     }
 
     #[Test]
-    public function it_follows_next_link_for_pagination(): void
+    public function it_caches_access_token_with_buffer(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'cached-token',
+                'expires_in' => 3600,
+            ], 200),
+        ]);
+
+        $reflection = new \ReflectionClass($this->client);
+        $method = $reflection->getMethod('fetchFreshAccessToken');
+        $method->setAccessible(true);
+
+        $method->invoke($this->client);
+
+        /* Check cache key method */
+        $cacheKeyMethod = $reflection->getMethod('getCacheKey');
+        $cacheKeyMethod->setAccessible(true);
+        $cacheKey = $cacheKeyMethod->invoke($this->client);
+
+        $cachedEncryptedToken = Cache::get($cacheKey);
+        $cachedToken = decrypt($cachedEncryptedToken);
+        $this->assertEquals('cached-token', $cachedToken);
+    }
+
+    #[Test]
+    public function it_throws_exception_when_token_fetch_fails(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([], 401),
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Cannot fetch access token from API.');
+
+        $reflection = new \ReflectionClass($this->client);
+        $method = $reflection->getMethod('fetchFreshAccessToken');
+        $method->setAccessible(true);
+
+        $method->invoke($this->client);
+    }
+
+    #[Test]
+    public function it_throws_exception_when_access_token_missing_in_response(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'expires_in' => 3600,
+            ], 200),
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Cannot fetch access token from API.');
+
+        $reflection = new \ReflectionClass($this->client);
+        $method = $reflection->getMethod('fetchFreshAccessToken');
+        $method->setAccessible(true);
+
+        $method->invoke($this->client);
+    }
+
+    #[Test]
+    public function it_reuses_cached_access_token(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'initial-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*' => Http::response(['value' => []], 200),
+        ]);
+
+        /* First call fetches token */
+        $this->client->get('/api/entities');
+
+        Http::assertSentCount(2); /* Token + API call */
+
+        /* Second call reuses cached token */
+        $this->client->get('/api/entities');
+
+        Http::assertSentCount(3); /* No additional token request */
+    }
+
+    #[Test]
+    public function it_performs_get_request(): void
     {
         Http::fake([
             '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            'https://api.example.com/api/entity/v1/mandants/test-mandate/Subjects?$skip=100' => Http::response([
+            '*/api/entities*' => Http::response([
                 'value' => [
-                    ['Id' => 101, 'Name' => 'Subject 101'],
-                    ['Id' => 102, 'Name' => 'Subject 102'],
+                    ['Id' => 1, 'Name' => 'Test'],
                 ],
             ], 200),
         ]);
 
-        $nextLinkUrl = 'https://api.example.com/api/entity/v1/mandants/test-mandate/Subjects?$skip=100';
-        $response = $this->client->getNextLink($nextLinkUrl);
+        $response = $this->client->get('/api/entities', ['$top' => 10]);
 
         $this->assertEquals(200, $response->status());
-        $this->assertCount(2, $response->json('value'));
+        $this->assertEquals([['Id' => 1, 'Name' => 'Test']], $response->json('value'));
 
-        Http::assertSent(function (Request $request) use ($nextLinkUrl) {
-            return $request->url() === $nextLinkUrl &&
-                   $request->hasHeader('Authorization');
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://api.example.com/api/entities?%24top=10' &&
+                   $request->hasHeader('Authorization', 'Bearer test-token');
         });
     }
 
     #[Test]
-    public function it_refreshes_token_on_next_link_401(): void
+    public function it_performs_post_request(): void
     {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities' => Http::response([
+                'Id' => 1,
+                'Name' => 'Created Entity',
+            ], 201),
+        ]);
+
+        $response = $this->client->post('/api/entities', ['Name' => 'Created Entity']);
+
+        $this->assertEquals(201, $response->status());
+        $this->assertEquals('Created Entity', $response->json('Name'));
+
+        Http::assertSent(function (Request $request) {
+            return $request->method() === 'POST' &&
+                   $request->data() === ['Name' => 'Created Entity'];
+        });
+    }
+
+    #[Test]
+    public function it_performs_patch_request(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities/1' => Http::response([
+                'Id' => 1,
+                'Name' => 'Updated Entity',
+            ], 200),
+        ]);
+
+        $response = $this->client->patch('/api/entities/1', ['Name' => 'Updated Entity']);
+
+        $this->assertEquals(200, $response->status());
+
+        Http::assertSent(function (Request $request) {
+            return $request->method() === 'PATCH' &&
+                   $request->data() === ['Name' => 'Updated Entity'];
+        });
+    }
+
+    #[Test]
+    public function it_performs_put_request(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities/1' => Http::response([
+                'Id' => 1,
+                'Name' => 'Replaced Entity',
+            ], 200),
+        ]);
+
+        $response = $this->client->put('/api/entities/1', ['Name' => 'Replaced Entity']);
+
+        $this->assertEquals(200, $response->status());
+
+        Http::assertSent(function (Request $request) {
+            return $request->method() === 'PUT';
+        });
+    }
+
+    #[Test]
+    public function it_performs_delete_request(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities/1' => Http::response(null, 204),
+        ]);
+
+        $response = $this->client->delete('/api/entities/1');
+
+        $this->assertEquals(204, $response->status());
+
+        Http::assertSent(function (Request $request) {
+            return $request->method() === 'DELETE' &&
+                   str_contains($request->url(), '/api/entities/1');
+        });
+    }
+
+    #[Test]
+    public function it_refreshes_token_on_401_response(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::sequence()
+                ->push(['access_token' => 'initial-token', 'expires_in' => 3600], 200)
+                ->push(['access_token' => 'refreshed-token', 'expires_in' => 3600], 200),
+            '*/api/entities' => Http::sequence()
+                ->push(['error' => 'Unauthorized'], 401)
+                ->push(['value' => []], 200),
+        ]);
+
+        $response = $this->client->get('/api/entities');
+
+        $this->assertEquals(200, $response->status());
+
+        /* Should have: 1st token request, 401 response, 2nd token request, success response */
+        Http::assertSentCount(4);
+    }
+
+    #[Test]
+    public function it_clears_cache_on_401_response(): void
+    {
+        /* Get cache key first */
+        $reflection = new \ReflectionClass($this->client);
+        $cacheKeyMethod = $reflection->getMethod('getCacheKey');
+        $cacheKeyMethod->setAccessible(true);
+        $cacheKey = $cacheKeyMethod->invoke($this->client);
+
+        /* Manually cache an old token */
+        $oldExpiredToken = 'old-expired-token';
+        $oldEncryptedToken = encrypt($oldExpiredToken);
+        Cache::put($cacheKey, $oldEncryptedToken, 3600);
+
         Http::fake([
             '*/oauth/oauth2/v1/token'=> Http::response([
                 'access_token' => 'refreshed-token',
                 'expires_in' => 3600,
             ], 200),
-            'https://api.example.com/next-page*' => Http::sequence()
+            '*/api/entities' => Http::sequence()
                 ->push(['error' => 'Unauthorized'], 401)
                 ->push(['value' => []], 200),
         ]);
 
-        $response = $this->client->getNextLink('https://api.example.com/next-page');
+        $response = $this->client->get('/api/entities');
 
         $this->assertEquals(200, $response->status());
+
+        /* Verify cache was cleared and updated */
+        $encryptedCachedToken = Cache::get($cacheKey);
+        $cachedToken = decrypt($encryptedCachedToken);
+        $this->assertEquals('refreshed-token', $cachedToken);
     }
 
     #[Test]
-    public function it_uses_correct_mandate_in_paths(): void
+    public function it_throws_exception_on_request_failure(): void
     {
-        $customClient = new AbacusClient(
-            'https://api.example.com',
-            'custom-mandate-123'
-        );
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities' => Http::response(['error' => 'Bad Request'], 400),
+        ]);
 
-        $path = $customClient->entityPath('Invoices');
+        $this->expectException(RequestException::class);
 
-        $this->assertEquals('/api/entity/v1/mandants/custom-mandate-123/Invoices', $path);
+        $this->client->get('/api/entities');
     }
 
     #[Test]
-    public function it_builds_paths_with_special_characters(): void
+    public function it_includes_accept_json_header(): void
     {
-        $path = $this->client->entityPath('Special/Resource');
+        Http::fake([
+            '*/oauth/oauth2/v1/token'=> Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*' => Http::response(['value' => []], 200),
+        ]);
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Special/Resource', $path);
+        $this->client->get('/api/entities');
+
+        Http::assertSent(function (Request $request) {
+            return $request->hasHeader('Accept', 'application/json');
+        });
     }
 
     #[Test]
-    public function it_builds_path_with_numeric_id(): void
+    public function it_generates_unique_cache_key(): void
     {
-        $path = $this->client->entityPathWithId('Orders', 99999);
+        $client1 = new AbacusODataClient('https://api1.example.com', 'mandate1', 'client1');
+        $client2 = new AbacusODataClient('https://api2.example.com', 'mandate2', 'client2');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Orders(99999)', $path);
-    }
+        $reflection = new \ReflectionClass($client1);
+        $method = $reflection->getMethod('getCacheKey');
+        $method->setAccessible(true);
 
-    #[Test]
-    public function it_builds_path_with_guid_id(): void
-    {
-        $guid = '550e8400-e29b-41d4-a716-446655440000';
-        $path = $this->client->entityPathWithId('Documents', $guid);
+        $key1 = $method->invoke($client1);
+        $key2 = $method->invoke($client2);
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Documents(550e8400-e29b-41d4-a716-446655440000)', $path);
-    }
-
-    #[Test]
-    public function it_builds_property_path_with_nested_property(): void
-    {
-        $path = $this->client->entityPropertyPath('Subjects', 42, 'Address/City');
-
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects(42)/Address/City', $path);
+        $this->assertNotEquals($key1, $key2);
+        $this->assertStringStartsWith('abacus_access_token:', $key1);
+        $this->assertStringStartsWith('abacus_access_token:', $key2);
     }
 }

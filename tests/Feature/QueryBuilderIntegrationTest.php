@@ -2,98 +2,89 @@
 
 namespace Contoweb\AbacusApi\Tests\Feature;
 
-use Contoweb\AbacusApi\Tests\TestCase;
-use Contoweb\AbacusApi\AbacusClient;
-use Contoweb\AbacusApi\AbacusQueryBuilder;
-use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
+use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
 class QueryBuilderIntegrationTest extends TestCase
 {
-    protected AbacusService $service;
-
     protected function setUp(): void
     {
         parent::setUp();
-
-        $client = new AbacusClient();
-        $this->service = new AbacusService($client);
     }
 
     #[Test]
     public function it_executes_complex_filtered_query(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*' => Http::response([
                 'value' => [
-                    ['Id' => 1, 'Name' => 'John Doe', 'Age' => 25, 'IsActive' => true],
-                    ['Id' => 2, 'Name' => 'Jane Smith', 'Age' => 30, 'IsActive' => true],
+                    ['Id' => 1, 'FirstName' => 'John', 'LastName' => 'Doe', 'Age' => 25, 'IsActive' => true],
+                    ['Id' => 2, 'FirstName' => 'Jane', 'LastName' => 'Smith', 'Age' => 30, 'IsActive' => true],
                 ],
             ], 200),
         ]);
 
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $results = $builder
-            ->where('IsActive', ODataOperator::EQUALS, true)
+        $results = TestSubject::where('IsActive', ODataOperator::EQUALS, true)
             ->where('Age', ODataOperator::GREATER_THAN, 18)
-            ->select('Id', 'Name', 'Age')
-            ->orderBy('Name', 'asc')
+            ->select(['Id', 'FirstName', 'LastName', 'Age'])
+            ->orderBy('FirstName', 'asc')
             ->top(10)
-            ->getFirstPage();
+            ->get();
 
         $this->assertCount(2, $results);
-        $this->assertEquals('John Doe', $results[0]['Name']);
+        $this->assertEquals('John', $results[0]->FirstName);
+        $this->assertEquals(25, $results[0]->Age);
     }
 
     #[Test]
     public function it_follows_pagination_automatically(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
                 'value' => [
-                    ['Id' => 1, 'Name' => 'Item 1'],
-                    ['Id' => 2, 'Name' => 'Item 2'],
+                    ['Id' => 1, 'FirstName' => 'Item 1'],
+                    ['Id' => 2, 'FirstName' => 'Item 2'],
                 ],
                 '@odata.nextLink' => 'https://api.example.com/page2',
             ], 200),
             'https://api.example.com/page2' => Http::response([
                 'value' => [
-                    ['Id' => 3, 'Name' => 'Item 3'],
-                    ['Id' => 4, 'Name' => 'Item 4'],
+                    ['Id' => 3, 'FirstName' => 'Item 3'],
+                    ['Id' => 4, 'FirstName' => 'Item 4'],
                 ],
                 '@odata.nextLink' => 'https://api.example.com/page3',
             ], 200),
             'https://api.example.com/page3' => Http::response([
                 'value' => [
-                    ['Id' => 5, 'Name' => 'Item 5'],
+                    ['Id' => 5, 'FirstName' => 'Item 5'],
                 ],
             ], 200),
         ]);
 
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $results = $builder->get();
+        $results = TestSubject::cursor()->pages(10)->get();
 
         /* Should automatically fetch all 3 pages */
         $this->assertCount(5, $results);
-        $this->assertEquals('Item 1', $results[0]['Name']);
-        $this->assertEquals('Item 5', $results[4]['Name']);
+        $this->assertEquals('Item 1', $results[0]->FirstName);
+        $this->assertEquals('Item 5', $results[4]->FirstName);
     }
 
     #[Test]
     public function it_executes_query_with_expand(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -101,7 +92,7 @@ class QueryBuilderIntegrationTest extends TestCase
                 'value' => [
                     [
                         'Id' => 1,
-                        'Name' => 'Subject',
+                        'FirstName' => 'Subject',
                         'Addresses' => [
                             ['Street' => '123 Main St', 'City' => 'Springfield'],
                         ],
@@ -113,44 +104,40 @@ class QueryBuilderIntegrationTest extends TestCase
             ], 200),
         ]);
 
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $results = $builder
-            ->expand('Addresses', 'Contacts')
-            ->getFirstPage();
+        $results = TestSubject::expand(['Addresses', 'Contacts'])->get();
 
         $this->assertCount(1, $results);
-        $this->assertArrayHasKey('Addresses', $results[0]);
-        $this->assertArrayHasKey('Contacts', $results[0]);
+        $this->assertIsArray($results[0]->Addresses);
+        $this->assertIsArray($results[0]->Contacts);
+        $this->assertEquals('123 Main St', $results[0]->Addresses[0]['Street']);
     }
 
     #[Test]
     public function it_chains_multiple_conditions(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*' => Http::response([
                 'value' => [
-                    ['Id' => 1, 'Name' => 'Match', 'Age' => 25, 'Status' => 'Active', 'Score' => 85],
+                    ['Id' => 1, 'FirstName' => 'Match', 'Age' => 25, 'Status' => 'Active', 'Score' => 85],
                 ],
             ], 200),
         ]);
 
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $results = $builder
-            ->where('Status', 'eq', 'Active')
+        $results = TestSubject::where('Status', 'eq', 'Active')
             ->where('Age', 'ge', 21)
             ->where('Age', 'le', 65)
             ->where('Score', 'gt', 80)
-            ->select('Id', 'Name', 'Age', 'Status', 'Score')
+            ->select(['Id', 'FirstName', 'Age', 'Status', 'Score'])
             ->orderBy('Score', 'desc')
             ->top(5)
-            ->getFirstPage();
+            ->get();
 
         $this->assertCount(1, $results);
-        $this->assertEquals('Match', $results[0]['Name']);
+        $this->assertEquals('Match', $results[0]->FirstName);
 
         Http::assertSent(function ($request) {
             $url = $request->url();
@@ -166,25 +153,23 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_handles_first_result(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*' => Http::response([
                 'value' => [
-                    ['Id' => 42, 'Name' => 'First Item'],
+                    ['Id' => 42, 'FirstName' => 'First Item'],
                 ],
             ], 200),
         ]);
 
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $result = $builder
-            ->where('IsActive', 'eq', true)
+        $result = TestSubject::where('IsActive', 'eq', true)
             ->orderBy('CreatedAt', 'desc')
             ->first();
 
-        $this->assertIsArray($result);
-        $this->assertEquals('First Item', $result['Name']);
+        $this->assertInstanceOf(TestSubject::class, $result);
+        $this->assertEquals('First Item', $result->FirstName);
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), '%24top=1');
@@ -195,92 +180,40 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_handles_find_by_id(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(123)' => Http::response([
+            '*/api/entity/v1/mandants/test-mandate/Subjects(123)*' => Http::response([
                 'Id' => 123,
-                'Name' => 'Found by ID',
+                'FirstName' => 'Found',
+                'LastName' => 'ByID',
                 'Email' => 'found@example.com',
             ], 200),
         ]);
 
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $result = $builder->find(123);
+        $result = TestSubject::find(123);
 
-        $this->assertEquals(123, $result['Id']);
-        $this->assertEquals('Found by ID', $result['Name']);
-    }
-
-    #[Test]
-    public function it_handles_different_output_formats(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*' => Http::response([
-                'value' => [['Id' => 1]],
-            ], 200),
-        ]);
-
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $results = $builder
-            ->format('xml')
-            ->getFirstPage();
-
-        Http::assertSent(function ($request) {
-            return str_contains($request->url(), '%24format=xml');
-        });
-    }
-
-    #[Test]
-    public function it_builds_query_without_execution(): void
-    {
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $query = $builder
-            ->where('Status', 'eq', 'Active')
-            ->where('Age', 'gt', 18)
-            ->select('Id', 'Name', 'Email')
-            ->orderBy('Name', 'asc')
-            ->top(50)
-            ->expand('Addresses')
-            ->toODataQuery();
-
-        $this->assertArrayHasKey('$filter', $query);
-        $this->assertArrayHasKey('$select', $query);
-        $this->assertArrayHasKey('$orderby', $query);
-        $this->assertArrayHasKey('$top', $query);
-        $this->assertArrayHasKey('$expand', $query);
-
-        $this->assertStringContainsString("Status eq 'Active'", $query['$filter']);
-        $this->assertEquals('Id,Name,Email', $query['$select']);
-        $this->assertEquals('Name asc', $query['$orderby']);
-        $this->assertEquals(50, $query['$top']);
-        $this->assertEquals('Addresses', $query['$expand']);
+        $this->assertEquals(123, $result->Id);
+        $this->assertEquals('Found', $result->FirstName);
     }
 
     #[Test]
     public function it_handles_special_characters_in_values(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*' => Http::response([
                 'value' => [
-                    ['Id' => 1, 'Name' => "O'Brien"],
+                    ['Id' => 1, 'FirstName' => "O'Brien"],
                 ],
             ], 200),
         ]);
 
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $results = $builder
-            ->where('Name', 'eq', "O'Brien")
-            ->getFirstPage();
+        $results = TestSubject::where('FirstName', 'eq', "O'Brien")->get();
 
         Http::assertSent(function ($request) {
             /* Single quotes should be escaped as double single quotes and URL encoded */
@@ -292,29 +225,70 @@ class QueryBuilderIntegrationTest extends TestCase
     public function it_handles_multiple_select_and_expand_calls(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*' => Http::response(['value' => []], 200),
         ]);
 
-        $builder = new AbacusQueryBuilder($this->service, 'Subjects');
-        $builder
-            ->select('Id', 'Name')
+        TestSubject::select(['Id', 'FirstName'])
             ->select('Email')
             ->expand('Addresses')
-            ->expand('Contacts', 'Orders')
-            ->getFirstPage();
+            ->expand(['Contacts', 'Orders'])
+            ->get();
 
         Http::assertSent(function ($request) {
             $url = $request->url();
             return str_contains($url, '%24select=Id') &&
-                   str_contains($url, 'Name') &&
+                   str_contains($url, 'FirstName') &&
                    str_contains($url, 'Email') &&
                    str_contains($url, '%24expand=Addresses') &&
                    str_contains($url, 'Contacts') &&
                    str_contains($url, 'Orders');
         });
+    }
+
+    #[Test]
+    public function it_handles_cursor_pagination_with_callback(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
+                'value' => [
+                    ['Id' => 1, 'FirstName' => 'Page1'],
+                    ['Id' => 2, 'FirstName' => 'Page1'],
+                ],
+                '@odata.nextLink' => 'https://api.example.com/page2',
+            ], 200),
+            'https://api.example.com/page2' => Http::response([
+                'value' => [
+                    ['Id' => 3, 'FirstName' => 'Page2'],
+                ],
+            ], 200),
+        ]);
+
+        $processedPages = [];
+
+        TestSubject::pages(10)
+            ->cursorWithCallback(function ($items, $pageNumber) use (&$processedPages) {
+                $processedPages[] = [
+                    'page' => $pageNumber,
+                    'count' => $items->count(),
+                    'first_name' => $items->first()->FirstName,
+                ];
+            })
+            ->get();
+
+        $this->assertCount(2, $processedPages);
+        $this->assertEquals(1, $processedPages[0]['page']);
+        $this->assertEquals(2, $processedPages[0]['count']);
+        $this->assertEquals('Page1', $processedPages[0]['first_name']);
+        $this->assertEquals(2, $processedPages[1]['page']);
+        $this->assertEquals(1, $processedPages[1]['count']);
+        $this->assertEquals('Page2', $processedPages[1]['first_name']);
     }
 }

@@ -7,13 +7,14 @@ Laravel package for the Abacus REST API with OData support and Eloquent-like mod
 
 ## Features
 
-✅ **Eloquent-like API** - Familiar Laravel syntax
-✅ **OData Support** - Filter, Select, OrderBy, Top, Expand
-✅ **Type-Safe** - Full PHPDoc support
-✅ **IDE Autocomplete** - Automatic IDE Helper generation
-✅ **CRUD Operations** - Create, Read, Update, Delete
-✅ **Query Builder** - Fluent interface for complex queries
-✅ **Testable** - Easy mocking with Laravel HTTP Fake
+- **Eloquent-like API** - Familiar Laravel syntax
+- **OData Support** - Filter, Select, OrderBy, Top, Expand
+- **Type-Safe** - Full PHPDoc support
+- **IDE Autocomplete** - Automatic IDE Helper generation
+- **CRUD Operations** - Create, Read, Update, Delete
+- **Batch Requests** - Multiple operations in a single HTTP request
+- **Query Builder** - Fluent interface for complex queries
+- **Testable** - Easy mocking with Laravel HTTP Fake
 
 ## Installation
 
@@ -145,14 +146,55 @@ $subject = Subject::create([
 ]);
 
 /* Update */
-$subject->Email = 'new@example.com';
-$subject->save();
+Subject::update(1, ['Email' => 'new@example.com']);
 
 /* Delete */
-$subject->delete();
+$subject->delete(1);
 ```
 
 ## Usage
+
+### Cursor Pagination
+
+Handle large datasets efficiently using OData's `@odata.nextLink` pagination:
+
+```php
+/* Basic cursor pagination - loads all pages into memory */
+$subjects = Subject::cursor()
+    ->pages(100)  // Max 100 pages
+    ->get();
+
+/* Process items page-by-page without loading everything into memory */
+Subject::pages(100)
+    ->cursorWithCallback(function($items, $pageNumber) {
+        // Process each page as it's loaded
+        foreach ($items as $item) {
+            DB::table('processed')->insert([
+                'item_id' => $item->Id,
+                'processed_at' => now(),
+            ]);
+        }
+        
+        Log::info("Processed page {$pageNumber}: {$items->count()} items");
+    })
+    ->get();
+```
+
+**When to use `cursorWithCallback()`:**
+- Processing large datasets (10,000+ records)
+- Memory-intensive operations
+- Long-running batch jobs
+- Real-time progress logging
+
+**Note:** `cursorWithCallback()` automatically enables cursor pagination, so calling `cursor()` is optional.
+
+**Configuration:**
+```php
+// config/abacus-api.php
+'query_builder' => [
+    'max_next_link_page_resolving' => 5  // Default page limit
+]
+```
 
 ### Query Builder
 
@@ -174,15 +216,31 @@ Subject::orderBy('LastName', 'desc')
 Subject::top(10)->get();
 
 /* Expand Navigation Properties */
-Subject::with('Addresses')->get();
+Subject::expand('Addresses')->get();
 
 /* Combined */
 Subject::where('City', 'eq', 'Zürich')
     ->select(['FirstName', 'LastName', 'Email'])
     ->orderBy('LastName', 'asc')
-    ->with('Addresses')
+    ->expand('Addresses')
     ->top(5)
     ->get();
+
+/* Cursor Pagination - Process large datasets page by page */
+Subject::pages(100)
+    ->cursorWithCallback(function($items, $pageNumber) {
+        foreach ($items as $subject) {
+            // Process each item immediately
+            $this->processSubject($subject);
+        }
+        Log::info("Processed page {$pageNumber} with {$items->count()} subjects");
+    })
+    ->get();
+
+/* Cursor Pagination - Load all pages into memory */
+Subject::cursor()
+    ->pages(50)
+    ->get(); // Returns Collection of all items
 ```
 
 ### CRUD Operations
@@ -207,6 +265,44 @@ $subject->update(['Email' => 'new@example.com']);
 
 /* Delete */
 $subject->delete();
+```
+
+### Batch Requests
+
+Execute multiple operations in a single HTTP request to reduce network overhead.
+
+**IMPORTANT:** Batch requests are NOT transactional. If Operation 2 fails, Operation 1 remains persisted.
+```php
+use Contoweb\AbacusApi\Facades\Abacus;
+
+/* Basic usage */
+$results = Abacus::batch(
+    Customer::batch()->find(123),
+    Product::batch()->where('Price', 'gt', 100)->get(),
+    Order::batch()->create(['CustomerId' => 456, 'Total' => 99.99])
+)->send();
+
+/* Mixed CRUD operations */
+$results = Abacus::batch(
+    Customer::batch()->find(100),
+    Order::batch()->create(['CustomerId' => 200, 'Total' => 99.99]),
+    Customer::batch()->update(100, ['Status' => 'Active']),
+    Product::batch()->delete(999)
+)->send();
+
+/* Composite keys */
+$results = Abacus::batch(
+    StockBatch::batch()->find(['BatchNumber' => '5436', 'ProductId' => 12276]),
+    StockBatch::batch()->update(
+        ['BatchNumber' => '5436', 'ProductId' => 12276],
+        ['Remark' => 'Updated']
+    )
+)->send();
+
+/* Filter successful results */
+$successfulModels = $results
+    ->filter(fn($result) => $result->isSuccess())
+    ->map(fn($result) => $result->getModel());
 ```
 
 ### Working Directly with the Service

@@ -2,129 +2,17 @@
 
 namespace Contoweb\AbacusApi;
 
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
+use Contoweb\AbacusApi\Batch\BatchRequest;
 use Illuminate\Support\Facades\Cache;
 
 class AbacusService
 {
-    protected AbacusClient $client;
+    protected AbacusODataClient $client;
 
-    public function __construct(AbacusClient $client)
+    public function __construct(AbacusODataClient $client)
     {
         $this->client = $client;
-    }
-
-    /**
-     * List of entities with query parameters
-     * GET /api/entity/v1/mandants/{mandate}/Subjects
-     */
-    public function query(string $resource, array $odataParams = []): array
-    {
-        $path = $this->client->entityPath($resource);
-
-        return $this->client
-            ->get($path, $odataParams)
-            ->json();
-    }
-
-    /**
-     * Query with complete response including metadata (@odata.nextLink, etc.)
-     * Useful for pagination
-     */
-    public function queryWithMetadata(string $resource, array $odataParams = []): array
-    {
-        $path = $this->client->entityPath($resource);
-
-        return $this->client
-            ->get($path, $odataParams)
-            ->json();
-    }
-
-    /**
-     * Fetch next page via @odata.nextLink
-     */
-    public function getNextPage(string $nextLink): array
-    {
-        return $this->client
-            ->getNextLink($nextLink)
-            ->json();
-    }
-
-    /**
-     * Specific entity via primary key
-     * GET /api/entity/v1/mandants/{mandate}/Subjects(2)
-     */
-    public function find(string $resource, mixed $id, array $odataParams = []): array
-    {
-        $path = $this->client->entityPathWithId($resource, $id);
-
-        return $this->client
-            ->get($path, $odataParams)
-            ->json();
-    }
-
-    /**
-     * Specific property of an entity
-     * GET /api/entity/v1/mandants/{mandate}/Subjects(2)/LastName
-     */
-    public function findProperty(string $resource, mixed $id, string $property): mixed
-    {
-        $path = $this->client->entityPropertyPath($resource, $id, $property);
-
-        return $this->client
-            ->get($path)
-            ->json();
-    }
-
-    /**
-     * Create entity
-     * POST /api/entity/v1/mandants/{mandate}/Subjects
-     */
-    public function create(string $resource, array $data): array
-    {
-        $path = $this->client->entityPath($resource);
-
-        return $this->client
-            ->post($path, $data)
-            ->json();
-    }
-
-    /**
-     * Update entity (PATCH)
-     * PATCH /api/entity/v1/mandants/{mandate}/Subjects(2)
-     */
-    public function update(string $resource, mixed $id, array $data): array
-    {
-        $path = $this->client->entityPathWithId($resource, $id);
-
-        return $this->client
-            ->patch($path, $data)
-            ->json();
-    }
-
-    /**
-     * Replace entity completely (PUT)
-     * PUT /api/entity/v1/mandants/{mandate}/Subjects(2)
-     */
-    public function replace(string $resource, mixed $id, array $data): array
-    {
-        $path = $this->client->entityPathWithId($resource, $id);
-
-        return $this->client
-            ->put($path, $data)
-            ->json();
-    }
-
-    /**
-     * Delete entity
-     * DELETE /api/entity/v1/mandants/{mandate}/Subjects(2)
-     */
-    public function delete(string $resource, mixed $id): bool
-    {
-        $path = $this->client->entityPathWithId($resource, $id);
-
-        $this->client->delete($path);
-
-        return true;
     }
 
     /**
@@ -155,5 +43,16 @@ class AbacusService
                 ->get($path)
                 ->body();
         });
+    }
+
+    /**
+     * Create a new batch request
+     *
+     * @param BatchRequestItem ...$requests
+     * @return BatchRequest
+     */
+    public function batch(BatchRequestItem ...$requests): BatchRequest
+    {
+        return new BatchRequest($this->client, ...$requests);
     }
 }

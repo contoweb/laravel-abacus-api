@@ -2,9 +2,9 @@
 
 namespace Contoweb\AbacusApi\Tests\Feature;
 
-use Contoweb\AbacusApi\Tests\TestCase;
-use Contoweb\AbacusApi\AbacusClient;
 use Contoweb\AbacusApi\AbacusService;
+use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
+use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -16,171 +16,224 @@ class AbacusServiceIntegrationTest extends TestCase
     {
         parent::setUp();
 
-        $client = new AbacusClient();
-        $this->service = new AbacusService($client);
+        $this->service = app(AbacusService::class);
     }
 
     #[Test]
-    public function it_performs_complete_crud_workflow(): void
+    public function it_performs_complete_crud_workflow_with_models(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             /* Create */
             '*/api/entity/v1/mandants/test-mandate/Subjects' => Http::response([
                 'Id' => 100,
-                'Name' => 'Integration Test',
-                'Email' => 'integration@test.com',
+                'FirstName' => 'John',
+                'LastName' => 'Doe',
+                'Email' => 'john@example.com',
             ], 201),
             /* Read, Update, Delete - use sequence for same URL */
-            '*/api/entity/v1/mandants/test-mandate/Subjects(100)' => Http::sequence()
-                ->push(['Id' => 100, 'Name' => 'Integration Test', 'Email' => 'integration@test.com'], 200) /* Read */
-                ->push(['Id' => 100, 'Name' => 'Updated Name', 'Email' => 'integration@test.com'], 200)      /* Update */
-                ->push(null, 204),                                                                              /* Delete */
+            '*/api/entity/v1/mandants/test-mandate/Subjects(100)*' => Http::sequence()
+                ->push(['Id' => 100, 'FirstName' => 'John', 'LastName' => 'Doe'], 200)     /* Read */
+                ->push(['Id' => 100, 'FirstName' => 'Jane', 'LastName' => 'Doe'], 200)     /* Update */
+                ->push(null, 204),                                                            /* Delete */
         ]);
 
         /* Create */
-        $created = $this->service->create('Subjects', [
-            'Name' => 'Integration Test',
-            'Email' => 'integration@test.com',
+        $created = TestSubject::create([
+            'FirstName' => 'John',
+            'LastName' => 'Doe',
+            'Email' => 'john@example.com',
         ]);
-        $this->assertEquals(100, $created['Id']);
+        $this->assertEquals(100, $created->Id);
+        $this->assertEquals('John', $created->FirstName);
 
         /* Read */
-        $found = $this->service->find('Subjects', 100);
-        $this->assertEquals('Integration Test', $found['Name']);
+        $found = TestSubject::find(100);
+        $this->assertEquals('John', $found->FirstName);
+        $this->assertEquals('Doe', $found->LastName);
 
         /* Update */
-        $updated = $this->service->update('Subjects', 100, ['Name' => 'Updated Name']);
-        $this->assertEquals('Updated Name', $updated['Name']);
+        $updated = TestSubject::update(100, ['FirstName' => 'Jane']);
+        $this->assertEquals('Jane', $updated->FirstName);
 
         /* Delete */
-        $deleted = $this->service->delete('Subjects', 100);
-        $this->assertTrue($deleted);
+        TestSubject::delete(100);
+        $this->assertTrue(true); // Delete returns void, just verify no exception
     }
 
     #[Test]
-    public function it_handles_token_refresh_during_workflow(): void
+    public function it_performs_complex_query_workflow_with_models(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::sequence()
-                ->push(['access_token' => 'token-1', 'expires_in' => 3600], 200)  /* Initial token */
-                ->push(['access_token' => 'token-2', 'expires_in' => 3600], 200), /* Refreshed token */
-            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::sequence()
-                ->push(['value' => [['Id' => 1, 'Name' => 'Test']]], 200)  /* First query succeeds */
-                ->push(['error' => 'Unauthorized'], 401)                    /* Second query returns 401 */
-                ->push(['value' => [['Id' => 1, 'Name' => 'Test']]], 200), /* Retry after token refresh */
-        ]);
-
-        /* First query */
-        $result1 = $this->service->query('Subjects');
-        $this->assertIsArray($result1);
-
-        /* Second query - will get 401 and refresh token */
-        $result2 = $this->service->query('Subjects');
-        $this->assertIsArray($result2);
-    }
-
-    #[Test]
-    public function it_performs_complex_query_workflow(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*' => Http::response([
                 'value' => [
-                    ['Id' => 1, 'Name' => 'Active User 1', 'Status' => 'Active'],
-                    ['Id' => 2, 'Name' => 'Active User 2', 'Status' => 'Active'],
+                    ['Id' => 1, 'FirstName' => 'Alice', 'LastName' => 'Smith', 'Age' => 30],
+                    ['Id' => 2, 'FirstName' => 'Bob', 'LastName' => 'Jones', 'Age' => 35],
                 ],
             ], 200),
         ]);
 
-        $result = $this->service->query('Subjects', [
-            '$filter' => "Status eq 'Active'",
-            '$select' => 'Id,Name,Status',
-            '$orderby' => 'Name asc',
-            '$top' => 10,
-        ]);
+        $results = TestSubject::where('Age', 'gt', 25)
+            ->select(['Id', 'FirstName', 'LastName', 'Age'])
+            ->orderBy('FirstName', 'asc')
+            ->top(10)
+            ->get();
 
-        $this->assertArrayHasKey('value', $result);
-        $this->assertCount(2, $result['value']);
-        $this->assertEquals('Active', $result['value'][0]['Status']);
+        $this->assertCount(2, $results);
+        $this->assertEquals('Alice', $results[0]->FirstName);
+        $this->assertEquals(30, $results[0]->Age);
+        $this->assertEquals('Bob', $results[1]->FirstName);
     }
 
     #[Test]
-    public function it_handles_pagination_workflow(): void
+    public function it_handles_cursor_pagination_workflow(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
                 'value' => [
-                    ['Id' => 1, 'Name' => 'Page 1 Item 1'],
+                    ['Id' => 1, 'FirstName' => 'Page1-Item1'],
+                    ['Id' => 2, 'FirstName' => 'Page1-Item2'],
                 ],
                 '@odata.nextLink' => 'https://api.example.com/page2',
             ], 200),
             'https://api.example.com/page2' => Http::response([
                 'value' => [
-                    ['Id' => 2, 'Name' => 'Page 2 Item 1'],
+                    ['Id' => 3, 'FirstName' => 'Page2-Item1'],
                 ],
                 '@odata.nextLink' => 'https://api.example.com/page3',
             ], 200),
             'https://api.example.com/page3' => Http::response([
                 'value' => [
-                    ['Id' => 3, 'Name' => 'Page 3 Item 1'],
+                    ['Id' => 4, 'FirstName' => 'Page3-Item1'],
                 ],
             ], 200),
         ]);
 
-        /* Get first page */
-        $page1 = $this->service->queryWithMetadata('Subjects');
-        $this->assertEquals(1, $page1['value'][0]['Id']);
-        $this->assertArrayHasKey('@odata.nextLink', $page1);
+        /* Fetch all pages with cursor pagination */
+        $allResults = TestSubject::cursor()
+            ->pages(10)
+            ->get();
 
-        /* Get second page */
-        $page2 = $this->service->getNextPage($page1['@odata.nextLink']);
-        $this->assertEquals(2, $page2['value'][0]['Id']);
-
-        /* Get third page */
-        $page3 = $this->service->getNextPage($page2['@odata.nextLink']);
-        $this->assertEquals(3, $page3['value'][0]['Id']);
-        $this->assertArrayNotHasKey('@odata.nextLink', $page3);
+        $this->assertCount(4, $allResults);
+        $this->assertEquals('Page1-Item1', $allResults[0]->FirstName);
+        $this->assertEquals('Page3-Item1', $allResults[3]->FirstName);
     }
 
     #[Test]
-    public function it_handles_property_access_workflow(): void
+    public function it_handles_cursor_pagination_with_callback(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(42)/Name' => Http::response([
-                'value' => 'John Doe',
+            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
+                'value' => [
+                    ['Id' => 1, 'FirstName' => 'Item1'],
+                    ['Id' => 2, 'FirstName' => 'Item2'],
+                ],
+                '@odata.nextLink' => 'https://api.example.com/page2',
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(42)/Email' => Http::response([
-                'value' => 'john@example.com',
+            'https://api.example.com/page2' => Http::response([
+                'value' => [
+                    ['Id' => 3, 'FirstName' => 'Item3'],
+                ],
             ], 200),
         ]);
 
-        $name = $this->service->findProperty('Subjects', 42, 'Name');
-        $email = $this->service->findProperty('Subjects', 42, 'Email');
+        $processedPages = [];
 
-        $this->assertEquals(['value' => 'John Doe'], $name);
-        $this->assertEquals(['value' => 'john@example.com'], $email);
+        TestSubject::pages(10)
+            ->cursorWithCallback(function ($items, $pageNumber) use (&$processedPages) {
+                $processedPages[] = [
+                    'page' => $pageNumber,
+                    'count' => $items->count(),
+                ];
+            })
+            ->get();
+
+        $this->assertCount(2, $processedPages);
+        $this->assertEquals(1, $processedPages[0]['page']);
+        $this->assertEquals(2, $processedPages[0]['count']);
+        $this->assertEquals(2, $processedPages[1]['page']);
+        $this->assertEquals(1, $processedPages[1]['count']);
     }
 
     #[Test]
-    public function it_handles_metadata_caching_workflow(): void
+    public function it_handles_batch_operations_workflow(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/test-mandate/$batch' => Http::response(
+                $this->createBatchResponse([
+                    ['Id' => 1, 'FirstName' => 'Alice'],
+                    ['Id' => 2, 'FirstName' => 'Bob'],
+                    ['value' => [['Id' => 1, 'FirstName' => 'Alice']]],
+                ]),
+                200,
+                ['Content-Type' => 'multipart/mixed; boundary=batch_response']
+            ),
+        ]);
+
+        $batch = $this->service->batch(
+            TestSubject::batch()->create(['FirstName' => 'Alice', 'LastName' => 'Smith']),
+            TestSubject::batch()->create(['FirstName' => 'Bob', 'LastName' => 'Jones']),
+            TestSubject::batch()->get()
+        );
+
+        $results = $batch->send();
+
+        $this->assertCount(3, $results);
+        $this->assertTrue($results[0]->isSuccess());
+        $this->assertEquals('Alice', $results[0]->body['FirstName']);
+        $this->assertTrue($results[1]->isSuccess());
+        $this->assertEquals('Bob', $results[1]->body['FirstName']);
+    }
+
+    #[Test]
+    public function it_lists_available_entities(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/test-mandate/' => Http::response([
+                'value' => [
+                    ['name' => 'Subjects', 'url' => 'Subjects'],
+                    ['name' => 'Products', 'url' => 'Products'],
+                    ['name' => 'Invoices', 'url' => 'Invoices'],
+                ],
+            ], 200),
+        ]);
+
+        $entities = $this->service->listEntityIds();
+
+        $this->assertIsArray($entities);
+        $this->assertArrayHasKey('value', $entities);
+        $this->assertCount(3, $entities['value']);
+        $this->assertEquals('Subjects', $entities['value'][0]['name']);
+    }
+
+    #[Test]
+    public function it_fetches_and_caches_metadata(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -207,26 +260,116 @@ class AbacusServiceIntegrationTest extends TestCase
     }
 
     #[Test]
-    public function it_handles_batch_operations(): void
+    public function it_handles_token_refresh_during_operations(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::sequence()
+                ->push(['access_token' => 'token-1', 'expires_in' => 3600], 200)  /* Initial token */
+                ->push(['access_token' => 'token-2', 'expires_in' => 3600], 200), /* Refreshed token */
+            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::sequence()
+                ->push(['value' => [['Id' => 1, 'FirstName' => 'Test']]], 200)    /* First query succeeds */
+                ->push(['error' => 'Unauthorized'], 401)                           /* Second query returns 401 */
+                ->push(['value' => [['Id' => 1, 'FirstName' => 'Test']]], 200),   /* Retry after token refresh */
+        ]);
+
+        /* First query */
+        $result1 = TestSubject::all();
+        $this->assertCount(1, $result1);
+
+        /* Second query - will get 401 and refresh token */
+        $result2 = TestSubject::all();
+        $this->assertCount(1, $result2);
+
+        /* Should have called token endpoint twice */
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/oauth/oauth2/v1/token');
+        }, 2);
+    }
+
+    #[Test]
+    public function it_handles_expand_relationships(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects' => Http::sequence()
-                ->push(['Id' => 1, 'Name' => 'Subject 1'], 201)
-                ->push(['Id' => 2, 'Name' => 'Subject 2'], 201)
-                ->push(['Id' => 3, 'Name' => 'Subject 3'], 201),
+            '*' => Http::response([
+                'value' => [
+                    [
+                        'Id' => 1,
+                        'FirstName' => 'John',
+                        'Addresses' => [
+                            ['Street' => 'Main St', 'City' => 'NYC'],
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
-        $created = [];
-        for ($i = 1; $i <= 3; $i++) {
-            $created[] = $this->service->create('Subjects', ['Name' => "Subject {$i}"]);
+        $results = TestSubject::expand('Addresses')
+            ->select(['Id', 'FirstName'])
+            ->get();
+
+        $this->assertCount(1, $results);
+        $this->assertEquals('John', $results[0]->FirstName);
+        $this->assertIsArray($results[0]->Addresses);
+    }
+
+    #[Test]
+    public function it_handles_composite_key_operations(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            "*/Subjects(BatchNumber='123',ProductId=456)*" => Http::response([
+                'BatchNumber' => '123',
+                'ProductId' => 456,
+                'Quantity' => 100,
+            ], 200),
+        ]);
+
+        $compositeKey = [
+            'BatchNumber' => '123',
+            'ProductId' => 456,
+        ];
+
+        $result = TestSubject::find($compositeKey);
+
+        $this->assertEquals('123', $result->BatchNumber);
+        $this->assertEquals(456, $result->ProductId);
+        $this->assertEquals(100, $result->Quantity);
+    }
+
+    /**
+     * Helper to create a multipart batch response
+     */
+    protected function createBatchResponse(array $responses): string
+    {
+        $boundary = 'batch_response';
+        $parts = [];
+
+        foreach ($responses as $index => $responseData) {
+            $json = json_encode($responseData);
+            $statusCode = 200;
+
+            $part = "Content-Type: application/http\r\n";
+            $part .= "Content-Transfer-Encoding: binary\r\n";
+            $part .= "\r\n";
+            $part .= "HTTP/1.1 {$statusCode} OK\r\n";
+            $part .= "Content-Type: application/json\r\n";
+            $part .= "\r\n";
+            $part .= $json;
+
+            $parts[] = $part;
         }
 
-        $this->assertCount(3, $created);
-        $this->assertEquals('Subject 1', $created[0]['Name']);
-        $this->assertEquals('Subject 3', $created[2]['Name']);
+        $body = '--' . $boundary . "\r\n";
+        $body .= implode("\r\n--" . $boundary . "\r\n", $parts);
+        $body .= "\r\n--" . $boundary . "--\r\n";
+
+        return $body;
     }
 }

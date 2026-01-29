@@ -2,13 +2,13 @@
 
 namespace Contoweb\AbacusApi\Reports;
 
-use Contoweb\AbacusApi\BaseAbacusClient;
+use Contoweb\AbacusApi\AbacusClient;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
-class AbacusReportsClient extends BaseAbacusClient
+class AbacusReportsClient extends AbacusClient
 {
     /**
      * Submit a report for execution
