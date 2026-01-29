@@ -307,7 +307,7 @@ class BatchRequestTest extends TestCase
 
         $batch = new BatchRequest(
             $this->client,
-            TestSubject::createAsBatch(['FirstName' => 'Created'])
+            TestSubject::batch()->create(['FirstName' => 'Created'])
         );
 
         $results = $batch->send();

@@ -147,9 +147,9 @@ class AbacusServiceTest extends TestCase
     public function it_creates_batch_request_with_variadic_parameters(): void
     {
         $batch = $this->service->batch(
-            TestSubject::createAsBatch(['FirstName' => 'Alice']),
-            TestSubject::createAsBatch(['FirstName' => 'Bob']),
-            TestSubject::createAsBatch(['FirstName' => 'Charlie'])
+            TestSubject::batch()->create(['FirstName' => 'Alice']),
+            TestSubject::batch()->create(['FirstName' => 'Bob']),
+            TestSubject::batch()->create(['FirstName' => 'Charlie'])
         );
 
         $this->assertInstanceOf(BatchRequest::class, $batch);
@@ -167,10 +167,10 @@ class AbacusServiceTest extends TestCase
     public function it_creates_batch_with_mixed_operations(): void
     {
         $batch = $this->service->batch(
-            TestSubject::getAsBatch(),
-            TestSubject::createAsBatch(['FirstName' => 'New']),
-            TestSubject::updateAsBatch(123, ['FirstName' => 'Updated']),
-            TestSubject::deleteAsBatch(456)
+            TestSubject::batch()->get(),
+            TestSubject::batch()->create(['FirstName' => 'New']),
+            TestSubject::batch()->update(123, ['FirstName' => 'Updated']),
+            TestSubject::batch()->delete(456)
         );
 
         $this->assertInstanceOf(BatchRequest::class, $batch);
@@ -194,7 +194,7 @@ class AbacusServiceTest extends TestCase
         ]);
 
         $batch = $this->service->batch(
-            TestSubject::createAsBatch(['FirstName' => 'Test'])
+            TestSubject::batch()->create(['FirstName' => 'Test'])
         );
 
         $results = $batch->send();

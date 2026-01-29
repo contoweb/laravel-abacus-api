@@ -12,7 +12,7 @@ trait HasODataQueryMethods
      */
     public function expand(array|string $relations): static
     {
-        $this->queryState->expand($relations);
+        $this->queryState->expand(...func_get_args());
 
         return $this;
     }
@@ -70,7 +70,7 @@ trait HasODataQueryMethods
      */
     public function select(array|string $fields): static
     {
-        $this->queryState->select($fields);
+        $this->queryState->select(...func_get_args());
 
         return $this;
     }
@@ -87,5 +87,16 @@ trait HasODataQueryMethods
         $this->queryState->where($field, $operator, $value);
 
         return $this;
+    }
+
+    /**
+     * Debug: Display query parameters
+     *
+     * @return array<string, mixed>
+     */
+    public
+    function toODataQuery(): array
+    {
+        return $this->queryState->toODataQuery();
     }
 }
