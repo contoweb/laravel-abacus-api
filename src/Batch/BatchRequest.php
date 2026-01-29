@@ -2,7 +2,7 @@
 
 namespace Contoweb\AbacusApi\Batch;
 
-use Contoweb\AbacusApi\AbacusClient;
+use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -11,19 +11,19 @@ use Illuminate\Support\Collection;
 class BatchRequest
 {
     /**
-     * @var AbacusClient
+     * @var AbacusODataClient
      */
-    private AbacusClient $client;
+    private AbacusODataClient $client;
     /**
      * @var BatchRequestItem[]
      */
     public array $requests = [];
 
     /**
-     * @param AbacusClient $client
+     * @param AbacusODataClient $client
      * @param BatchRequestItem ...$requests
      */
-    public function __construct(AbacusClient $client, BatchRequestItem ...$requests)
+    public function __construct(AbacusODataClient $client, BatchRequestItem ...$requests)
     {
         $this->client = $client;
         $this->requests = $requests;

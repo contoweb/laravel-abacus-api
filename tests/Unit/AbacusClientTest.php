@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
-class BaseAbacusClientTest extends TestCase
+class AbacusClientTest extends TestCase
 {
     protected AbacusODataClient $client;
 
