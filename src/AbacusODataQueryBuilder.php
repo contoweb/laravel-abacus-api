@@ -3,6 +3,7 @@
 namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
+use Contoweb\AbacusApi\Enums\ODataEnum;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Http\Client\ConnectionException;
@@ -10,27 +11,24 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
-/**
- * @template TypeModel of AbacusModel
- */
-class AbacusQueryBuilder
+class AbacusODataQueryBuilder
 {
-    protected AbacusClient  $client;
-    protected string        $resource;
-    protected array         $filters = [];
-    protected array         $selects = [];
-    protected ?string       $orderBy = null;
-    protected ?int          $top = null;
-    protected array         $expand = [];
-    protected string        $format = 'json';
-    protected string        $modelClass;
-    protected mixed         $entityId = null;
-    protected array         $compositeKey = [];
-    public int              $pages;
-    public bool             $cursor;
-    protected ?\Closure     $pageCallback = null;
+    protected AbacusODataClient $client;
+    protected string $resource;
+    protected array $filters = [];
+    protected array $selects = [];
+    protected ?string $orderBy = null;
+    protected ?int $top = null;
+    protected array $expand = [];
+    protected string $format = 'json';
+    protected string $modelClass;
+    protected mixed $entityId = null;
+    protected array $compositeKey = [];
+    public int $pages;
+    public bool $cursor;
+    protected ?\Closure $pageCallback = null;
 
-    public function __construct(AbacusClient $client, string $resource, string $modelClass)
+    public function __construct(AbacusODataClient $client, string $resource, string $modelClass)
     {
         $this->client = $client;
         $this->resource = $resource;
@@ -42,16 +40,16 @@ class AbacusQueryBuilder
     /**
      * Set entity ID (simple or composite)
      *
-     * @param mixed $id Single value for simple keys, array for composite keys
+     * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
      * @return void
      */
-    private function id(int|array $id): void
+    private function id(int|string|array $idOrCriteria): void
     {
-        if (is_array($id)) {
-            $this->compositeKey = $id;
+        if (is_array($idOrCriteria)) {
+            $this->compositeKey = $idOrCriteria;
             $this->entityId = null;
         } else {
-            $this->entityId = $id;
+            $this->entityId = $idOrCriteria;
             $this->compositeKey = [];
         }
     }
@@ -213,7 +211,7 @@ class AbacusQueryBuilder
     /**
      * Execute query and return all paginated results as Collection
      *
-     * @return Collection<int, TypeModel>
+     * @return Collection<int, AbacusModel>
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -235,7 +233,7 @@ class AbacusQueryBuilder
 
         if ($this->cursor) {
             $pageNumber = 1;
-            
+
             /* Call callback for first page if provided */
             if ($this->pageCallback !== null && isset($response['value'])) {
                 $pageItems = collect($response['value'])->map(fn($item) => new $this->modelClass($item));
@@ -248,19 +246,19 @@ class AbacusQueryBuilder
                 }
 
                 $pageNumber++;
-                
+
                 $response = $this->client
                     ->getNextLink($response['@odata.nextLink'])
                     ->json();
 
                 if (isset($response['value'])) {
                     $pageItems = collect($response['value'])->map(fn($item) => new $this->modelClass($item));
-                    
+
                     /* Call callback for each page if provided */
                     if ($this->pageCallback !== null) {
                         call_user_func($this->pageCallback, $pageItems, $pageNumber);
                     }
-                    
+
                     $allResults = array_merge($allResults, $response['value']);
                 }
             }
@@ -290,11 +288,11 @@ class AbacusQueryBuilder
     /**
      * Return first match
      *
-     * @return TypeModel|null
+     * @return AbacusModel
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function first(): mixed
+    public function first(): AbacusModel
     {
         $this->top = 1;
         $result = $this->get();
@@ -306,14 +304,14 @@ class AbacusQueryBuilder
     /**
      * Fetch entity via primary key
      *
-     * @param int|array $id
-     * @return TypeModel
+     * @param int|string|array<string, int|string> $idOrCriteria
+     * @return AbacusModel
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function find(int|array $id)
+    public function find(int|string|array $idOrCriteria): AbacusModel
     {
-        $this->id($id);
+        $this->id($idOrCriteria);
         $path = $this->buildPathWithId();
 
         $result = $this->client
@@ -326,12 +324,12 @@ class AbacusQueryBuilder
     /**
      * Prepare a find operation as batch request item
      *
-     * @param int|array $id
+     * @param int|string|array<string, int|string> $idOrCriteria
      * @return BatchRequestItem
      */
-    public function findAsBatch(int|array $id): BatchRequestItem
+    public function findAsBatch(int|string|array $idOrCriteria): BatchRequestItem
     {
-        $this->id($id);
+        $this->id($idOrCriteria);
 
         $path = $this->buildPathWithId();
         $odataParams = $this->buildODataQuery();
@@ -347,12 +345,12 @@ class AbacusQueryBuilder
      * Execute a POST request (create entity)
      * Valid query methods: select(), expand()
      *
-     * @param array $data Request body data
-     * @return TypeModel|array The created entity
+     * @param array<string, int|string> $data Request body data
+     * @return AbacusModel The created entity
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function create(array $data): mixed
+    public function create(array $data): AbacusModel
     {
         $path = $this->client->entityPath($this->resource);
 
@@ -366,7 +364,7 @@ class AbacusQueryBuilder
     /**
      * Prepare a create operation as batch request item
      *
-     * @param array $data
+     * @param array<string, int|string> $data
      * @return BatchRequestItem
      */
     public function createAsBatch(array $data): BatchRequestItem
@@ -385,13 +383,14 @@ class AbacusQueryBuilder
      * Execute a DELETE request
      * Requires: ID set via id()
      *
+     * @param int|string|array<string, int|string> $idOrCriteria
      * @return void Success status
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function delete(int|array $id): void
+    public function delete(int|string|array $idOrCriteria): void
     {
-        $this->id($id);
+        $this->id($idOrCriteria);
         $path = $this->buildPathWithId();
         $this->client->delete($path);
     }
@@ -399,12 +398,12 @@ class AbacusQueryBuilder
     /**
      * Prepare a delete operation as batch request item
      *
-     * @param int|array $id
+     * @param int|string|array<string, int|string> $idOrCriteria
      * @return BatchRequestItem
      */
-    public function deleteAsBatch(int|array $id): BatchRequestItem
+    public function deleteAsBatch(int|string|array $idOrCriteria): BatchRequestItem
     {
-        $this->id($id);
+        $this->id($idOrCriteria);
         $path = $this->buildPathWithId();
         $odataParams = $this->buildODataQuery();
 
@@ -418,16 +417,16 @@ class AbacusQueryBuilder
     /**
      * Update an entity
      *
-     * @param int|array $id Single value for simple keys, array for composite keys
-     * @param array $data Request body data
-     * @return TypeModel|array The updated entity
+     * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
+     * @param array<string, int|array> $data Request body data
+     * @return AbacusModel The updated entity
      * @throws ConnectionException
      * @throws RequestException
      * @example Simple: Model::update(210, ['Name' => 'Test'])
      */
-    public function update(int|array $id, array $data)
+    public function update(int|string|array $idOrCriteria, array $data): AbacusModel
     {
-        $this->id($id);
+        $this->id($idOrCriteria);
         $path = $this->buildPathWithId();
 
         $result = $this->client
@@ -440,13 +439,13 @@ class AbacusQueryBuilder
     /**
      * Prepare a batch operation as batch request item
      *
-     * @param int|array $id
-     * @param array $data
+     * @param int|string|array<string, int|string> $idOrCriteria
+     * @param array<string, int|string> $data
      * @return BatchRequestItem
      */
-    public function updateAsBatch(int|array $id, array $data): BatchRequestItem
+    public function updateAsBatch(int|string|array $idOrCriteria, array $data): BatchRequestItem
     {
-        $this->id($id);
+        $this->id($idOrCriteria);
         $path = $this->buildPathWithId();
         $odataParams = $this->buildODataQuery();
 
@@ -560,6 +559,10 @@ class AbacusQueryBuilder
      */
     private function formatValue(mixed $value): string
     {
+        if ($value instanceof ODataEnum) {
+            return $value->toODataString();
+        }
+
         if (is_string($value)) {
             /* Escape single quotes */
             return "'" . str_replace("'", "''", $value) . "'";
