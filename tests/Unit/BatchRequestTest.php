@@ -17,7 +17,7 @@ class BatchRequestTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = new AbacusODataClient();
+        $this->client = new AbacusODataClient;
     }
 
     #[Test]
@@ -162,16 +162,16 @@ class BatchRequestTest extends TestCase
         $results = $batch->send();
 
         $this->assertCount(3, $results);
-        
+
         /* First: Success */
         $this->assertTrue($results[0]->isSuccess());
         $this->assertEquals(200, $results[0]->status);
-        
+
         /* Second: Error */
         $this->assertFalse($results[1]->isSuccess());
         $this->assertEquals(400, $results[1]->status);
         $this->assertEquals('Bad Request', $results[1]->error);
-        
+
         /* Third: Success */
         $this->assertTrue($results[2]->isSuccess());
         $this->assertEquals(201, $results[2]->status);
@@ -336,14 +336,14 @@ class BatchRequestTest extends TestCase
             $part .= "HTTP/1.1 {$statusCode} {$statusText}\r\n";
             $part .= "Content-Type: application/json\r\n";
             $part .= "\r\n";
-            $part .= $json . "\r\n";
+            $part .= $json."\r\n";
 
             $parts[] = $part;
         }
 
-        $body = '--' . $boundary . "\r\n";
-        $body .= implode("--" . $boundary . "\r\n", $parts);
-        $body .= "--" . $boundary . "--\r\n";
+        $body = '--'.$boundary."\r\n";
+        $body .= implode('--'.$boundary."\r\n", $parts);
+        $body .= '--'.$boundary."--\r\n";
 
         return $body;
     }
@@ -367,14 +367,14 @@ class BatchRequestTest extends TestCase
             $part .= "HTTP/1.1 {$statusCode} {$statusText}\r\n";
             $part .= "Content-Type: application/json\r\n";
             $part .= "\r\n";
-            $part .= $json . "\r\n";
+            $part .= $json."\r\n";
 
             $parts[] = $part;
         }
 
-        $body = '--' . $boundary . "\r\n";
-        $body .= implode("--" . $boundary . "\r\n", $parts);
-        $body .= "--" . $boundary . "--\r\n";
+        $body = '--'.$boundary."\r\n";
+        $body .= implode('--'.$boundary."\r\n", $parts);
+        $body .= '--'.$boundary."--\r\n";
 
         return $body;
     }
@@ -384,7 +384,7 @@ class BatchRequestTest extends TestCase
      */
     protected function getStatusText(int $statusCode): string
     {
-        return match($statusCode) {
+        return match ($statusCode) {
             200 => 'OK',
             201 => 'Created',
             204 => 'No Content',

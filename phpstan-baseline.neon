@@ -1,0 +1,55 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method Contoweb\\AbacusApi\\AbacusODataQueryBuilder\:\:get\(\) should return Illuminate\\Support\\Collection\<int, Contoweb\\AbacusApi\\Models\\AbacusModel\> but returns Illuminate\\Support\\Collection\<\(int\|string\), object\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/AbacusODataQueryBuilder.php
+
+		-
+			message: '#^Method Contoweb\\AbacusApi\\Models\\AbacusModel\:\:all\(\) should return Illuminate\\Support\\Collection\<int, static\(Contoweb\\AbacusApi\\Models\\AbacusModel\)\> but returns Illuminate\\Support\\Collection\<int, Contoweb\\AbacusApi\\Models\\AbacusModel\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Models/AbacusModel.php
+
+		-
+			message: '#^Method Contoweb\\AbacusApi\\Models\\AbacusModel\:\:create\(\) should return static\(Contoweb\\AbacusApi\\Models\\AbacusModel\) but returns Contoweb\\AbacusApi\\Models\\AbacusModel\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Models/AbacusModel.php
+
+		-
+			message: '#^Method Contoweb\\AbacusApi\\Models\\AbacusModel\:\:find\(\) should return static\(Contoweb\\AbacusApi\\Models\\AbacusModel\) but returns Contoweb\\AbacusApi\\Models\\AbacusModel\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Models/AbacusModel.php
+
+		-
+			message: '#^Method Contoweb\\AbacusApi\\Models\\AbacusModel\:\:get\(\) should return Illuminate\\Support\\Collection&iterable\<static\(Contoweb\\AbacusApi\\Models\\AbacusModel\)\> but returns Illuminate\\Support\\Collection\<int, Contoweb\\AbacusApi\\Models\\AbacusModel\>\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Models/AbacusModel.php
+
+		-
+			message: '#^Method Contoweb\\AbacusApi\\Models\\AbacusModel\:\:update\(\) should return static\(Contoweb\\AbacusApi\\Models\\AbacusModel\) but returns Contoweb\\AbacusApi\\Models\\AbacusModel\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Models/AbacusModel.php
+
+		-
+			message: '#^PHPDoc tag @return contains generic type Contoweb\\AbacusApi\\AbacusODataBatchQueryBuilder\<static\(Contoweb\\AbacusApi\\Models\\AbacusModel\)\> but class Contoweb\\AbacusApi\\AbacusODataBatchQueryBuilder is not generic\.$#'
+			identifier: generics.notGeneric
+			count: 1
+			path: src/Models/AbacusModel.php
+
+		-
+			message: '#^PHPDoc tag @return contains generic type Contoweb\\AbacusApi\\AbacusODataQueryBuilder\<static\(Contoweb\\AbacusApi\\Models\\AbacusModel\)\> but class Contoweb\\AbacusApi\\AbacusODataQueryBuilder is not generic\.$#'
+			identifier: generics.notGeneric
+			count: 6
+			path: src/Models/AbacusModel.php
+
+		-
+			message: '#^PHPDoc tag @return with type Contoweb\\AbacusApi\\Models\\AbacusModel is not subtype of native type static\(Contoweb\\AbacusApi\\Models\\AbacusModel\)\.$#'
+			identifier: return.phpDocType
+			count: 1
+			path: src/Models/AbacusModel.php

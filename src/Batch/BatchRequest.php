@@ -10,19 +10,13 @@ use Illuminate\Support\Collection;
 
 class BatchRequest
 {
-    /**
-     * @var AbacusODataClient
-     */
     private AbacusODataClient $client;
+
     /**
      * @var BatchRequestItem[]
      */
     public array $requests = [];
 
-    /**
-     * @param AbacusODataClient $client
-     * @param BatchRequestItem ...$requests
-     */
     public function __construct(AbacusODataClient $client, BatchRequestItem ...$requests)
     {
         $this->client = $client;
@@ -33,6 +27,7 @@ class BatchRequest
      * Send the batch request and return parsed results
      *
      * @return Collection<int, BatchResponseDto>
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -42,16 +37,16 @@ class BatchRequest
         $body = MultipartEncoder::encode($this->requests);
         $path = $this->client->batchPath();
 
-        $response =  $this->client->sendBatch($path, $body);
+        $response = $this->client->sendBatch($path, $body);
 
-        $contentType = $response->getHeader('Content-Type');
+        $contentType = $response->header('Content-Type');
 
-        preg_match('/boundary=(.+)$/', $contentType[0], $matches);
+        preg_match('/boundary=(.+)$/', $contentType, $matches);
         $boundary = trim($matches[1]);
 
         /* Decode multipart response */
         $results = MultipartDecoder::decode($response->body(), $boundary);
 
-        return collect($results)->map(fn($result) => BatchResponseDto::fromArray($result));
+        return collect($results)->map(fn ($result) => BatchResponseDto::fromArray($result));
     }
 }

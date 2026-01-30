@@ -35,14 +35,14 @@ class BatchResponseHelperTest extends TestCase
             $parts[] = $part;
         }
 
-        $body = '--' . $boundary . "\r\n";
-        $body .= implode("\r\n--" . $boundary . "\r\n", $parts);
-        $body .= "\r\n--" . $boundary . "--\r\n";
+        $body = '--'.$boundary."\r\n";
+        $body .= implode("\r\n--".$boundary."\r\n", $parts);
+        $body .= "\r\n--".$boundary."--\r\n";
 
         /* Test decoding */
         $results = MultipartDecoder::decode($body, $boundary);
 
-        $this->assertCount(2, $results, "Should decode 2 parts. Raw body:\n" . $body);
+        $this->assertCount(2, $results, "Should decode 2 parts. Raw body:\n".$body);
         $this->assertEquals(200, $results[0]['status']);
         $this->assertEquals(['Id' => 1, 'Name' => 'First'], $results[0]['body']);
         $this->assertEquals(200, $results[1]['status']);
@@ -73,14 +73,14 @@ class BatchResponseHelperTest extends TestCase
             $parts[] = $part;
         }
 
-        $body = '--' . $boundary . "\r\n";
-        $body .= implode("\r\n--" . $boundary . "\r\n", $parts);
-        $body .= "\r\n--" . $boundary . "--\r\n";
+        $body = '--'.$boundary."\r\n";
+        $body .= implode("\r\n--".$boundary."\r\n", $parts);
+        $body .= "\r\n--".$boundary."--\r\n";
 
         /* Test decoding */
         $results = MultipartDecoder::decode($body, $boundary);
 
-        $this->assertCount(2, $results, "Should decode 2 parts with empty body. Raw body:\n" . $body);
+        $this->assertCount(2, $results, "Should decode 2 parts with empty body. Raw body:\n".$body);
         $this->assertEquals(204, $results[0]['status']);
         $this->assertEquals(204, $results[1]['status']);
     }

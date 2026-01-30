@@ -2,8 +2,8 @@
 
 namespace Contoweb\AbacusApi;
 
-use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Batch\BatchRequest;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Illuminate\Support\Facades\Cache;
 
 class AbacusService
@@ -47,9 +47,6 @@ class AbacusService
 
     /**
      * Create a new batch request
-     *
-     * @param BatchRequestItem ...$requests
-     * @return BatchRequest
      */
     public function batch(BatchRequestItem ...$requests): BatchRequest
     {

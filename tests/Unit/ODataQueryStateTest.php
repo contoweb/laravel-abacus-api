@@ -18,13 +18,13 @@ class ODataQueryStateTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = new AbacusODataClient();
+        $this->client = new AbacusODataClient;
     }
 
     #[Test]
     public function it_sets_simple_entity_id(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->id(42);
 
         $path = $state->buildPathWithId($this->client, 'Subjects');
@@ -35,7 +35,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_sets_string_entity_id(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->id('abc-123');
 
         $path = $state->buildPathWithId($this->client, 'Subjects');
@@ -46,7 +46,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_sets_composite_key(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->id([
             'BatchNumber' => '5436',
             'ProductId' => 12276,
@@ -63,7 +63,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_simple_where_clause(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('LastName', 'eq', 'Müller');
 
         $query = $state->buildODataQuery();
@@ -74,7 +74,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_where_with_enum_operator(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('Age', ODataOperator::GREATER_THAN, 18);
 
         $query = $state->buildODataQuery();
@@ -85,9 +85,9 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_multiple_where_clauses_with_and(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('LastName', 'eq', 'Müller')
-              ->where('Age', 'gt', 18);
+            ->where('Age', 'gt', 18);
 
         $query = $state->buildODataQuery();
 
@@ -97,7 +97,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_where_equals_convenience_method(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->whereEquals('Status', 'Active');
 
         $query = $state->buildODataQuery();
@@ -111,20 +111,20 @@ class ODataQueryStateTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Operator 'invalid' not supported");
 
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('Name', 'invalid', 'Test');
     }
 
     #[Test]
     public function it_supports_all_valid_operators(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
 
         $state->where('Field1', 'eq', 1)
-              ->where('Field2', 'lt', 2)
-              ->where('Field3', 'gt', 3)
-              ->where('Field4', 'le', 4)
-              ->where('Field5', 'ge', 5);
+            ->where('Field2', 'lt', 2)
+            ->where('Field3', 'gt', 3)
+            ->where('Field4', 'le', 4)
+            ->where('Field5', 'ge', 5);
 
         $query = $state->buildODataQuery();
 
@@ -138,7 +138,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_formats_string_values_with_quotes(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('Name', 'eq', 'Test String');
 
         $query = $state->buildODataQuery();
@@ -149,7 +149,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_escapes_single_quotes_in_string_values(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('Name', 'eq', "O'Brien");
 
         $query = $state->buildODataQuery();
@@ -160,9 +160,9 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_formats_boolean_values(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('IsActive', 'eq', true)
-              ->where('IsDeleted', 'eq', false);
+            ->where('IsDeleted', 'eq', false);
 
         $query = $state->buildODataQuery();
 
@@ -173,7 +173,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_formats_null_values(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('MiddleName', 'eq', null);
 
         $query = $state->buildODataQuery();
@@ -184,7 +184,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_formats_numeric_values(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('Age', 'eq', 42);
 
         $query = $state->buildODataQuery();
@@ -196,7 +196,7 @@ class ODataQueryStateTest extends TestCase
     public function it_formats_datetime_values(): void
     {
         $date = new \DateTime('2024-01-15 14:30:00');
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('CreatedAt', 'gt', $date);
 
         $query = $state->buildODataQuery();
@@ -208,7 +208,7 @@ class ODataQueryStateTest extends TestCase
     public function it_formats_odata_enum_values(): void
     {
         $enum = ODataEnum::make('ch.abacus.orde.ProductType', 'Article');
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('Type', 'eq', $enum);
 
         $query = $state->buildODataQuery();
@@ -219,7 +219,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_select_query_with_array(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->select(['Id', 'Name', 'Email']);
 
         $query = $state->buildODataQuery();
@@ -230,7 +230,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_select_query_with_varargs(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->select('Id', 'Name', 'Email');
 
         $query = $state->buildODataQuery();
@@ -241,9 +241,9 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_merges_multiple_select_calls(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->select('Id', 'Name')
-              ->select('Email');
+            ->select('Email');
 
         $query = $state->buildODataQuery();
 
@@ -253,7 +253,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_top_query(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->top(10);
 
         $query = $state->buildODataQuery();
@@ -264,7 +264,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_limit_query_as_alias_for_top(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->limit(5);
 
         $query = $state->buildODataQuery();
@@ -275,7 +275,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_take_query_as_alias_for_top(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->take(20);
 
         $query = $state->buildODataQuery();
@@ -286,7 +286,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_order_by_ascending(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->orderBy('LastName', 'asc');
 
         $query = $state->buildODataQuery();
@@ -297,7 +297,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_order_by_descending(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->orderBy('CreatedAt', 'desc');
 
         $query = $state->buildODataQuery();
@@ -308,7 +308,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_defaults_order_by_to_ascending(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->orderBy('Name');
 
         $query = $state->buildODataQuery();
@@ -322,16 +322,16 @@ class ODataQueryStateTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Direction must be 'asc' or 'desc'");
 
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->orderBy('Name', 'invalid');
     }
 
     #[Test]
     public function it_overrides_previous_order_by(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->orderBy('FirstName', 'asc')
-              ->orderBy('LastName', 'desc');
+            ->orderBy('LastName', 'desc');
 
         $query = $state->buildODataQuery();
 
@@ -341,7 +341,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_expand_query_with_array(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->expand(['Addresses', 'Contacts']);
 
         $query = $state->buildODataQuery();
@@ -352,7 +352,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_expand_query_with_varargs(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->expand('Addresses', 'Contacts');
 
         $query = $state->buildODataQuery();
@@ -363,9 +363,9 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_merges_multiple_expand_calls(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->expand('Addresses')
-              ->expand('Contacts', 'Orders');
+            ->expand('Contacts', 'Orders');
 
         $query = $state->buildODataQuery();
 
@@ -375,12 +375,12 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_builds_complete_query_with_all_parameters(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('IsActive', 'eq', true)
-              ->select(['Id', 'Name'])
-              ->orderBy('Name', 'asc')
-              ->top(10)
-              ->expand('Addresses');
+            ->select(['Id', 'Name'])
+            ->orderBy('Name', 'asc')
+            ->top(10)
+            ->expand('Addresses');
 
         $query = $state->buildODataQuery();
 
@@ -394,7 +394,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function it_returns_empty_array_when_no_parameters_set(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
 
         $query = $state->buildODataQuery();
 
@@ -404,7 +404,7 @@ class ODataQueryStateTest extends TestCase
     #[Test]
     public function to_odata_query_is_alias_for_build_odata_query(): void
     {
-        $state = new ODataQueryState();
+        $state = new ODataQueryState;
         $state->where('Status', 'eq', 'Active');
 
         $this->assertEquals($state->buildODataQuery(), $state->toODataQuery());

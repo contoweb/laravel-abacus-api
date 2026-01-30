@@ -27,8 +27,8 @@ class ODataEnum
     /**
      * Create a new OData enum value
      *
-     * @param string $namespace The full enum namespace (e.g., 'ch.abacus.orde.ProductType')
-     * @param string $value The enum value (e.g., 'Article')
+     * @param  string  $namespace  The full enum namespace (e.g., 'ch.abacus.orde.ProductType')
+     * @param  string  $value  The enum value (e.g., 'Article')
      */
     public static function make(string $namespace, string $value): self
     {

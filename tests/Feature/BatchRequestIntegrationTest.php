@@ -77,7 +77,7 @@ class BatchRequestIntegrationTest extends TestCase
         )->send();
 
         $this->assertCount(3, $results);
-        
+
         foreach ($results as $i => $result) {
             $this->assertTrue($result->isSuccess());
             $this->assertEquals(200, $result->status);
@@ -173,22 +173,22 @@ class BatchRequestIntegrationTest extends TestCase
         )->send();
 
         $this->assertCount(4, $results);
-        
+
         /* GET */
         $this->assertTrue($results[0]->isSuccess());
         $this->assertEquals(200, $results[0]->status);
         $this->assertArrayHasKey('value', $results[0]->body);
-        
+
         /* POST */
         $this->assertTrue($results[1]->isSuccess());
         $this->assertEquals(201, $results[1]->status);
         $this->assertEquals('New Subject', $results[1]->body['FirstName']);
-        
+
         /* PATCH */
         $this->assertTrue($results[2]->isSuccess());
         $this->assertEquals(200, $results[2]->status);
         $this->assertEquals('Updated Subject', $results[2]->body['FirstName']);
-        
+
         /* DELETE */
         $this->assertTrue($results[3]->isSuccess());
         $this->assertEquals(204, $results[3]->status);
@@ -222,20 +222,20 @@ class BatchRequestIntegrationTest extends TestCase
         )->send();
 
         $this->assertCount(4, $results);
-        
+
         /* First: Success */
         $this->assertTrue($results[0]->isSuccess());
         $this->assertEquals(200, $results[0]->status);
-        
+
         /* Second: Error */
         $this->assertFalse($results[1]->isSuccess());
         $this->assertEquals(400, $results[1]->status);
         $this->assertEquals('Bad Request', $results[1]->error);
-        
+
         /* Third: Error */
         $this->assertFalse($results[2]->isSuccess());
         $this->assertEquals(404, $results[2]->status);
-        
+
         /* Fourth: Success */
         $this->assertTrue($results[3]->isSuccess());
         $this->assertEquals(200, $results[3]->status);
@@ -290,14 +290,14 @@ class BatchRequestIntegrationTest extends TestCase
             $part .= "HTTP/1.1 {$statusCode} {$statusText}\r\n";
             $part .= "Content-Type: application/json\r\n";
             $part .= "\r\n";
-            $part .= $json . "\r\n";
+            $part .= $json."\r\n";
 
             $parts[] = $part;
         }
 
-        $body = '--' . $boundary . "\r\n";
-        $body .= implode("--" . $boundary . "\r\n", $parts);
-        $body .= "--" . $boundary . "--\r\n";
+        $body = '--'.$boundary."\r\n";
+        $body .= implode('--'.$boundary."\r\n", $parts);
+        $body .= '--'.$boundary."--\r\n";
 
         return $body;
     }
@@ -321,14 +321,14 @@ class BatchRequestIntegrationTest extends TestCase
             $part .= "HTTP/1.1 {$statusCode} {$statusText}\r\n";
             $part .= "Content-Type: application/json\r\n";
             $part .= "\r\n";
-            $part .= $json . "\r\n";
+            $part .= $json."\r\n";
 
             $parts[] = $part;
         }
 
-        $body = '--' . $boundary . "\r\n";
-        $body .= implode("--" . $boundary . "\r\n", $parts);
-        $body .= "--" . $boundary . "--\r\n";
+        $body = '--'.$boundary."\r\n";
+        $body .= implode('--'.$boundary."\r\n", $parts);
+        $body .= '--'.$boundary."--\r\n";
 
         return $body;
     }
@@ -338,7 +338,7 @@ class BatchRequestIntegrationTest extends TestCase
      */
     protected function getStatusText(int $statusCode): string
     {
-        return match($statusCode) {
+        return match ($statusCode) {
             200 => 'OK',
             201 => 'Created',
             204 => 'No Content',

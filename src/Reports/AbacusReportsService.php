@@ -17,24 +17,25 @@ class AbacusReportsService
     /**
      * Parameters for the report request
      */
-    protected array | string $parameters = [];
+    protected array|string $parameters = [];
 
     /**
      * Cache configuration
      */
-    protected bool    $cacheEnabled   = false;
-    protected int     $cacheTtl       = 3600;
+    protected bool $cacheEnabled = false;
+
+    protected int $cacheTtl = 3600;
+
     protected ?string $customCacheKey = null;
 
     public function __construct(
         protected AbacusReportsClient $client
-    ) {
-    }
+    ) {}
 
     /**
      * Set report parameters
      */
-    public function parameter(array | string $parameters): static
+    public function parameter(array|string $parameters): static
     {
         $this->parameters = $parameters;
 
@@ -46,8 +47,8 @@ class AbacusReportsService
      */
     public function cache(int $ttl = 3600, ?string $cacheKey = null): static
     {
-        $this->cacheEnabled   = true;
-        $this->cacheTtl       = $ttl;
+        $this->cacheEnabled = true;
+        $this->cacheTtl = $ttl;
         $this->customCacheKey = $cacheKey;
 
         return $this;
@@ -56,9 +57,9 @@ class AbacusReportsService
     /**
      * Execute report and return collection of models
      *
-     * @param Report $report Report instance
-     *
+     * @param  Report  $report  Report instance
      * @return Collection Collection of report models
+     *
      * @throws ConnectionException
      * @throws ReportExecutionException
      * @throws ReportValidationException
@@ -69,7 +70,7 @@ class AbacusReportsService
         /* Check cache if enabled */
         if ($this->cacheEnabled) {
             $cacheKey = $this->getCacheKey($report);
-            $cached   = Cache::get($cacheKey);
+            $cached = Cache::get($cacheKey);
 
             if ($cached !== null) {
                 return $cached;
@@ -77,7 +78,7 @@ class AbacusReportsService
         }
 
         /* Execute report and get models */
-        $models     = $this->executeReport($report);
+        $models = $this->executeReport($report);
         $collection = collect($models);
 
         /* Store in cache if enabled */
@@ -95,9 +96,7 @@ class AbacusReportsService
     /**
      * Execute report and map to models
      *
-     * @param Report $report
      *
-     * @return array
      * @throws ReportExecutionException
      * @throws ReportValidationException
      * @throws ConnectionException
@@ -119,11 +118,11 @@ class AbacusReportsService
         /* Check for immediate errors */
         if (isset($jobResponse['status']) && ($jobResponse['status'] === 403 || $jobResponse['status'] === 500)) {
             throw new ReportExecutionException(
-                'AbaReport failed with message: ' . ($jobResponse['title'] ?? 'Unknown error')
+                'AbaReport failed with message: '.($jobResponse['title'] ?? 'Unknown error')
             );
         }
 
-        if ( ! isset($jobResponse['id'])) {
+        if (! isset($jobResponse['id'])) {
             throw new ReportExecutionException('Report submission did not return a job ID');
         }
 
@@ -131,13 +130,13 @@ class AbacusReportsService
 
         /* Poll until complete */
         $pollInterval = config('abacus-api.reports.poll_interval', 200000);
-        $maxAttempts  = config('abacus-api.reports.max_poll_attempts', 150);
-        $finalStatus  = $this->client->pollJobUntilComplete($jobId, $pollInterval, $maxAttempts);
+        $maxAttempts = config('abacus-api.reports.max_poll_attempts', 150);
+        $finalStatus = $this->client->pollJobUntilComplete($jobId, $pollInterval, $maxAttempts);
 
         /* Check final status */
         if (($finalStatus['state'] ?? null) !== 'FinishedSuccess') {
             throw new ReportExecutionException(
-                'AbaReport failed since it was not successful. Message: ' . ($finalStatus['message'] ?? 'unknown')
+                'AbaReport failed since it was not successful. Message: '.($finalStatus['message'] ?? 'unknown')
             );
         }
 
@@ -146,7 +145,7 @@ class AbacusReportsService
 
         /* Close the report session */
         $this->client->deleteJob($jobId);
-        
+
         /* Parse and map to models */
 
         return $this->parseAndMapJson($jsonData, $report);
@@ -159,15 +158,15 @@ class AbacusReportsService
      */
     protected function parseAndMapJson(array $jsonData, Report $report): array
     {
-        /* Check if data is an array of records */
-        if ( ! is_array($jsonData)) {
-            throw new ReportExecutionException('Report output is not a valid array');
+        /* Check if data is empty */
+        if (empty($jsonData)) {
+            return [];
         }
 
         $models = [];
 
         foreach ($jsonData as $record) {
-            if ( ! is_array($record)) {
+            if (! is_array($record)) {
                 throw new ReportExecutionException('Report record is not a valid array');
             }
 
@@ -197,14 +196,14 @@ class AbacusReportsService
     protected function getCacheKey(Report $report): string
     {
         if ($this->customCacheKey !== null) {
-            return 'abacus_report:' . $this->customCacheKey;
+            return 'abacus_report:'.$this->customCacheKey;
         }
 
         $paramKey = is_array($this->parameters)
             ? md5(json_encode($this->parameters))
             : md5($this->parameters);
 
-        return 'abacus_report:' . md5($report->name()) . ':' . $paramKey;
+        return 'abacus_report:'.md5($report->name()).':'.$paramKey;
     }
 
     /**
@@ -212,9 +211,9 @@ class AbacusReportsService
      */
     protected function resetState(): void
     {
-        $this->parameters     = [];
-        $this->cacheEnabled   = false;
-        $this->cacheTtl       = 3600;
+        $this->parameters = [];
+        $this->cacheEnabled = false;
+        $this->cacheTtl = 3600;
         $this->customCacheKey = null;
     }
 }

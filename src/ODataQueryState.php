@@ -9,19 +9,25 @@ use InvalidArgumentException;
 class ODataQueryState
 {
     protected array $filters = [];
+
     protected array $selects = [];
+
     protected ?string $orderBy = null;
+
     protected ?int $top = null;
+
     protected array $expand = [];
+
     protected string $format = 'json';
+
     protected mixed $entityId = null;
+
     protected array $compositeKey = [];
 
     /**
      * Set entity ID (simple or composite)
      *
-     * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
-     * @return void
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      */
     public function id(int|string|array $idOrCriteria): void
     {
@@ -49,9 +55,9 @@ class ODataQueryState
         /* Supported operators: eq, ge, gt, le, lt */
         $allowedOperators = ['eq', 'lt', 'gt', 'le', 'ge'];
 
-        if (!in_array($operatorValue, $allowedOperators)) {
+        if (! in_array($operatorValue, $allowedOperators)) {
             throw new InvalidArgumentException(
-                "Operator '{$operatorValue}' not supported. Allowed: " . implode(', ', $allowedOperators)
+                "Operator '{$operatorValue}' not supported. Allowed: ".implode(', ', $allowedOperators)
             );
         }
 
@@ -117,11 +123,11 @@ class ODataQueryState
      */
     public function orderBy(string $field, string $direction = 'asc'): static
     {
-        if (!in_array(strtolower($direction), ['asc', 'desc'])) {
+        if (! in_array(strtolower($direction), ['asc', 'desc'])) {
             throw new InvalidArgumentException("Direction must be 'asc' or 'desc'");
         }
 
-        $this->orderBy = "{$field} " . strtolower($direction);
+        $this->orderBy = "{$field} ".strtolower($direction);
 
         return $this;
     }
@@ -147,7 +153,7 @@ class ODataQueryState
     {
         $basePath = $client->entityPath($resource);
 
-        return $basePath . '(' . $this->buildEntityIdSegment() . ')';
+        return $basePath.'('.$this->buildEntityIdSegment().')';
     }
 
     /**
@@ -159,7 +165,7 @@ class ODataQueryState
      */
     private function buildEntityIdSegment(): string
     {
-        if (!empty($this->compositeKey)) {
+        if (! empty($this->compositeKey)) {
             $parts = [];
             foreach ($this->compositeKey as $key => $value) {
                 $formattedValue = $this->formatValue($value);
@@ -169,7 +175,7 @@ class ODataQueryState
             return implode(',', $parts);
         }
 
-        return (string)$this->entityId;
+        return (string) $this->entityId;
     }
 
     /**
@@ -180,12 +186,12 @@ class ODataQueryState
         $query = [];
 
         // $filter
-        if (!empty($this->filters)) {
+        if (! empty($this->filters)) {
             $query['$filter'] = implode(' and ', $this->filters);
         }
 
         // $select
-        if (!empty($this->selects)) {
+        if (! empty($this->selects)) {
             $query['$select'] = implode(',', $this->selects);
         }
 
@@ -200,7 +206,7 @@ class ODataQueryState
         }
 
         // $expand
-        if (!empty($this->expand)) {
+        if (! empty($this->expand)) {
             $query['$expand'] = implode(',', $this->expand);
         }
 
@@ -223,7 +229,7 @@ class ODataQueryState
 
         if (is_string($value)) {
             /* Escape single quotes */
-            return "'" . str_replace("'", "''", $value) . "'";
+            return "'".str_replace("'", "''", $value)."'";
         }
 
         if (is_bool($value)) {
@@ -238,7 +244,7 @@ class ODataQueryState
             return $value->format('Y-m-d\TH:i:s\Z');
         }
 
-        return (string)$value;
+        return (string) $value;
     }
 
     /**

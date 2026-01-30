@@ -15,20 +15,20 @@ class GenerateIdeHelperCommand extends Command
     protected $description = 'Generate IDE helper file from Abacus OData metadata';
 
     protected array $typeMapping = [
-        'Edm.String'         => 'string',
-        'Edm.Int32'          => 'int',
-        'Edm.Int64'          => 'int',
-        'Edm.Double'         => 'float',
-        'Edm.Decimal'        => 'float',
-        'Edm.Boolean'        => 'bool',
-        'Edm.DateTime'       => 'string',
+        'Edm.String' => 'string',
+        'Edm.Int32' => 'int',
+        'Edm.Int64' => 'int',
+        'Edm.Double' => 'float',
+        'Edm.Decimal' => 'float',
+        'Edm.Boolean' => 'bool',
+        'Edm.DateTime' => 'string',
         'Edm.DateTimeOffset' => 'string',
-        'Edm.Guid'           => 'string',
-        'Edm.Binary'         => 'string',
-        'Edm.Byte'           => 'int',
-        'Edm.SByte'          => 'int',
-        'Edm.Int16'          => 'int',
-        'Edm.Single'         => 'float',
+        'Edm.Guid' => 'string',
+        'Edm.Binary' => 'string',
+        'Edm.Byte' => 'int',
+        'Edm.SByte' => 'int',
+        'Edm.Int16' => 'int',
+        'Edm.Single' => 'float',
     ];
 
     public function __construct(protected AbacusService $abacusService)
@@ -38,7 +38,7 @@ class GenerateIdeHelperCommand extends Command
 
     public function handle(): int
     {
-        if ( ! config('abacus-api.ide_helper.enabled')) {
+        if (! config('abacus-api.ide_helper.enabled')) {
             $this->info('IDE Helper generation is disabled in config.');
 
             return 0;
@@ -55,7 +55,7 @@ class GenerateIdeHelperCommand extends Command
             $userModelsInfo = [];
 
             if (is_dir($modelsPath)) {
-                $files = File::glob($modelsPath . '/*.php');
+                $files = File::glob($modelsPath.'/*.php');
 
                 foreach ($files as $file) {
                     $modelInfo = $this->extractModelInfo($file, $namespace);
@@ -66,7 +66,7 @@ class GenerateIdeHelperCommand extends Command
             }
 
             /* Try to load from local definition files based on user models */
-            if ( ! empty($userModelsInfo)) {
+            if (! empty($userModelsInfo)) {
                 $this->info('Looking for local endpoint definition files...');
 
                 $definitionsPath = storage_path('app/abacus/endpoint-definitions');
@@ -76,12 +76,13 @@ class GenerateIdeHelperCommand extends Command
                     $models = $this->loadDefinitionsForModels($definitionsPath, $userModelsInfo);
                 }
 
-                if ( ! empty($models)) {
-                    $this->info('Loaded ' . count($models) . ' entity definitions from local files');
+                if (! empty($models)) {
+                    $this->info('Loaded '.count($models).' entity definitions from local files');
 
                     /* If --list flag is set, display all entities and exit */
                     if ($this->option('list')) {
                         $this->listEntities($models);
+
                         return 0;
                     }
 
@@ -113,7 +114,7 @@ class GenerateIdeHelperCommand extends Command
             $this->info('Parsing OData metadata...');
 
             $isXml = str_starts_with(trim($metadataContent), '<');
-            $this->comment('Detected format: ' . ($isXml ? 'XML' : 'JSON'));
+            $this->comment('Detected format: '.($isXml ? 'XML' : 'JSON'));
 
             if ($isXml) {
                 /* Parse XML metadata */
@@ -149,7 +150,7 @@ class GenerateIdeHelperCommand extends Command
                 $metadata = json_decode($metadataContent, true);
 
                 if (json_last_error() !== JSON_ERROR_NONE) {
-                    $this->error('Failed to parse JSON metadata: ' . json_last_error_msg());
+                    $this->error('Failed to parse JSON metadata: '.json_last_error_msg());
                     $this->comment('First 500 characters of response:');
                     $this->line(substr($metadataContent, 0, 500));
 
@@ -165,7 +166,7 @@ class GenerateIdeHelperCommand extends Command
                     return 1;
                 }
 
-                $this->info('Found ' . count($entityTypes) . ' entity types');
+                $this->info('Found '.count($entityTypes).' entity types');
                 $this->info('Parsing entity definitions...');
                 $models = $this->parseEntityTypes($entityTypes);
             }
@@ -176,7 +177,7 @@ class GenerateIdeHelperCommand extends Command
                 return 1;
             }
 
-            $this->info('Found ' . count($models) . ' entity types');
+            $this->info('Found '.count($models).' entity types');
 
             /* If --list flag is set, display all entities and exit */
             if ($this->option('list')) {
@@ -213,11 +214,12 @@ class GenerateIdeHelperCommand extends Command
             $resource = $modelInfo['resource'];
 
             /* Convert resource name to filename (e.g., Products → products.json) */
-            $fileName = strtolower($resource) . '.json';
-            $filePath = $definitionsPath . '/' . $fileName;
+            $fileName = strtolower($resource).'.json';
+            $filePath = $definitionsPath.'/'.$fileName;
 
-            if ( ! File::exists($filePath)) {
+            if (! File::exists($filePath)) {
                 $this->warn("  {$className}: Definition file not found: {$fileName}");
+
                 continue;
             }
 
@@ -227,23 +229,26 @@ class GenerateIdeHelperCommand extends Command
             $swagger = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->warn("    Failed to parse: " . json_last_error_msg());
+                $this->warn('    Failed to parse: '.json_last_error_msg());
+
                 continue;
             }
 
             /* Extract the schema name from the GET response */
             $schemaName = $this->extractSchemaName($swagger);
 
-            if ( ! $schemaName) {
-                $this->warn("    Could not find schema reference");
+            if (! $schemaName) {
+                $this->warn('    Could not find schema reference');
+
                 continue;
             }
 
             /* Extract the schema definition */
             $schema = $swagger['components']['schemas'][$schemaName] ?? null;
 
-            if ( ! $schema) {
+            if (! $schema) {
                 $this->warn("    Schema {$schemaName} not found");
+
                 continue;
             }
 
@@ -254,8 +259,8 @@ class GenerateIdeHelperCommand extends Command
             $entityName = $this->extractEntityName($schemaName);
 
             $models[$className] = [
-                'resource'    => $className,
-                'properties'  => $properties,
+                'resource' => $className,
+                'properties' => $properties,
                 'description' => $resource !== $className ? "From {$resource} ({$entityName})" : null,
             ];
 
@@ -277,6 +282,7 @@ class GenerateIdeHelperCommand extends Command
                 /* Look for $ref in the value array items */
                 if (isset($schema['properties']['value']['items']['$ref'])) {
                     $ref = $schema['properties']['value']['items']['$ref'];
+
                     /* Extract schema name from #/components/schemas/ch.abacus.orde.ProductData */
                     return str_replace('#/components/schemas/', '', $ref);
                 }
@@ -290,6 +296,7 @@ class GenerateIdeHelperCommand extends Command
     {
         /* Extract the last part after the last dot (e.g., ch.abacus.orde.ProductData → ProductData) */
         $parts = explode('.', $schemaName);
+
         return end($parts);
     }
 
@@ -301,10 +308,11 @@ class GenerateIdeHelperCommand extends Command
             /* Handle $ref properties (complex types) */
             if (isset($property['$ref'])) {
                 $parsed[$name] = [
-                    'type'        => 'array', /* Complex types represented as array */
-                    'nullable'    => true,
-                    'description' => 'Complex type: ' . $this->extractEntityName($property['$ref']),
+                    'type' => 'array', /* Complex types represented as array */
+                    'nullable' => true,
+                    'description' => 'Complex type: '.$this->extractEntityName($property['$ref']),
                 ];
+
                 continue;
             }
 
@@ -313,8 +321,8 @@ class GenerateIdeHelperCommand extends Command
             $nullable = true; /* OpenAPI doesn't have explicit nullable in this format */
 
             $parsed[$name] = [
-                'type'        => $type,
-                'nullable'    => $nullable,
+                'type' => $type,
+                'nullable' => $nullable,
                 'description' => $description,
             ];
         }
@@ -355,7 +363,7 @@ class GenerateIdeHelperCommand extends Command
 
             $entityName = (string) $entityType['Name'];
 
-            if ( ! $this->isEntity($entityName)) {
+            if (! $this->isEntity($entityName)) {
                 continue;
             }
 
@@ -369,15 +377,15 @@ class GenerateIdeHelperCommand extends Command
                 $nullable = ! isset($property['Nullable']) || (string) $property['Nullable'] === 'true';
 
                 $properties[$propertyName] = [
-                    'type'        => $this->mapODataType($propertyType),
-                    'nullable'    => $nullable,
+                    'type' => $this->mapODataType($propertyType),
+                    'nullable' => $nullable,
                     'description' => null,
                 ];
             }
 
             $models[$entityName] = [
-                'resource'    => $entityName,
-                'properties'  => $properties,
+                'resource' => $entityName,
+                'properties' => $properties,
                 'description' => null,
             ];
         }
@@ -422,7 +430,7 @@ class GenerateIdeHelperCommand extends Command
         $models = [];
 
         foreach ($entityTypes as $entityName => $entityType) {
-            if ( ! $this->isEntity($entityName)) {
+            if (! $this->isEntity($entityName)) {
                 continue;
             }
 
@@ -441,16 +449,16 @@ class GenerateIdeHelperCommand extends Command
                     $nullable = $propertyValue['$Nullable'] ?? true;
 
                     $properties[$propertyName] = [
-                        'type'        => $this->mapODataType($propertyType),
-                        'nullable'    => $nullable,
+                        'type' => $this->mapODataType($propertyType),
+                        'nullable' => $nullable,
                         'description' => null,
                     ];
                 }
             }
 
             $models[$entityName] = [
-                'resource'    => $entityName,
-                'properties'  => $properties,
+                'resource' => $entityName,
+                'properties' => $properties,
                 'description' => null,
             ];
         }
@@ -487,7 +495,7 @@ class GenerateIdeHelperCommand extends Command
         sort($entityNames);
 
         $columns = 3;
-        $rows = ceil(count($entityNames) / $columns);
+        $rows = (int) ceil(count($entityNames) / $columns);
 
         for ($i = 0; $i < $rows; $i++) {
             $line = '';
@@ -501,7 +509,7 @@ class GenerateIdeHelperCommand extends Command
         }
 
         $this->info('');
-        $this->info('Total: ' . count($entityNames) . ' entity types');
+        $this->info('Total: '.count($entityNames).' entity types');
         $this->info('');
         $this->comment('Use these entity names in your model\'s $resource property.');
     }
@@ -511,7 +519,7 @@ class GenerateIdeHelperCommand extends Command
         $namespace = config('abacus-api.models_namespace');
         $modelsPath = $this->namespaceToPath($namespace);
 
-        if ( ! is_dir($modelsPath)) {
+        if (! is_dir($modelsPath)) {
             $this->comment("No models directory found at: {$modelsPath}");
             $this->comment('Generating IDE helper for all entity types from metadata...');
 
@@ -519,12 +527,12 @@ class GenerateIdeHelperCommand extends Command
         }
 
         $userModels = [];
-        $files = File::glob($modelsPath . '/*.php');
+        $files = File::glob($modelsPath.'/*.php');
 
         foreach ($files as $file) {
             $modelInfo = $this->extractModelInfo($file, $namespace);
 
-            if ( ! $modelInfo) {
+            if (! $modelInfo) {
                 continue;
             }
 
@@ -534,8 +542,8 @@ class GenerateIdeHelperCommand extends Command
             /* Find the entity in metadata */
             if (isset($entityModels[$resource])) {
                 $userModels[$className] = [
-                    'resource'    => $className,
-                    'properties'  => $entityModels[$resource]['properties'],
+                    'resource' => $className,
+                    'properties' => $entityModels[$resource]['properties'],
                     'description' => $resource !== $className ? "Mapped from {$resource}" : null,
                 ];
 
@@ -553,7 +561,7 @@ class GenerateIdeHelperCommand extends Command
             return $entityModels;
         }
 
-        $this->info('Found ' . count($userModels) . ' user models');
+        $this->info('Found '.count($userModels).' user models');
 
         return $userModels;
     }
@@ -575,14 +583,14 @@ class GenerateIdeHelperCommand extends Command
         /* Extract the $resource property */
         if (preg_match('/protected\s+static\s+string\s+\$resource\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $matches)) {
             return [
-                'class'    => $fileName,
+                'class' => $fileName,
                 'resource' => $matches[1],
             ];
         }
 
         /* If no $resource is defined, assume it matches the class name */
         return [
-            'class'    => $fileName,
+            'class' => $fileName,
             'resource' => $fileName,
         ];
     }
@@ -598,7 +606,7 @@ class GenerateIdeHelperCommand extends Command
             ' * IDE Helper for Abacus REST Models',
             ' * ',
             ' * Generated with: php artisan abacus:generate-ide-helper',
-            ' * Date: ' . now()->toDateTimeString(),
+            ' * Date: '.now()->toDateTimeString(),
             ' * ',
             ' * DO NOT EDIT THIS FILE MANUALLY!',
             ' * This file is auto-generated and will be overwritten.',
@@ -624,7 +632,7 @@ class GenerateIdeHelperCommand extends Command
         $lines = ['    /**'];
 
         if ($model['description']) {
-            $lines[] = '     * ' . $model['description'];
+            $lines[] = '     * '.$model['description'];
             $lines[] = '     *';
         }
 
@@ -637,7 +645,7 @@ class GenerateIdeHelperCommand extends Command
             $line = "     * @property {$type} \${$propertyName}";
 
             if ($property['description']) {
-                $line .= ' ' . $property['description'];
+                $line .= ' '.$property['description'];
             }
 
             $lines[] = $line;
@@ -648,23 +656,23 @@ class GenerateIdeHelperCommand extends Command
         $methods = [
             "@method static {$modelName}|null find(\$id)",
             "@method static {$modelName}|null first()",
-            "@method static \\Illuminate\\Support\\Collection|static[] all()",
-            "@method static \\Illuminate\\Support\\Collection|static[] firstPage()",
-            "@method static \\Illuminate\\Support\\Collection|static[] get()",
+            '@method static \\Illuminate\\Support\\Collection|static[] all()',
+            '@method static \\Illuminate\\Support\\Collection|static[] firstPage()',
+            '@method static \\Illuminate\\Support\\Collection|static[] get()',
             "@method static {$modelName} create(array \$attributes)",
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder query()",
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder where(string \$field, string \$operator, mixed \$value)",
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder whereEquals(string \$field, mixed \$value)",
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder select(array|string \$fields)",
+            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder query()',
+            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder where(string $field, string $operator, mixed $value)',
+            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder whereEquals(string $field, mixed $value)',
+            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder select(array|string $fields)',
             "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder orderBy(string \$field, string \$direction = 'asc')",
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder top(int \$limit)",
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder limit(int \$limit)",
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder take(int \$limit)",
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder expand(array|string \$relations)",
+            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder top(int $limit)',
+            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder limit(int $limit)',
+            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder take(int $limit)',
+            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder expand(array|string $relations)',
         ];
 
         foreach ($methods as $method) {
-            $lines[] = '     * ' . $method;
+            $lines[] = '     * '.$method;
         }
 
         $lines[] = '     */';
