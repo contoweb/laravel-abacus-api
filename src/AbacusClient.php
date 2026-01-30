@@ -9,6 +9,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 abstract class AbacusClient
 {
@@ -21,14 +22,14 @@ abstract class AbacusClient
     protected string $apiVersion;
 
     public function __construct(
-        LoggerInterface $logger,
         ?string $baseUrl = null,
         ?string $mandate = null,
         ?string $clientId = null,
         ?string $clientSecret = null,
-        ?string $apiVersion = null
+        ?string $apiVersion = null,
+        ?LoggerInterface $logger = null,
     ) {
-        $this->logger = $logger;
+        $this->logger = $logger ?: new NullLogger();
         $this->baseUrl      = $baseUrl      ?? config('abacus-api.rest_api.url');
         $this->mandate      = $mandate      ?? config('abacus-api.rest_api.mandate');
         $this->clientId     = $clientId     ?? config('abacus-api.rest_api.client_id');
@@ -160,7 +161,7 @@ abstract class AbacusClient
                 'path' => $path,
             ]);
 
-            return $this->client()->get($path);
+            return $this->client()->get($path, $queryString);
         })->throw();
     }
 
