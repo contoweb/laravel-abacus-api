@@ -1,7 +1,9 @@
 # Abacus REST API Package for Laravel
 
-[![Latest Version](https://img.shields.io/packagist/v/contoweb/laravel-abacus-api.svg?style=flat-square)](https://packagist.org/packages/contoweb/laravel-abacus-api)
-[![License](https://img.shields.io/packagist/l/contoweb/laravel-abacus-api.svg?style=flat-square)](LICENSE.md)
+[![Tests](https://github.com/contoweb/laravel-abacus-api/actions/workflows/tests.yml/badge.svg)](https://github.com/contoweb/laravel-abacus-api/actions/workflows/tests.yml)
+[![Code Style](https://github.com/contoweb/laravel-abacus-api/actions/workflows/code-style.yml/badge.svg)](https://github.com/contoweb/laravel-abacus-api/actions/workflows/code-style.yml)
+[![Latest Stable Version](https://poser.pugx.org/contoweb/laravel-abacus-api/v/stable)](https://packagist.org/packages/contoweb/laravel-abacus-api)
+[![License](https://poser.pugx.org/contoweb/laravel-abacus-api/license)](https://packagist.org/packages/contoweb/laravel-abacus-api)
 
 Laravel package for the Abacus REST API with OData support and Eloquent-like models.
 
