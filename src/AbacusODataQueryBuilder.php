@@ -28,7 +28,7 @@ class AbacusODataQueryBuilder
         $this->modelClass = $modelClass;
         $this->pages = config('abacus-api.query_builder.max_next_link_page_resolving') ?? 0;
         $this->cursor = false;
-        $this->queryState = new OdataQueryState();
+        $this->queryState = new ODataQueryState();
     }
 
     /**
