@@ -45,7 +45,7 @@ class Product extends AbacusModel
     }
 
     /*
-     * Determines whether a serial number should be kept from incoming goods, for e.g. purchase order.
+     * Determines whether a serial number should be assigned from stock movement inbound (Wareneingang), for e.g. purchase order.
      */
     public function keepSerialNumberFromReceipt(): bool
     {
