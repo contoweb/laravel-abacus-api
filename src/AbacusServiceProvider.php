@@ -18,7 +18,7 @@ class AbacusServiceProvider extends ServiceProvider
     {
         /* Merge config */
         $this->mergeConfigFrom(
-            __DIR__ . '/../config/abacus-api.php',
+            __DIR__.'/../config/abacus-api.php',
             'abacus-api'
         );
 
@@ -48,7 +48,7 @@ class AbacusServiceProvider extends ServiceProvider
     {
         // Publish config with multiple tags
         $this->publishes([
-            __DIR__ . '/../config/abacus-api.php' => config_path('abacus-api.php'),
+            __DIR__.'/../config/abacus-api.php' => config_path('abacus-api.php'),
         ], ['config', 'abacus-config', 'abacus', 'abacus-api']);
 
         // Register commands

@@ -13,7 +13,7 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         /* Set up encryption for all tests */
         $this->setUpEncryption();
     }

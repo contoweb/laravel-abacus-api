@@ -14,7 +14,7 @@ class HttpMockHelper
     public static function mockSuccessfulWorkflow(array $customResponses = []): void
     {
         $defaultResponses = [
-            '*/oauth/oauth2/v1/token'=> Http::response(ResponseFixtures::successfulTokenResponse(), 200),
+            '*/oauth/oauth2/v1/token' => Http::response(ResponseFixtures::successfulTokenResponse(), 200),
         ];
 
         Http::fake(array_merge($defaultResponses, $customResponses));
@@ -26,7 +26,7 @@ class HttpMockHelper
     public static function mockCrudWorkflow(string $resource = 'Subjects', int $entityId = 1): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response(ResponseFixtures::successfulTokenResponse(), 200),
+            '*/oauth/oauth2/v1/token' => Http::response(ResponseFixtures::successfulTokenResponse(), 200),
 
             /* Create */
             "*/api/entity/v1/mandants/*/{$resource}" => Http::response(
@@ -63,7 +63,7 @@ class HttpMockHelper
     public static function mockPagination(int $totalPages = 3): void
     {
         $responses = [
-            '*/oauth/oauth2/v1/token'=> Http::response(ResponseFixtures::successfulTokenResponse(), 200),
+            '*/oauth/oauth2/v1/token' => Http::response(ResponseFixtures::successfulTokenResponse(), 200),
         ];
 
         for ($page = 1; $page <= $totalPages; $page++) {
@@ -75,7 +75,7 @@ class HttpMockHelper
                     200
                 );
             } else {
-                $responses["https://api.example.com/api/entities?skip=" . (($page - 1) * 10)] = Http::response(
+                $responses['https://api.example.com/api/entities?skip='.(($page - 1) * 10)] = Http::response(
                     ResponseFixtures::paginatedResponse($page, $hasNext),
                     200
                 );
@@ -117,7 +117,7 @@ class HttpMockHelper
         int $pollAttempts = 2
     ): void {
         $responses = [
-            '*/oauth/oauth2/v1/token'=> Http::response(ResponseFixtures::successfulTokenResponse(), 200),
+            '*/oauth/oauth2/v1/token' => Http::response(ResponseFixtures::successfulTokenResponse(), 200),
             "*/api/abareport/v1/report/{$reportName}" => Http::response(
                 ResponseFixtures::reportJobSubmittedResponse($jobId),
                 202
@@ -146,7 +146,7 @@ class HttpMockHelper
     public static function mockFailedReport(string $error = 'Report execution failed'): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response(ResponseFixtures::successfulTokenResponse(), 200),
+            '*/oauth/oauth2/v1/token' => Http::response(ResponseFixtures::successfulTokenResponse(), 200),
             '*/api/abareport/v1/report/*' => Http::response(
                 ResponseFixtures::reportJobSubmittedResponse('job-fail'),
                 202
@@ -164,7 +164,7 @@ class HttpMockHelper
     public static function mockMetadata(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response(ResponseFixtures::successfulTokenResponse(), 200),
+            '*/oauth/oauth2/v1/token' => Http::response(ResponseFixtures::successfulTokenResponse(), 200),
             '*/api/entity/v1/mandants/*/$metadata' => Http::response(
                 ResponseFixtures::metadataResponse(),
                 200,
@@ -179,7 +179,7 @@ class HttpMockHelper
     public static function mockError(int $statusCode = 400, string $message = 'Bad Request'): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response(ResponseFixtures::successfulTokenResponse(), 200),
+            '*/oauth/oauth2/v1/token' => Http::response(ResponseFixtures::successfulTokenResponse(), 200),
             '*' => Http::response(ResponseFixtures::errorResponse($statusCode, $message), $statusCode),
         ]);
     }

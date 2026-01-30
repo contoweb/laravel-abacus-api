@@ -2,8 +2,8 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\AbacusODataClient;
+use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
@@ -19,13 +19,13 @@ class AbacusClientTest extends TestCase
         parent::setUp();
 
         Cache::flush();
-        $this->client = new AbacusODataClient();
+        $this->client = new AbacusODataClient;
     }
 
     #[Test]
     public function it_constructs_with_config_values(): void
     {
-        $client = new AbacusODataClient();
+        $client = new AbacusODataClient;
 
         $this->assertEquals('https://api.example.com', $client->getUrl());
         $this->assertEquals('test-mandate', $client->getMandate());
@@ -74,7 +74,7 @@ class AbacusClientTest extends TestCase
     public function it_fetches_fresh_access_token(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token-12345',
                 'expires_in' => 3600,
                 'token_type' => 'Bearer',
@@ -95,7 +95,7 @@ class AbacusClientTest extends TestCase
     public function it_caches_access_token_with_buffer(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'cached-token',
                 'expires_in' => 3600,
             ], 200),
@@ -121,7 +121,7 @@ class AbacusClientTest extends TestCase
     public function it_throws_exception_when_token_fetch_fails(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([], 401),
+            '*/oauth/oauth2/v1/token' => Http::response([], 401),
         ]);
 
         $this->expectException(\RuntimeException::class);
@@ -138,7 +138,7 @@ class AbacusClientTest extends TestCase
     public function it_throws_exception_when_access_token_missing_in_response(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'expires_in' => 3600,
             ], 200),
         ]);
@@ -157,7 +157,7 @@ class AbacusClientTest extends TestCase
     public function it_reuses_cached_access_token(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'initial-token',
                 'expires_in' => 3600,
             ], 200),
@@ -179,7 +179,7 @@ class AbacusClientTest extends TestCase
     public function it_performs_get_request(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -205,7 +205,7 @@ class AbacusClientTest extends TestCase
     public function it_performs_post_request(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -230,7 +230,7 @@ class AbacusClientTest extends TestCase
     public function it_performs_patch_request(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -254,7 +254,7 @@ class AbacusClientTest extends TestCase
     public function it_performs_put_request(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -277,7 +277,7 @@ class AbacusClientTest extends TestCase
     public function it_performs_delete_request(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -298,7 +298,7 @@ class AbacusClientTest extends TestCase
     public function it_refreshes_token_on_401_response(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::sequence()
+            '*/oauth/oauth2/v1/token' => Http::sequence()
                 ->push(['access_token' => 'initial-token', 'expires_in' => 3600], 200)
                 ->push(['access_token' => 'refreshed-token', 'expires_in' => 3600], 200),
             '*/api/entities' => Http::sequence()
@@ -329,7 +329,7 @@ class AbacusClientTest extends TestCase
         Cache::put($cacheKey, $oldEncryptedToken, 3600);
 
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'refreshed-token',
                 'expires_in' => 3600,
             ], 200),
@@ -352,7 +352,7 @@ class AbacusClientTest extends TestCase
     public function it_throws_exception_on_request_failure(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -368,7 +368,7 @@ class AbacusClientTest extends TestCase
     public function it_includes_accept_json_header(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),

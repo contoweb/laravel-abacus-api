@@ -10,8 +10,11 @@ class AbacusODataBatchQueryBuilder
     use HasODataQueryMethods;
 
     private AbacusODataClient $client;
+
     private string $resource;
+
     private string $modelClass;
+
     protected ODataQueryState $queryState;
 
     public function __construct(AbacusODataClient $client, string $resource, string $modelClass)
@@ -19,7 +22,7 @@ class AbacusODataBatchQueryBuilder
         $this->client = $client;
         $this->resource = $resource;
         $this->modelClass = $modelClass;
-        $this->queryState = new ODataQueryState();
+        $this->queryState = new ODataQueryState;
     }
 
     public function all(): BatchRequestItem
@@ -28,10 +31,9 @@ class AbacusODataBatchQueryBuilder
 
         return new BatchRequestItem($this->modelClass, 'GET', $path, null);
     }
+
     /**
      * Prepare a get operation as batch request item
-     *
-     * @return BatchRequestItem
      */
     public function get(): BatchRequestItem
     {
@@ -39,8 +41,8 @@ class AbacusODataBatchQueryBuilder
         $odataParams = $this->queryState->buildODataQuery();
 
         /* Build full path with query string */
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->client->buildQueryString($odataParams);
+        if (! empty($odataParams)) {
+            $path .= '?'.$this->client->buildQueryString($odataParams);
         }
 
         return new BatchRequestItem($this->modelClass, 'GET', $path, null);
@@ -49,8 +51,7 @@ class AbacusODataBatchQueryBuilder
     /**
      * Prepare a find operation as batch request item
      *
-     * @param int|string|array<string, int|string> $idOrCriteria
-     * @return BatchRequestItem
+     * @param  int|string|array<string, int|string>  $idOrCriteria
      */
     public function find(int|string|array $idOrCriteria): BatchRequestItem
     {
@@ -59,8 +60,8 @@ class AbacusODataBatchQueryBuilder
         $path = $this->queryState->buildPathWithId($this->client, $this->resource);
         $odataParams = $this->queryState->buildODataQuery();
 
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->client->buildQueryString($odataParams);
+        if (! empty($odataParams)) {
+            $path .= '?'.$this->client->buildQueryString($odataParams);
         }
 
         return new BatchRequestItem($this->modelClass, 'GET', $path, null);
@@ -69,16 +70,15 @@ class AbacusODataBatchQueryBuilder
     /**
      * Prepare a create operation as batch request item
      *
-     * @param array<string, int|string> $data
-     * @return BatchRequestItem
+     * @param  array<string, int|string>  $data
      */
     public function create(array $data): BatchRequestItem
     {
         $path = $this->client->entityPath($this->resource);
         $odataParams = $this->queryState->buildODataQuery();
 
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->client->buildQueryString($odataParams);
+        if (! empty($odataParams)) {
+            $path .= '?'.$this->client->buildQueryString($odataParams);
         }
 
         return new BatchRequestItem($this->modelClass, 'POST', $path, $data);
@@ -87,8 +87,7 @@ class AbacusODataBatchQueryBuilder
     /**
      * Prepare a delete operation as batch request item
      *
-     * @param int|string|array<string, int|string> $idOrCriteria
-     * @return BatchRequestItem
+     * @param  int|string|array<string, int|string>  $idOrCriteria
      */
     public function delete(int|string|array $idOrCriteria): BatchRequestItem
     {
@@ -96,8 +95,8 @@ class AbacusODataBatchQueryBuilder
         $path = $this->queryState->buildPathWithId($this->client, $this->resource);
         $odataParams = $this->queryState->buildODataQuery();
 
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->client->buildQueryString($odataParams);
+        if (! empty($odataParams)) {
+            $path .= '?'.$this->client->buildQueryString($odataParams);
         }
 
         return new BatchRequestItem($this->modelClass, 'DELETE', $path, null);
@@ -106,9 +105,8 @@ class AbacusODataBatchQueryBuilder
     /**
      * Prepare a batch operation as batch request item
      *
-     * @param int|string|array<string, int|string> $idOrCriteria
-     * @param array<string, int|string> $data
-     * @return BatchRequestItem
+     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @param  array<string, int|string>  $data
      */
     public function update(int|string|array $idOrCriteria, array $data): BatchRequestItem
     {
@@ -116,8 +114,8 @@ class AbacusODataBatchQueryBuilder
         $path = $this->queryState->buildPathWithId($this->client, $this->resource);
         $odataParams = $this->queryState->buildODataQuery();
 
-        if (!empty($odataParams)) {
-            $path .= '?' . $this->client->buildQueryString($odataParams);
+        if (! empty($odataParams)) {
+            $path .= '?'.$this->client->buildQueryString($odataParams);
         }
 
         return new BatchRequestItem($this->modelClass, 'PATCH', $path, $data);
@@ -125,8 +123,6 @@ class AbacusODataBatchQueryBuilder
 
     /**
      * Prepare a get operation and return the first result
-     *
-     * @return BatchRequestItem
      */
     public function first(): BatchRequestItem
     {

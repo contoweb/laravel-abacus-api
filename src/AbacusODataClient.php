@@ -5,8 +5,8 @@ namespace Contoweb\AbacusApi;
 use Contoweb\AbacusApi\Batch\MultipartEncoder;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
 
 class AbacusODataClient extends AbacusClient
 {
@@ -20,9 +20,9 @@ class AbacusODataClient extends AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($url) {
             return Http::withToken($this->getAccessToken())
-                       ->withHeaders(['Accept' => 'application/json'])
-                       ->timeout(30)
-                       ->get($url);
+                ->withHeaders(['Accept' => 'application/json'])
+                ->timeout(30)
+                ->get($url);
         })->throw();
     }
 
@@ -39,7 +39,7 @@ class AbacusODataClient extends AbacusClient
      */
     public function entityPath(string $resource): string
     {
-        return $this->getEntityBasePath() . "/{$this->mandate}/{$resource}";
+        return $this->getEntityBasePath()."/{$this->mandate}/{$resource}";
     }
 
     /**
@@ -47,7 +47,7 @@ class AbacusODataClient extends AbacusClient
      */
     public function entityPathWithId(string $resource, mixed $id): string
     {
-        return $this->getEntityBasePath() . "/{$this->mandate}/{$resource}({$id})";
+        return $this->getEntityBasePath()."/{$this->mandate}/{$resource}({$id})";
     }
 
     /**
@@ -55,7 +55,7 @@ class AbacusODataClient extends AbacusClient
      */
     public function entityPropertyPath(string $resource, mixed $id, string $property): string
     {
-        return $this->getEntityBasePath() . "/{$this->mandate}/{$resource}({$id})/{$property}";
+        return $this->getEntityBasePath()."/{$this->mandate}/{$resource}({$id})/{$property}";
     }
 
     /**
@@ -63,7 +63,7 @@ class AbacusODataClient extends AbacusClient
      */
     public function metadataPath(): string
     {
-        return $this->getEntityBasePath() . "/{$this->mandate}/\$metadata";
+        return $this->getEntityBasePath()."/{$this->mandate}/\$metadata";
     }
 
     /**
@@ -71,7 +71,7 @@ class AbacusODataClient extends AbacusClient
      */
     public function entitiesPath(): string
     {
-        return $this->getEntityBasePath() . "/{$this->mandate}/";
+        return $this->getEntityBasePath()."/{$this->mandate}/";
     }
 
     /**
@@ -79,15 +79,12 @@ class AbacusODataClient extends AbacusClient
      */
     public function batchPath(): string
     {
-        return $this->getEntityBasePath() . "/{$this->mandate}/\$batch";
+        return $this->getEntityBasePath()."/{$this->mandate}/\$batch";
     }
 
     /**
      * Send batch request with multiple operations
      *
-     * @param string $path
-     * @param string $body
-     * @return Response
      * @throws ConnectionException
      * @throws RequestException
      */

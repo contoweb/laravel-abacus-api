@@ -14,8 +14,8 @@ class MakeAbacusModelCommand extends Command
 
     public function handle(): int
     {
-        $name      = $this->argument('name');
-        $resource  = $this->option('resource') ?? Str::plural($name);
+        $name = $this->argument('name');
+        $resource = $this->option('resource') ?? Str::plural($name);
         $namespace = config('abacus-api.models_namespace');
 
         $path = $this->getPath($namespace, $name);
@@ -28,7 +28,7 @@ class MakeAbacusModelCommand extends Command
 
         $this->makeDirectory($path);
 
-        $stub    = $this->getStub();
+        $stub = $this->getStub();
         $content = $this->replaceStub($stub, $name, $resource, $namespace);
 
         File::put($path, $content);
@@ -43,7 +43,7 @@ class MakeAbacusModelCommand extends Command
     protected function getPath(string $namespace, string $name): string
     {
         $namespacePath = str_replace('\\', '/', $namespace);
-        $appPath       = app_path();
+        $appPath = app_path();
 
         // Remove 'App' from namespace path
         $namespacePath = preg_replace('/^App\//', '', $namespacePath);
@@ -55,7 +55,7 @@ class MakeAbacusModelCommand extends Command
     {
         $directory = dirname($path);
 
-        if ( ! File::isDirectory($directory)) {
+        if (! File::isDirectory($directory)) {
             File::makeDirectory($directory, 0755, true);
         }
     }

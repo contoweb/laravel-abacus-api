@@ -84,7 +84,7 @@ class MultipartEncoderTest extends TestCase
 
         $this->assertStringContainsString('DELETE /api/entity/v1/mandants/test-mandate/Subjects(456) HTTP/1.1', $encoded);
         $this->assertStringContainsString('Content-Type: application/json', $encoded);
-        
+
         /* DELETE should not have a body */
         $this->assertStringNotContainsString('{', $encoded);
     }
@@ -203,7 +203,7 @@ class MultipartEncoderTest extends TestCase
         /* Should have boundaries but no content between them */
         $this->assertStringContainsString('--batch_boundary', $encoded);
         $this->assertStringEndsWith("--batch_boundary--\r\n", $encoded);
-        
+
         /* Should only have 2 boundaries: start and end */
         $boundaryCount = substr_count($encoded, '--batch_boundary');
         $this->assertEquals(2, $boundaryCount);
@@ -262,7 +262,7 @@ class MultipartEncoderTest extends TestCase
 
         /* Should use \r\n (CRLF) for HTTP protocol */
         $this->assertStringContainsString("\r\n", $encoded);
-        
+
         /* Should not use just \n */
         $withoutCR = str_replace("\r\n", "\n", $encoded);
         $this->assertNotEquals($encoded, $withoutCR);

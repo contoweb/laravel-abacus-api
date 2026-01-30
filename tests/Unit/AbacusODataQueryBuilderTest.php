@@ -2,24 +2,25 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
 class AbacusODataQueryBuilderTest extends TestCase
 {
     protected AbacusService $service;
+
     protected AbacusODataClient $client;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->client = new AbacusODataClient();
+        $this->client = new AbacusODataClient;
         $this->service = new AbacusService($this->client);
     }
 
@@ -50,7 +51,7 @@ class AbacusODataQueryBuilderTest extends TestCase
     {
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
         $builder->where('LastName', 'eq', 'Müller')
-                ->where('Age', 'gt', 18);
+            ->where('Age', 'gt', 18);
 
         $query = $builder->toODataQuery();
 
@@ -95,7 +96,7 @@ class AbacusODataQueryBuilderTest extends TestCase
     {
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
         $builder->where('IsActive', 'eq', true)
-                ->where('IsDeleted', 'eq', false);
+            ->where('IsDeleted', 'eq', false);
 
         $query = $builder->toODataQuery();
 
@@ -153,10 +154,10 @@ class AbacusODataQueryBuilderTest extends TestCase
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
 
         $builder->where('Field1', 'eq', 1)
-                ->where('Field2', 'lt', 2)
-                ->where('Field3', 'gt', 3)
-                ->where('Field4', 'le', 4)
-                ->where('Field5', 'ge', 5);
+            ->where('Field2', 'lt', 2)
+            ->where('Field3', 'gt', 3)
+            ->where('Field4', 'le', 4)
+            ->where('Field5', 'ge', 5);
 
         $query = $builder->toODataQuery();
 
@@ -194,7 +195,7 @@ class AbacusODataQueryBuilderTest extends TestCase
     {
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
         $builder->select('Id', 'Name')
-                ->select('Email');
+            ->select('Email');
 
         $query = $builder->toODataQuery();
 
@@ -282,7 +283,7 @@ class AbacusODataQueryBuilderTest extends TestCase
     {
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
         $builder->orderBy('FirstName', 'asc')
-                ->orderBy('LastName', 'desc');
+            ->orderBy('LastName', 'desc');
 
         $query = $builder->toODataQuery();
 
@@ -316,7 +317,7 @@ class AbacusODataQueryBuilderTest extends TestCase
     {
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
         $builder->expand('Addresses')
-                ->expand('Contacts', 'Orders');
+            ->expand('Contacts', 'Orders');
 
         $query = $builder->toODataQuery();
 
@@ -327,7 +328,7 @@ class AbacusODataQueryBuilderTest extends TestCase
     public function it_executes_first(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -348,7 +349,7 @@ class AbacusODataQueryBuilderTest extends TestCase
     public function it_executes_find(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -369,7 +370,7 @@ class AbacusODataQueryBuilderTest extends TestCase
     public function it_executes_find_property(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -390,9 +391,9 @@ class AbacusODataQueryBuilderTest extends TestCase
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
 
         $result = $builder->where('IsActive', 'eq', true)
-                          ->select('Id', 'Name')
-                          ->orderBy('Name', 'asc')
-                          ->top(10);
+            ->select('Id', 'Name')
+            ->orderBy('Name', 'asc')
+            ->top(10);
 
         $this->assertInstanceOf(AbacusODataQueryBuilder::class, $result);
     }

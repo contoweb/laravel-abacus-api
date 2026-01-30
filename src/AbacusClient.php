@@ -14,12 +14,18 @@ use Psr\Log\NullLogger;
 abstract class AbacusClient
 {
     const CACHE_NAMESPACE = 'abacus_access_token:';
-    protected LoggerInterface $logger;
+
     protected string $baseUrl;
+
     protected string $mandate;
+
     protected string $clientId;
+
     protected string $clientSecret;
+
     protected string $apiVersion;
+
+    protected LoggerInterface $logger;
 
     public function __construct(
         ?string $baseUrl = null,
@@ -29,12 +35,12 @@ abstract class AbacusClient
         ?string $apiVersion = null,
         ?LoggerInterface $logger = null,
     ) {
-        $this->logger = $logger ?: new NullLogger();
-        $this->baseUrl      = $baseUrl      ?? config('abacus-api.rest_api.url');
-        $this->mandate      = $mandate      ?? config('abacus-api.rest_api.mandate');
-        $this->clientId     = $clientId     ?? config('abacus-api.rest_api.client_id');
+        $this->baseUrl = $baseUrl ?? config('abacus-api.rest_api.url');
+        $this->mandate = $mandate ?? config('abacus-api.rest_api.mandate');
+        $this->clientId = $clientId ?? config('abacus-api.rest_api.client_id');
         $this->clientSecret = $clientSecret ?? config('abacus-api.rest_api.client_secret');
-        $this->apiVersion   = $apiVersion   ?? config('abacus-api.rest_api.version');
+        $this->apiVersion = $apiVersion ?? config('abacus-api.rest_api.version');
+        $this->logger = $logger ?: new NullLogger();
     }
 
     /*
@@ -43,11 +49,11 @@ abstract class AbacusClient
     protected function client(): PendingRequest
     {
         return Http::baseUrl($this->getBaseUrl())
-                   ->withToken($this->getAccessToken())
-                   ->withHeaders([
-                       'Accept' => 'application/json',
-                   ])
-                   ->timeout(30);
+            ->withToken($this->getAccessToken())
+            ->withHeaders([
+                'Accept' => 'application/json',
+            ])
+            ->timeout(30);
     }
 
     /*
@@ -57,8 +63,8 @@ abstract class AbacusClient
     {
         $url = $this->baseUrl;
 
-        if ( ! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
-            $url = 'https://' . $url;
+        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            $url = 'https://'.$url;
         }
 
         return $url;
@@ -69,7 +75,7 @@ abstract class AbacusClient
      */
     protected function getCacheKey(): string
     {
-        return self::CACHE_NAMESPACE . md5($this->baseUrl . $this->clientId . $this->mandate);
+        return self::CACHE_NAMESPACE.md5($this->baseUrl.$this->clientId.$this->mandate);
     }
 
     /*
@@ -101,18 +107,18 @@ abstract class AbacusClient
     protected function fetchFreshAccessToken(): string
     {
         $response = Http::asForm()
-                        ->post($this->getBaseUrl() . $this->getTokenEndpoint(), [
-                            'grant_type'    => 'client_credentials',
-                            'client_id'     => $this->clientId,
-                            'client_secret' => $this->clientSecret,
-                        ]);
+            ->post($this->getBaseUrl().$this->getTokenEndpoint(), [
+                'grant_type' => 'client_credentials',
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+            ]);
 
         if ($response->failed() || $response->json('access_token') === null) {
             throw new \RuntimeException('Cannot fetch access token from API.');
         }
 
-        $accessToken   = $response->json('access_token');
-        $tokenLifetime = (int)$response->json('expires_in');
+        $accessToken = $response->json('access_token');
+        $tokenLifetime = (int) $response->json('expires_in');
 
         /* Cache token with 10 second buffer before expiration */
         Cache::put(
@@ -132,8 +138,8 @@ abstract class AbacusClient
     {
         $response = $callback();
 
-        if ( ! ($response instanceof Response)) {
-            throw new \TypeError('Callback function must return an instance of ' . Response::class);
+        if (! ($response instanceof Response)) {
+            throw new \TypeError('Callback function must return an instance of '.Response::class);
         }
 
         if ($response->status() === 401) {
@@ -174,8 +180,8 @@ abstract class AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($path, $data, $queryString) {
 
-            if (!empty($queryString)) {
-                $path .= '?' . $this->buildQueryString($queryString);
+            if (! empty($queryString)) {
+                $path .= '?'.$this->buildQueryString($queryString);
             }
 
             $this->logger->info('POST request', [
@@ -196,8 +202,8 @@ abstract class AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($path, $data, $queryString) {
 
-            if (!empty($queryString)) {
-                $path .= '?' . $this->buildQueryString($queryString);
+            if (! empty($queryString)) {
+                $path .= '?'.$this->buildQueryString($queryString);
             }
 
             $this->logger->info('PATCH request', [
@@ -218,8 +224,8 @@ abstract class AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($path, $data, $queryString) {
 
-            if (!empty($queryString)) {
-                $path .= '?' . $this->buildQueryString($queryString);
+            if (! empty($queryString)) {
+                $path .= '?'.$this->buildQueryString($queryString);
             }
 
             $this->logger->info('PUT request', [
@@ -271,8 +277,8 @@ abstract class AbacusClient
     {
         $queryParts = [];
         foreach ($params as $key => $value) {
-            $encodedValue = str_replace('+', '%20', urlencode((string)$value));
-            $queryParts[] = $key . '=' . $encodedValue;
+            $encodedValue = str_replace('+', '%20', urlencode((string) $value));
+            $queryParts[] = $key.'='.$encodedValue;
         }
 
         return implode('&', $queryParts);

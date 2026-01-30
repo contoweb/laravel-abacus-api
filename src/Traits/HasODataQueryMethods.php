@@ -26,6 +26,7 @@ trait HasODataQueryMethods
     {
 
         $this->queryState->orderBy($field, $direction);
+
         return $this;
     }
 

@@ -12,12 +12,6 @@ class BatchRequestItem
 
     public readonly ?array $body;
 
-    /**
-     * @param string $modelClass
-     * @param string $method
-     * @param string $path
-     * @param array|null $body
-     */
     public function __construct(string $modelClass, string $method, string $path, ?array $body)
     {
         $this->modelClass = $modelClass;

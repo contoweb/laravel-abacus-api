@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\Test;
 class AbacusServiceTest extends TestCase
 {
     protected AbacusService $service;
+
     protected AbacusODataClient $client;
 
     protected function setUp(): void
@@ -21,7 +22,7 @@ class AbacusServiceTest extends TestCase
         parent::setUp();
 
         Cache::flush();
-        $this->client = new AbacusODataClient();
+        $this->client = new AbacusODataClient;
         $this->service = new AbacusService($this->client);
     }
 
@@ -135,10 +136,10 @@ class AbacusServiceTest extends TestCase
         $this->service->metadata();
 
         $cacheKey = 'abacus_metadata_test-mandate';
-        
+
         /* Cache should exist */
         $this->assertTrue(Cache::has($cacheKey));
-        
+
         /* Value should match */
         $this->assertEquals('<edmx:Edmx>cached</edmx:Edmx>', Cache::get($cacheKey));
     }
@@ -245,7 +246,7 @@ class AbacusServiceTest extends TestCase
         $reflection = new \ReflectionClass($this->service);
         $property = $reflection->getProperty('client');
         $property->setAccessible(true);
-        
+
         $client = $property->getValue($this->service);
 
         $this->assertInstanceOf(AbacusODataClient::class, $client);
@@ -267,7 +268,7 @@ class AbacusServiceTest extends TestCase
         $reflection = new \ReflectionClass($customService);
         $property = $reflection->getProperty('client');
         $property->setAccessible(true);
-        
+
         $client = $property->getValue($customService);
 
         $this->assertSame($customClient, $client);
@@ -301,14 +302,14 @@ class AbacusServiceTest extends TestCase
             $part .= "HTTP/1.1 {$statusCode} {$statusText}\r\n";
             $part .= "Content-Type: application/json\r\n";
             $part .= "\r\n";
-            $part .= $json . "\r\n";
+            $part .= $json."\r\n";
 
             $parts[] = $part;
         }
 
-        $body = '--' . $boundary . "\r\n";
-        $body .= implode("--" . $boundary . "\r\n", $parts);
-        $body .= "--" . $boundary . "--\r\n";
+        $body = '--'.$boundary."\r\n";
+        $body .= implode('--'.$boundary."\r\n", $parts);
+        $body .= '--'.$boundary."--\r\n";
 
         return $body;
     }
@@ -318,7 +319,7 @@ class AbacusServiceTest extends TestCase
      */
     protected function getStatusText(int $statusCode): string
     {
-        return match($statusCode) {
+        return match ($statusCode) {
             200 => 'OK',
             201 => 'Created',
             204 => 'No Content',
