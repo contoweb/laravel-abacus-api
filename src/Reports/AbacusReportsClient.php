@@ -13,11 +13,11 @@ class AbacusReportsClient extends AbacusClient
     /**
      * Submit a report for execution
      *
-     * @param string $reportName Name of the report (e.g., "mandate%2Freport.avx")
-     * @param array  $parameters Report parameters
-     * @param string $outputType Output format (default: json)
-     *
+     * @param  string  $reportName  Name of the report (e.g., "mandate%2Freport.avx")
+     * @param  array  $parameters  Report parameters
+     * @param  string  $outputType  Output format (default: json)
      * @return array Response containing job ID and state
+     *
      * @throws RequestException|ConnectionException
      */
     public function submitReport(string $reportName, array $parameters = [], string $outputType = 'json'): array
@@ -35,9 +35,9 @@ class AbacusReportsClient extends AbacusClient
     /**
      * Get job status
      *
-     * @param string $jobId Job identifier
-     *
+     * @param  string  $jobId  Job identifier
      * @return array Job status information
+     *
      * @throws RequestException|ConnectionException
      */
     public function getJobStatus(string $jobId): array
@@ -52,9 +52,9 @@ class AbacusReportsClient extends AbacusClient
     /**
      * Get job output (final result)
      *
-     * @param string $jobId Job identifier
-     *
+     * @param  string  $jobId  Job identifier
      * @return array Parsed JSON output
+     *
      * @throws RequestException|ConnectionException
      */
     public function getJobOutput(string $jobId): array
@@ -62,8 +62,8 @@ class AbacusReportsClient extends AbacusClient
         $path = $this->jobOutputPath($jobId);
 
         $response = Http::withToken($this->getAccessToken())
-                        ->get($this->getUrl() . $path)
-                        ->throw();
+            ->get($this->getUrl().$path)
+            ->throw();
 
         return $response->json() ?? [];
     }
@@ -71,9 +71,8 @@ class AbacusReportsClient extends AbacusClient
     /**
      * Delete/close a report job session
      *
-     * @param string $jobId Job identifier
+     * @param  string  $jobId  Job identifier
      *
-     * @return void
      * @throws RequestException|ConnectionException
      */
     public function deleteJob(string $jobId): void
@@ -86,11 +85,11 @@ class AbacusReportsClient extends AbacusClient
     /**
      * Poll job until completion
      *
-     * @param string $jobId        Job identifier
-     * @param int    $pollInterval Microseconds between polls (default: 200000 = 0.2s)
-     * @param int    $maxAttempts  Maximum number of poll attempts
-     *
+     * @param  string  $jobId  Job identifier
+     * @param  int  $pollInterval  Microseconds between polls (default: 200000 = 0.2s)
+     * @param  int  $maxAttempts  Maximum number of poll attempts
      * @return array Final job status
+     *
      * @throws ConnectionException
      * @throws ReportExecutionException
      * @throws RequestException
@@ -105,7 +104,7 @@ class AbacusReportsClient extends AbacusClient
             /* Check for error states */
             if (isset($status['status']) && ($status['status'] === 403 || $status['status'] === 500)) {
                 throw new ReportExecutionException(
-                    'AbaReport failed with message: ' . ($status['title'] ?? 'Unknown error')
+                    'AbaReport failed with message: '.($status['title'] ?? 'Unknown error')
                 );
             }
 
@@ -118,7 +117,7 @@ class AbacusReportsClient extends AbacusClient
             $attempts++;
         }
 
-        throw new ReportExecutionException('Report job polling timed out after ' . $maxAttempts . ' attempts');
+        throw new ReportExecutionException('Report job polling timed out after '.$maxAttempts.' attempts');
     }
 
     /**
@@ -134,7 +133,7 @@ class AbacusReportsClient extends AbacusClient
      */
     public function reportPath(string $reportName): string
     {
-        return $this->getReportBasePath() . '/report/' . $reportName;
+        return $this->getReportBasePath().'/report/'.$reportName;
     }
 
     /**
@@ -142,7 +141,7 @@ class AbacusReportsClient extends AbacusClient
      */
     public function jobPath(string $jobId): string
     {
-        return $this->getReportBasePath() . '/jobs/' . $jobId;
+        return $this->getReportBasePath().'/jobs/'.$jobId;
     }
 
     /**
@@ -150,6 +149,6 @@ class AbacusReportsClient extends AbacusClient
      */
     public function jobOutputPath(string $jobId): string
     {
-        return $this->getReportBasePath() . '/jobs/' . $jobId . '/output';
+        return $this->getReportBasePath().'/jobs/'.$jobId.'/output';
     }
 }

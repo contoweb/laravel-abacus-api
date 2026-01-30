@@ -11,14 +11,14 @@ class MultipartDecoderTest extends TestCase
     #[Test]
     public function it_decodes_simple_batch_response(): void
     {
-        $response = "--batch_boundary\r\n" .
-            "Content-Type: application/http\r\n" .
-            "Content-Transfer-Encoding: binary\r\n" .
-            "\r\n" .
-            "HTTP/1.1 200 OK\r\n" .
-            "Content-Type: application/json\r\n" .
-            "\r\n" .
-            '{"Id":1,"Name":"Test"}' . "\r\n" .
+        $response = "--batch_boundary\r\n".
+            "Content-Type: application/http\r\n".
+            "Content-Transfer-Encoding: binary\r\n".
+            "\r\n".
+            "HTTP/1.1 200 OK\r\n".
+            "Content-Type: application/json\r\n".
+            "\r\n".
+            '{"Id":1,"Name":"Test"}'."\r\n".
             "--batch_boundary--\r\n";
 
         $results = MultipartDecoder::decode($response, 'batch_boundary');
@@ -32,22 +32,22 @@ class MultipartDecoderTest extends TestCase
     #[Test]
     public function it_decodes_multiple_parts(): void
     {
-        $response = "--batch_boundary\r\n" .
-            "Content-Type: application/http\r\n" .
-            "Content-Transfer-Encoding: binary\r\n" .
-            "\r\n" .
-            "HTTP/1.1 200 OK\r\n" .
-            "Content-Type: application/json\r\n" .
-            "\r\n" .
-            '{"Id":1}' . "\r\n" .
-            "--batch_boundary\r\n" .
-            "Content-Type: application/http\r\n" .
-            "Content-Transfer-Encoding: binary\r\n" .
-            "\r\n" .
-            "HTTP/1.1 201 Created\r\n" .
-            "Content-Type: application/json\r\n" .
-            "\r\n" .
-            '{"Id":2}' . "\r\n" .
+        $response = "--batch_boundary\r\n".
+            "Content-Type: application/http\r\n".
+            "Content-Transfer-Encoding: binary\r\n".
+            "\r\n".
+            "HTTP/1.1 200 OK\r\n".
+            "Content-Type: application/json\r\n".
+            "\r\n".
+            '{"Id":1}'."\r\n".
+            "--batch_boundary\r\n".
+            "Content-Type: application/http\r\n".
+            "Content-Transfer-Encoding: binary\r\n".
+            "\r\n".
+            "HTTP/1.1 201 Created\r\n".
+            "Content-Type: application/json\r\n".
+            "\r\n".
+            '{"Id":2}'."\r\n".
             "--batch_boundary--\r\n";
 
         $results = MultipartDecoder::decode($response, 'batch_boundary');
@@ -60,14 +60,14 @@ class MultipartDecoderTest extends TestCase
     #[Test]
     public function it_handles_empty_body(): void
     {
-        $response = "--batch_boundary\r\n" .
-            "Content-Type: application/http\r\n" .
-            "Content-Transfer-Encoding: binary\r\n" .
-            "\r\n" .
-            "HTTP/1.1 204 No Content\r\n" .
-            "Content-Type: application/json\r\n" .
-            "\r\n" .
-            "\r\n" .
+        $response = "--batch_boundary\r\n".
+            "Content-Type: application/http\r\n".
+            "Content-Transfer-Encoding: binary\r\n".
+            "\r\n".
+            "HTTP/1.1 204 No Content\r\n".
+            "Content-Type: application/json\r\n".
+            "\r\n".
+            "\r\n".
             "--batch_boundary--\r\n";
 
         $results = MultipartDecoder::decode($response, 'batch_boundary');
@@ -80,14 +80,14 @@ class MultipartDecoderTest extends TestCase
     #[Test]
     public function it_handles_error_responses(): void
     {
-        $response = "--batch_boundary\r\n" .
-            "Content-Type: application/http\r\n" .
-            "Content-Transfer-Encoding: binary\r\n" .
-            "\r\n" .
-            "HTTP/1.1 400 Bad Request\r\n" .
-            "Content-Type: application/json\r\n" .
-            "\r\n" .
-            '{"error":"Invalid data"}' . "\r\n" .
+        $response = "--batch_boundary\r\n".
+            "Content-Type: application/http\r\n".
+            "Content-Transfer-Encoding: binary\r\n".
+            "\r\n".
+            "HTTP/1.1 400 Bad Request\r\n".
+            "Content-Type: application/json\r\n".
+            "\r\n".
+            '{"error":"Invalid data"}'."\r\n".
             "--batch_boundary--\r\n";
 
         $results = MultipartDecoder::decode($response, 'batch_boundary');

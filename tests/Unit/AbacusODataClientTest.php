@@ -2,8 +2,8 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\AbacusODataClient;
+use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -16,7 +16,7 @@ class AbacusODataClientTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = new AbacusODataClient();
+        $this->client = new AbacusODataClient;
     }
 
     #[Test]
@@ -71,7 +71,7 @@ class AbacusODataClientTest extends TestCase
     public function it_follows_next_link_for_pagination(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -99,7 +99,7 @@ class AbacusODataClientTest extends TestCase
     public function it_refreshes_token_on_next_link_401(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'refreshed-token',
                 'expires_in' => 3600,
             ], 200),

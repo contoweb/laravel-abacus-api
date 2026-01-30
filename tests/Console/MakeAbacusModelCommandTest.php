@@ -32,8 +32,8 @@ class MakeAbacusModelCommandTest extends TestCase
     public function it_creates_model_file(): void
     {
         $this->artisan('make:abacus-model', ['name' => 'Subject'])
-             ->assertExitCode(0)
-             ->expectsOutput('Model Subject created successfully.');
+            ->assertExitCode(0)
+            ->expectsOutput('Model Subject created successfully.');
 
         $expectedPath = app_path('Models/Abacus/Subject.php');
         $this->assertFileExists($expectedPath);
@@ -58,7 +58,7 @@ class MakeAbacusModelCommandTest extends TestCase
     public function it_uses_plural_resource_by_default(): void
     {
         $this->artisan('make:abacus-model', ['name' => 'Subject'])
-             ->assertExitCode(0);
+            ->assertExitCode(0);
 
         $path = app_path('Models/Abacus/Subject.php');
         $content = File::get($path);
@@ -71,19 +71,19 @@ class MakeAbacusModelCommandTest extends TestCase
     {
         /* Create model first time */
         $this->artisan('make:abacus-model', ['name' => 'Duplicate'])
-             ->assertExitCode(0);
+            ->assertExitCode(0);
 
         /* Try to create again */
         $this->artisan('make:abacus-model', ['name' => 'Duplicate'])
-             ->assertExitCode(1)
-             ->expectsOutput('Model Duplicate already exists!');
+            ->assertExitCode(1)
+            ->expectsOutput('Model Duplicate already exists!');
     }
 
     #[Test]
     public function it_creates_correct_namespace(): void
     {
         $this->artisan('make:abacus-model', ['name' => 'TestModel'])
-             ->assertExitCode(0);
+            ->assertExitCode(0);
 
         $path = app_path('Models/Abacus/TestModel.php');
         $content = File::get($path);
@@ -101,7 +101,7 @@ class MakeAbacusModelCommandTest extends TestCase
         }
 
         $this->artisan('make:abacus-model', ['name' => 'NewModel'])
-             ->assertExitCode(0);
+            ->assertExitCode(0);
 
         $this->assertDirectoryExists($this->testModelsPath);
     }
@@ -110,7 +110,7 @@ class MakeAbacusModelCommandTest extends TestCase
     public function it_generates_valid_php_file(): void
     {
         $this->artisan('make:abacus-model', ['name' => 'ValidModel'])
-             ->assertExitCode(0);
+            ->assertExitCode(0);
 
         $path = app_path('Models/Abacus/ValidModel.php');
         $content = File::get($path);

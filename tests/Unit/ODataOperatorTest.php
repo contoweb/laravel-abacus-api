@@ -2,8 +2,8 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 class ODataOperatorTest extends TestCase
@@ -103,7 +103,7 @@ class ODataOperatorTest extends TestCase
         ];
 
         foreach ($expectedMapping as $constant => $odataValue) {
-            $enum = constant(ODataOperator::class . '::' . $constant);
+            $enum = constant(ODataOperator::class.'::'.$constant);
             $this->assertEquals($odataValue, $enum->value);
         }
     }

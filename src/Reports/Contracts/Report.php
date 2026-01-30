@@ -15,7 +15,7 @@ interface Report
     /**
      * Map JSON record to report model
      *
-     * @param array $record Associative array representing a single record
+     * @param  array  $record  Associative array representing a single record
      * @return ReportModel Model instance with mapped data
      */
     public function mapping(array $record): ReportModel;

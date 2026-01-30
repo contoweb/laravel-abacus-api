@@ -13,8 +13,11 @@ use Illuminate\Support\Collection;
 abstract class AbacusModel
 {
     protected static string $resource;
+
     protected static string|array $primaryKey = 'Id';
+
     protected array $attributes = [];
+
     protected array $original = [];
 
     public function __construct(array $attributes = [])
@@ -49,9 +52,6 @@ abstract class AbacusModel
 
     /**
      * Set the maximum number of pages to retrieve when cursor pagination is enabled
-     *
-     * @param int $limit
-     * @return AbacusODataQueryBuilder
      */
     public static function pages(int $limit): AbacusODataQueryBuilder
     {
@@ -60,8 +60,6 @@ abstract class AbacusModel
 
     /**
      * Enable automatic pagination through OData nextLink
-     *
-     * @return AbacusODataQueryBuilder
      */
     public static function cursor(): AbacusODataQueryBuilder
     {
@@ -71,8 +69,7 @@ abstract class AbacusModel
     /**
      * Enable automatic pagination with a callback for each page
      *
-     * @param callable $callback Callback function receiving (Collection $items, int $pageNumber)
-     * @return AbacusODataQueryBuilder
+     * @param  callable  $callback  Callback function receiving (Collection $items, int $pageNumber)
      */
     public static function cursorWithCallback(callable $callback): AbacusODataQueryBuilder
     {
@@ -83,6 +80,7 @@ abstract class AbacusModel
      * Execute query and return all paginated results as Collection
      *
      * @return Collection<int, static>
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -95,6 +93,7 @@ abstract class AbacusModel
      * Execute query and return all paginated results as Collection
      *
      * @return Collection<static>
+     *
      * @throws RequestException
      * @throws ConnectionException
      */
@@ -106,8 +105,9 @@ abstract class AbacusModel
     /**
      * Find entity via primary key
      *
-     * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @return AbacusModel
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -170,7 +170,8 @@ abstract class AbacusModel
     /**
      * Create entity
      *
-     * @param array<string, int|string> $data
+     * @param  array<string, int|string>  $data
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -182,10 +183,11 @@ abstract class AbacusModel
     /**
      * Delete entity by ID
      *
-     * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
-     * @return void
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     *
      * @throws ConnectionException
      * @throws RequestException
+     *
      * @example Single key: Customers::delete(210)
      * @example Composite key: StockBatches::delete(['BatchNumber' => '123', 'ProductId' => 456])
      */
@@ -197,11 +199,12 @@ abstract class AbacusModel
     /**
      * Update entity by ID
      *
-     * @param int|string|array<string, int|array> $idOrCriteria Single value for simple keys, array for composite keys
-     * @param array<string, int|string> $data Data to update
-     * @return static
+     * @param  int|string|array<string, int|array>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  array<string, int|string>  $data  Data to update
+     *
      * @throws ConnectionException
      * @throws RequestException
+     *
      * @example Simple: Customers::update(210, ['Name' => 'Test'])
      * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
      */
@@ -286,8 +289,6 @@ abstract class AbacusModel
 
     /**
      * Determine if the model has a single primary key
-     *
-     * @return bool
      */
     public static function hasSinglePrimaryKey(): bool
     {
@@ -296,8 +297,6 @@ abstract class AbacusModel
 
     /**
      * Determine if the model has a composite primary key
-     *
-     * @return bool
      */
     public static function hasCompositePrimaryKey(): bool
     {

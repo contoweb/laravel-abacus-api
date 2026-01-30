@@ -13,8 +13,8 @@ class MakeAbacusReportCommand extends Command
 
     public function handle(): int
     {
-        $name             = $this->argument('name');
-        $modelName        = $this->option('model');
+        $name = $this->argument('name');
+        $modelName = $this->option('model');
         $reportsNamespace = config('abacus-api.reports.reports_namespace');
 
         /* Create report class */
@@ -28,7 +28,7 @@ class MakeAbacusReportCommand extends Command
 
         $this->makeDirectory($reportPath);
 
-        $reportStub    = $this->getReportStub();
+        $reportStub = $this->getReportStub();
         $reportContent = $this->replaceReportStub($reportStub, $name, $reportsNamespace, $modelName);
 
         File::put($reportPath, $reportContent);
@@ -45,7 +45,7 @@ class MakeAbacusReportCommand extends Command
             } else {
                 $this->makeDirectory($modelPath);
 
-                $modelStub    = $this->getModelStub();
+                $modelStub = $this->getModelStub();
                 $modelContent = $this->replaceModelStub($modelStub, $modelName, $reportsNamespace);
 
                 File::put($modelPath, $modelContent);
@@ -54,7 +54,7 @@ class MakeAbacusReportCommand extends Command
                 $this->comment("Location: {$modelPath}");
             }
         } else {
-            $this->comment("Tip: Use --model=ModelName to generate a report model class.");
+            $this->comment('Tip: Use --model=ModelName to generate a report model class.');
         }
 
         return 0;
@@ -63,7 +63,7 @@ class MakeAbacusReportCommand extends Command
     protected function getPath(string $namespace, string $name): string
     {
         $namespacePath = str_replace('\\', '/', $namespace);
-        $appPath       = app_path();
+        $appPath = app_path();
 
         /* Remove 'App' from namespace path */
         $namespacePath = preg_replace('/^App\//', '', $namespacePath);
@@ -74,7 +74,7 @@ class MakeAbacusReportCommand extends Command
     protected function getModelPath(string $namespace, string $name): string
     {
         $namespacePath = str_replace('\\', '/', $namespace);
-        $appPath       = app_path();
+        $appPath = app_path();
 
         /* Remove 'App' from namespace path */
         $namespacePath = preg_replace('/^App\//', '', $namespacePath);
@@ -86,7 +86,7 @@ class MakeAbacusReportCommand extends Command
     {
         $directory = dirname($path);
 
-        if ( ! File::isDirectory($directory)) {
+        if (! File::isDirectory($directory)) {
             File::makeDirectory($directory, 0755, true);
         }
     }
@@ -160,7 +160,7 @@ STUB;
 
     protected function replaceReportStub(string $stub, string $name, string $namespace, ?string $modelName): string
     {
-        $modelClass  = $modelName ?? 'YourModel';
+        $modelClass = $modelName ?? 'YourModel';
         $modelImport = $modelName ? "use {$namespace}\\Models\\{$modelName};" : '';
 
         return str_replace(

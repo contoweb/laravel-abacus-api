@@ -8,10 +8,6 @@ class MultipartDecoder
 {
     /**
      * Decode multipart/mixed response into array of results
-     *
-     * @param string $responseBody
-     * @param string $boundary
-     * @return array
      */
     public static function decode(string $responseBody, string $boundary): array
     {
@@ -24,7 +20,7 @@ class MultipartDecoder
         $responseBody = str_replace("\r\n", "\n", $responseBody);
 
         /* Split by boundary */
-        $delimiter = '--' . $boundary;
+        $delimiter = '--'.$boundary;
         $parts = explode($delimiter, $responseBody);
 
         foreach ($parts as $part) {
@@ -66,7 +62,7 @@ class MultipartDecoder
         $lines = explode("\n", trim($httpResponse));
         $statusLine = trim($lines[0]);
 
-        if (!preg_match('/HTTP\/\d\.\d\s+(\d+)\s*(.*)/', $statusLine, $matches)) {
+        if (! preg_match('/HTTP\/\d\.\d\s+(\d+)\s*(.*)/', $statusLine, $matches)) {
             return null;
         }
 
@@ -92,7 +88,7 @@ class MultipartDecoder
         $parsedBody = null;
 
         /* Try to decode JSON */
-        if (!empty($body)) {
+        if (! empty($body)) {
             $decoded = json_decode($body, true);
             $parsedBody = $decoded !== null ? $decoded : $body;
         }

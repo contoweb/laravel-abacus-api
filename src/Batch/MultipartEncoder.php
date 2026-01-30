@@ -9,8 +9,7 @@ class MultipartEncoder
     /**
      * Encode array of requests into multipart/mixed format
      *
-     * @param BatchRequestItem[] $requests
-     * @return string
+     * @param  BatchRequestItem[]  $requests
      */
     public static function encode(array $requests): string
     {
@@ -21,9 +20,9 @@ class MultipartEncoder
         }
 
         /* Join all parts with boundary and add final boundary */
-        $body = '--' . self::BOUNDARY . "\r\n";
-        $body .= implode("\r\n--" . self::BOUNDARY . "\r\n", $parts);
-        $body .= "\r\n--" . self::BOUNDARY . "--\r\n";
+        $body = '--'.self::BOUNDARY."\r\n";
+        $body .= implode("\r\n--".self::BOUNDARY."\r\n", $parts);
+        $body .= "\r\n--".self::BOUNDARY."--\r\n";
 
         return $body;
     }
@@ -41,7 +40,7 @@ class MultipartEncoder
      */
     public static function getContentType(): string
     {
-        return 'multipart/mixed; boundary=' . self::BOUNDARY;
+        return 'multipart/mixed; boundary='.self::BOUNDARY;
     }
 
     /**

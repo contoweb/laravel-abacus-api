@@ -32,8 +32,8 @@ class MakeAbacusReportCommandTest extends TestCase
     public function it_creates_report_file(): void
     {
         $this->artisan('make:abacus-report', ['name' => 'SalesReport'])
-             ->assertExitCode(0)
-             ->expectsOutput('Report SalesReport created successfully.');
+            ->assertExitCode(0)
+            ->expectsOutput('Report SalesReport created successfully.');
 
         $expectedPath = app_path('Reports/SalesReport.php');
         $this->assertFileExists($expectedPath);
@@ -46,8 +46,8 @@ class MakeAbacusReportCommandTest extends TestCase
             'name' => 'InvoiceReport',
             '--model' => 'InvoiceData',
         ])->assertExitCode(0)
-          ->expectsOutput('Report InvoiceReport created successfully.')
-          ->expectsOutput('Report model InvoiceData created successfully.');
+            ->expectsOutput('Report InvoiceReport created successfully.')
+            ->expectsOutput('Report model InvoiceData created successfully.');
 
         $reportPath = app_path('Reports/InvoiceReport.php');
         $modelPath = app_path('Reports/Models/InvoiceData.php');
@@ -61,12 +61,12 @@ class MakeAbacusReportCommandTest extends TestCase
     {
         /* Create report first time */
         $this->artisan('make:abacus-report', ['name' => 'DuplicateReport'])
-             ->assertExitCode(0);
+            ->assertExitCode(0);
 
         /* Try to create again */
         $this->artisan('make:abacus-report', ['name' => 'DuplicateReport'])
-             ->assertExitCode(1)
-             ->expectsOutput('Report DuplicateReport already exists!');
+            ->assertExitCode(1)
+            ->expectsOutput('Report DuplicateReport already exists!');
     }
 
     #[Test]
@@ -83,22 +83,22 @@ class MakeAbacusReportCommandTest extends TestCase
             'name' => 'SecondReport',
             '--model' => 'SharedModel',
         ])->assertExitCode(0)
-          ->expectsOutput('Model SharedModel already exists, skipping model generation.');
+            ->expectsOutput('Model SharedModel already exists, skipping model generation.');
     }
 
     #[Test]
     public function it_shows_tip_when_no_model_specified(): void
     {
         $this->artisan('make:abacus-report', ['name' => 'SimpleReport'])
-             ->assertExitCode(0)
-             ->expectsOutput('Tip: Use --model=ModelName to generate a report model class.');
+            ->assertExitCode(0)
+            ->expectsOutput('Tip: Use --model=ModelName to generate a report model class.');
     }
 
     #[Test]
     public function it_creates_correct_namespace(): void
     {
         $this->artisan('make:abacus-report', ['name' => 'TestReport'])
-             ->assertExitCode(0);
+            ->assertExitCode(0);
 
         $path = app_path('Reports/TestReport.php');
         $content = File::get($path);
@@ -116,7 +116,7 @@ class MakeAbacusReportCommandTest extends TestCase
         }
 
         $this->artisan('make:abacus-report', ['name' => 'NewReport'])
-             ->assertExitCode(0);
+            ->assertExitCode(0);
 
         $this->assertDirectoryExists($this->testReportsPath);
     }
