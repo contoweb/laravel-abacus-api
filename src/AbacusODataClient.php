@@ -92,7 +92,7 @@ class AbacusODataClient extends AbacusClient
     {
         $this->logger->info('BATCH request', [
             'path' => $path,
-            'body' => $body
+            'body' => $body,
         ]);
 
         return $this->callWithTokenRefresh(function () use ($body, $path) {

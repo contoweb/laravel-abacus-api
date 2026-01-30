@@ -82,6 +82,6 @@ return [
     */
 
     'request_logging' => [
-        'enabled' => env('ABACUS_REQUEST_LOGGING', true)
+        'enabled' => env('ABACUS_REQUEST_LOGGING', true),
     ],
 ];

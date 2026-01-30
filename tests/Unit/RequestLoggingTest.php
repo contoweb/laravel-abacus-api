@@ -120,7 +120,7 @@ class RequestLoggingTest extends TestCase
         $this->mockTokenAndApiResponse();
 
         /* Client without logger uses NullLogger by default */
-        $client = new AbacusODataClient();
+        $client = new AbacusODataClient;
 
         /* This should not throw - NullLogger silently ignores all log calls */
         $response = $client->get('/api/entities');

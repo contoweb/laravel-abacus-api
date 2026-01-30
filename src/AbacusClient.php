@@ -40,7 +40,7 @@ abstract class AbacusClient
         $this->clientId = $clientId ?? config('abacus-api.rest_api.client_id');
         $this->clientSecret = $clientSecret ?? config('abacus-api.rest_api.client_secret');
         $this->apiVersion = $apiVersion ?? config('abacus-api.rest_api.version');
-        $this->logger = $logger ?: new NullLogger();
+        $this->logger = $logger ?: new NullLogger;
     }
 
     /*
@@ -159,8 +159,8 @@ abstract class AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($path, $queryString) {
 
-            if (!empty($queryString)) {
-                $path .= '?' . $this->buildQueryString($queryString);
+            if (! empty($queryString)) {
+                $path .= '?'.$this->buildQueryString($queryString);
             }
 
             $this->logger->info('GET request', [
@@ -186,7 +186,7 @@ abstract class AbacusClient
 
             $this->logger->info('POST request', [
                 'path' => $path,
-                'body' => $data
+                'body' => $data,
             ]);
 
             return $this->client()->post($path, $data);
@@ -208,7 +208,7 @@ abstract class AbacusClient
 
             $this->logger->info('PATCH request', [
                 'path' => $path,
-                'body' => $data
+                'body' => $data,
             ]);
 
             return $this->client()->patch($path, $data);
@@ -230,7 +230,7 @@ abstract class AbacusClient
 
             $this->logger->info('PUT request', [
                 'path' => $path,
-                'body' => $data
+                'body' => $data,
             ]);
 
             return $this->client()->put($path, $data);

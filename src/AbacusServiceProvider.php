@@ -27,7 +27,7 @@ class AbacusServiceProvider extends ServiceProvider
                 return $app->make(LoggerInterface::class);
             }
 
-            return new NullLogger();
+            return new NullLogger;
         });
 
         /* Register AbacusClient as singleton */
