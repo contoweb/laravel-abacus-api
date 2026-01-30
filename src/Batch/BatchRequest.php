@@ -44,9 +44,9 @@ class BatchRequest
 
         $response =  $this->client->sendBatch($path, $body);
 
-        $contentType = $response->getHeader('Content-Type');
+        $contentType = $response->header('Content-Type');
 
-        preg_match('/boundary=(.+)$/', $contentType[0], $matches);
+        preg_match('/boundary=(.+)$/', $contentType, $matches);
         $boundary = trim($matches[1]);
 
         /* Decode multipart response */

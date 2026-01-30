@@ -487,7 +487,7 @@ class GenerateIdeHelperCommand extends Command
         sort($entityNames);
 
         $columns = 3;
-        $rows = ceil(count($entityNames) / $columns);
+        $rows = (int) ceil(count($entityNames) / $columns);
 
         for ($i = 0; $i < $rows; $i++) {
             $line = '';

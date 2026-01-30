@@ -159,9 +159,9 @@ class AbacusReportsService
      */
     protected function parseAndMapJson(array $jsonData, Report $report): array
     {
-        /* Check if data is an array of records */
-        if ( ! is_array($jsonData)) {
-            throw new ReportExecutionException('Report output is not a valid array');
+        /* Check if data is empty */
+        if (empty($jsonData)) {
+            return [];
         }
 
         $models = [];
