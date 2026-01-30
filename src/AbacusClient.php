@@ -8,11 +8,12 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Psr\Log\LoggerInterface;
 
 abstract class AbacusClient
 {
     const CACHE_NAMESPACE = 'abacus_access_token:';
-
+    protected LoggerInterface $logger;
     protected string $baseUrl;
     protected string $mandate;
     protected string $clientId;
@@ -20,12 +21,14 @@ abstract class AbacusClient
     protected string $apiVersion;
 
     public function __construct(
+        LoggerInterface $logger,
         ?string $baseUrl = null,
         ?string $mandate = null,
         ?string $clientId = null,
         ?string $clientSecret = null,
         ?string $apiVersion = null
     ) {
+        $this->logger = $logger;
         $this->baseUrl      = $baseUrl      ?? config('abacus-api.rest_api.url');
         $this->mandate      = $mandate      ?? config('abacus-api.rest_api.mandate');
         $this->clientId     = $clientId     ?? config('abacus-api.rest_api.client_id');
@@ -149,7 +152,15 @@ abstract class AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($path, $queryString) {
 
-            return $this->client()->get($path, $queryString);
+            if (!empty($queryString)) {
+                $path .= '?' . $this->buildQueryString($queryString);
+            }
+
+            $this->logger->info('GET request', [
+                'path' => $path,
+            ]);
+
+            return $this->client()->get($path);
         })->throw();
     }
 
@@ -165,6 +176,11 @@ abstract class AbacusClient
             if (!empty($queryString)) {
                 $path .= '?' . $this->buildQueryString($queryString);
             }
+
+            $this->logger->info('POST request', [
+                'path' => $path,
+                'body' => $data
+            ]);
 
             return $this->client()->post($path, $data);
         })->throw();
@@ -183,6 +199,11 @@ abstract class AbacusClient
                 $path .= '?' . $this->buildQueryString($queryString);
             }
 
+            $this->logger->info('PATCH request', [
+                'path' => $path,
+                'body' => $data
+            ]);
+
             return $this->client()->patch($path, $data);
         })->throw();
     }
@@ -200,6 +221,11 @@ abstract class AbacusClient
                 $path .= '?' . $this->buildQueryString($queryString);
             }
 
+            $this->logger->info('PUT request', [
+                'path' => $path,
+                'body' => $data
+            ]);
+
             return $this->client()->put($path, $data);
         })->throw();
     }
@@ -212,6 +238,11 @@ abstract class AbacusClient
     public function delete(string $path): Response
     {
         return $this->callWithTokenRefresh(function () use ($path) {
+
+            $this->logger->info('DELETE request', [
+                'path' => $path,
+            ]);
+
             return $this->client()->delete($path);
         })->throw();
     }

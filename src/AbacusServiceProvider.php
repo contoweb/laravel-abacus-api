@@ -6,6 +6,8 @@ use Contoweb\AbacusApi\Console\Commands\GenerateIdeHelperCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusModelCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusReportCommand;
 use Illuminate\Support\ServiceProvider;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 class AbacusServiceProvider extends ServiceProvider
 {
@@ -20,9 +22,17 @@ class AbacusServiceProvider extends ServiceProvider
             'abacus-api'
         );
 
+        $this->app->singleton('abacus.logger', function ($app) {
+            if (config('abacus-api.request_logging.enabled')) {
+                return $app->make(LoggerInterface::class);
+            }
+
+            return new NullLogger();
+        });
+
         /* Register AbacusClient as singleton */
         $this->app->singleton(AbacusODataClient::class, function ($app) {
-            return new AbacusODataClient();
+            return new AbacusODataClient(logger: $app->make('abacus.logger'));
         });
 
         /* Register AbacusService as singleton */
