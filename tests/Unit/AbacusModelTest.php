@@ -19,6 +19,7 @@ class TestSubject extends AbacusModel
 class TestStockBatch extends AbacusModel
 {
     protected static string $resource = 'stock-batches';
+
     protected static string|array $primaryKey = ['BatchNumber', 'BatchSequenceNumber', 'ProductId', 'VariantId'];
 }
 
@@ -79,7 +80,7 @@ class AbacusModelTest extends TestCase
     public function it_returns_null_when_entity_not_found(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -200,7 +201,7 @@ class AbacusModelTest extends TestCase
         ]);
 
         TestSubject::delete(42);
-        
+
         /* Delete returns void, just verify no exception */
         $this->assertTrue(true);
     }
@@ -262,7 +263,7 @@ class AbacusModelTest extends TestCase
     #[Test]
     public function it_uses_magic_setter(): void
     {
-        $subject = new TestSubject();
+        $subject = new TestSubject;
         $subject->Name = 'Magic Set';
         $subject->Email = 'magic@example.com';
 
@@ -422,7 +423,7 @@ class AbacusModelTest extends TestCase
             'ProductId' => 456,
             'VariantId' => 0,
         ]);
-        
+
         /* Delete returns void, just verify no exception */
         $this->assertTrue(true);
     }

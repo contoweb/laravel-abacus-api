@@ -20,12 +20,12 @@ class AssertionHelper
                 /* Handle special characters in OData parameters */
                 $encodedKey = urlencode($key);
 
-                if (!str_contains($url, $encodedKey)) {
+                if (! str_contains($url, $encodedKey)) {
                     return false;
                 }
 
                 /* Check if the parameter value is present */
-                if (is_string($value) && !str_contains($url, $value)) {
+                if (is_string($value) && ! str_contains($url, $value)) {
                     return false;
                 }
             }
@@ -44,13 +44,13 @@ class AssertionHelper
                 return false;
             }
 
-            if (!str_contains($request->url(), $resource)) {
+            if (! str_contains($request->url(), $resource)) {
                 return false;
             }
 
             $data = $request->data();
             foreach ($expectedData as $key => $value) {
-                if (!isset($data[$key]) || $data[$key] !== $value) {
+                if (! isset($data[$key]) || $data[$key] !== $value) {
                     return false;
                 }
             }
@@ -65,17 +65,17 @@ class AssertionHelper
     public static function assertEntityUpdated(string $resource, int $id, array $expectedData): void
     {
         Http::assertSent(function ($request) use ($resource, $id, $expectedData) {
-            if (!in_array($request->method(), ['PATCH', 'PUT'])) {
+            if (! in_array($request->method(), ['PATCH', 'PUT'])) {
                 return false;
             }
 
-            if (!str_contains($request->url(), $resource . '(' . $id . ')')) {
+            if (! str_contains($request->url(), $resource.'('.$id.')')) {
                 return false;
             }
 
             $data = $request->data();
             foreach ($expectedData as $key => $value) {
-                if (!isset($data[$key]) || $data[$key] !== $value) {
+                if (! isset($data[$key]) || $data[$key] !== $value) {
                     return false;
                 }
             }
@@ -91,7 +91,7 @@ class AssertionHelper
     {
         Http::assertSent(function ($request) use ($resource, $id) {
             return $request->method() === 'DELETE' &&
-                   str_contains($request->url(), $resource . '(' . $id . ')');
+                   str_contains($request->url(), $resource.'('.$id.')');
         });
     }
 
@@ -105,7 +105,7 @@ class AssertionHelper
                 return false;
             }
 
-            if (!str_contains($request->url(), $reportName)) {
+            if (! str_contains($request->url(), $reportName)) {
                 return false;
             }
 
@@ -115,7 +115,7 @@ class AssertionHelper
             }
 
             foreach ($expectedParams as $key => $value) {
-                if (!isset($data['parameters'][$key]) || $data['parameters'][$key] !== $value) {
+                if (! isset($data['parameters'][$key]) || $data['parameters'][$key] !== $value) {
                     return false;
                 }
             }
@@ -135,6 +135,7 @@ class AssertionHelper
             if (str_contains($request->url(), 'oauth/token')) {
                 $tokenRequests++;
             }
+
             return true;
         });
 
@@ -170,6 +171,7 @@ class AssertionHelper
     {
         Http::assertSent(function ($request) {
             $authHeader = $request->header('Authorization');
+
             return $authHeader && str_starts_with($authHeader[0], 'Bearer ');
         });
     }

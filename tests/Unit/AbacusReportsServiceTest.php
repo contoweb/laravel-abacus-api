@@ -2,13 +2,13 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
-use Contoweb\AbacusApi\Tests\TestCase;
 use Contoweb\AbacusApi\Reports\AbacusReportsClient;
 use Contoweb\AbacusApi\Reports\AbacusReportsService;
 use Contoweb\AbacusApi\Reports\Contracts\Report;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
+use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -66,6 +66,7 @@ class ValidatedReport implements Report, RequiresValidationRules
 class AbacusReportsServiceTest extends TestCase
 {
     protected AbacusReportsService $service;
+
     protected AbacusReportsClient $client;
 
     protected function setUp(): void
@@ -73,7 +74,7 @@ class AbacusReportsServiceTest extends TestCase
         parent::setUp();
 
         Cache::flush();
-        $this->client = new AbacusReportsClient();
+        $this->client = new AbacusReportsClient;
         $this->service = new AbacusReportsService($this->client);
     }
 
@@ -97,7 +98,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_executes_simple_report(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -115,7 +116,7 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
         $results = $this->service->collection($report);
 
         $this->assertCount(2, $results);
@@ -127,7 +128,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_executes_report_with_parameters(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -144,7 +145,7 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
         $results = $this->service
             ->parameter(['filter' => 'active'])
             ->collection($report);
@@ -152,10 +153,11 @@ class AbacusReportsServiceTest extends TestCase
         $this->assertCount(1, $results);
 
         Http::assertSent(function ($request) {
-            if (!str_contains($request->url(), '/report/test-report.avx')) {
+            if (! str_contains($request->url(), '/report/test-report.avx')) {
                 return false;
             }
             $data = $request->data();
+
             return isset($data['parameters']['filter']) &&
                    $data['parameters']['filter'] === 'active';
         });
@@ -165,7 +167,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_caches_report_results(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -184,7 +186,7 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
 
         /* First call - fetches from API */
         $results1 = $this->service
@@ -206,7 +208,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_uses_custom_cache_key(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -223,7 +225,7 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
         $this->service
             ->cache(3600, 'my-custom-key')
             ->collection($report);
@@ -235,7 +237,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_validates_report_parameters(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -243,7 +245,7 @@ class AbacusReportsServiceTest extends TestCase
 
         $this->expectException(ReportValidationException::class);
 
-        $report = new ValidatedReport();
+        $report = new ValidatedReport;
         $this->service
             ->parameter(['startDate' => '2024-01-01'])  /* Missing endDate */
             ->collection($report);
@@ -253,7 +255,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_passes_validation_with_valid_parameters(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -270,7 +272,7 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new ValidatedReport();
+        $report = new ValidatedReport;
         $results = $this->service
             ->parameter([
                 'startDate' => '2024-01-01',
@@ -285,7 +287,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_throws_exception_on_immediate_error(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -298,7 +300,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectException(ReportExecutionException::class);
         $this->expectExceptionMessage('AbaReport failed with message: Access denied');
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
         $this->service->collection($report);
     }
 
@@ -306,7 +308,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_throws_exception_when_no_job_id_returned(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -319,7 +321,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectException(ReportExecutionException::class);
         $this->expectExceptionMessage('Report submission did not return a job ID');
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
         $this->service->collection($report);
     }
 
@@ -327,7 +329,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_throws_exception_when_final_state_not_finished_success(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -345,7 +347,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectException(ReportExecutionException::class);
         $this->expectExceptionMessage('AbaReport failed since it was not successful');
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
         $this->service->collection($report);
     }
 
@@ -353,7 +355,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_throws_exception_when_output_record_is_not_array(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -367,14 +369,14 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
             /* Return array containing a string instead of array of arrays */
             '*/api/abareport/v1/jobs/job-invalid/output' => Http::response([
-                'not-an-array-record'
+                'not-an-array-record',
             ], 200),
         ]);
 
         $this->expectException(ReportExecutionException::class);
         $this->expectExceptionMessage('Report record is not a valid array');
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
         $this->service->collection($report);
     }
 
@@ -382,7 +384,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_resets_state_after_execution(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -400,7 +402,7 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
 
         /* Execute with parameters and cache */
         $this->service
@@ -423,7 +425,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_generates_unique_cache_keys_for_different_parameters(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -441,7 +443,7 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
 
         /* Execute with first set of parameters */
         $this->service
@@ -465,7 +467,7 @@ class AbacusReportsServiceTest extends TestCase
     public function it_handles_empty_output_array(): void
     {
         Http::fake([
-            '*/oauth/oauth2/v1/token'=> Http::response([
+            '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
@@ -480,7 +482,7 @@ class AbacusReportsServiceTest extends TestCase
             '*/api/abareport/v1/jobs/job-empty/output' => Http::response([], 200),
         ]);
 
-        $report = new SimpleReport();
+        $report = new SimpleReport;
         $results = $this->service->collection($report);
 
         $this->assertCount(0, $results);

@@ -24,7 +24,7 @@ class ResponseFixtures
                 'Name' => "Entity {$i}",
                 'Email' => "entity{$i}@example.com",
                 'IsActive' => $i % 2 === 0,
-                'CreatedAt' => '2024-01-' . str_pad($i, 2, '0', STR_PAD_LEFT),
+                'CreatedAt' => '2024-01-'.str_pad($i, 2, '0', STR_PAD_LEFT),
             ];
         }
 
@@ -39,7 +39,7 @@ class ResponseFixtures
         $response = self::entityListResponse(10);
 
         if ($hasNextPage) {
-            $response['@odata.nextLink'] = "https://api.example.com/api/entities?skip=" . ($page * 10);
+            $response['@odata.nextLink'] = 'https://api.example.com/api/entities?skip='.($page * 10);
         }
 
         return $response;
@@ -135,10 +135,10 @@ XML;
         $data = [];
         for ($i = 1; $i <= $count; $i++) {
             $data[] = [
-                'InvoiceId' => "INV-" . str_pad($i, 4, '0', STR_PAD_LEFT),
+                'InvoiceId' => 'INV-'.str_pad($i, 4, '0', STR_PAD_LEFT),
                 'CustomerName' => "Customer {$i}",
                 'Amount' => $i * 100.50,
-                'Date' => '2024-01-' . str_pad($i, 2, '0', STR_PAD_LEFT),
+                'Date' => '2024-01-'.str_pad($i, 2, '0', STR_PAD_LEFT),
             ];
         }
 

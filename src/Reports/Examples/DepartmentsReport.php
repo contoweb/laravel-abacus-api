@@ -25,7 +25,7 @@ class DepartmentsReport implements Report, RequiresValidationRules
      */
     public function name(): string
     {
-        return config('abacus-api.rest_api.mandate') . '%2F' . 'contacts_organisations.avx';
+        return config('abacus-api.rest_api.mandate').'%2F'.'contacts_organisations.avx';
     }
 
     /**

@@ -141,6 +141,7 @@ class QueryBuilderIntegrationTest extends TestCase
 
         Http::assertSent(function ($request) {
             $url = $request->url();
+
             /* URL parameters are encoded, so check for the filter parameter */
             return str_contains($url, '%24filter') &&
                    str_contains($url, 'Status') &&
@@ -217,7 +218,7 @@ class QueryBuilderIntegrationTest extends TestCase
 
         Http::assertSent(function ($request) {
             /* Single quotes should be escaped as double single quotes and URL encoded */
-            return str_contains($request->url(), "O%27%27Brien");
+            return str_contains($request->url(), 'O%27%27Brien');
         });
     }
 
@@ -240,6 +241,7 @@ class QueryBuilderIntegrationTest extends TestCase
 
         Http::assertSent(function ($request) {
             $url = $request->url();
+
             return str_contains($url, '%24select=Id') &&
                    str_contains($url, 'FirstName') &&
                    str_contains($url, 'Email') &&

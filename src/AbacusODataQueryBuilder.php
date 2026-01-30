@@ -14,11 +14,17 @@ class AbacusODataQueryBuilder
     use HasODataQueryMethods;
 
     protected AbacusODataClient $client;
+
     protected string $resource;
+
     protected string $modelClass;
+
     private int $pages;
+
     private bool $cursor;
+
     protected ?Closure $pageCallback = null;
+
     protected ODataQueryState $queryState;
 
     public function __construct(AbacusODataClient $client, string $resource, string $modelClass)
@@ -28,18 +34,18 @@ class AbacusODataQueryBuilder
         $this->modelClass = $modelClass;
         $this->pages = config('abacus-api.query_builder.max_next_link_page_resolving') ?? 0;
         $this->cursor = false;
-        $this->queryState = new ODataQueryState();
+        $this->queryState = new ODataQueryState;
     }
 
     /**
      * Set the maximum number of pages to retrieve when cursor pagination is enabled
      *
-     * @param int $limit
      * @return $this
      */
     public function pages(int $limit): static
     {
         $this->pages = $limit;
+
         return $this;
     }
 
@@ -51,6 +57,7 @@ class AbacusODataQueryBuilder
     public function cursor(): static
     {
         $this->cursor = true;
+
         return $this;
     }
 
@@ -59,7 +66,7 @@ class AbacusODataQueryBuilder
      * Useful for processing large datasets without loading everything into memory
      * Note: Automatically enables cursor pagination
      *
-     * @param callable $callback Callback function receiving (Collection $items, int $pageNumber)
+     * @param  callable  $callback  Callback function receiving (Collection $items, int $pageNumber)
      * @return $this
      *
      * @example
@@ -76,6 +83,7 @@ class AbacusODataQueryBuilder
     {
         $this->cursor = true;
         $this->pageCallback = $callback;
+
         return $this;
     }
 
@@ -83,6 +91,7 @@ class AbacusODataQueryBuilder
      * Execute query and return all paginated results as Collection
      *
      * @return Collection<int, AbacusModel>
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -107,12 +116,12 @@ class AbacusODataQueryBuilder
 
             /* Call callback for first page if provided */
             if ($this->pageCallback !== null && isset($response['value'])) {
-                $pageItems = collect($response['value'])->map(fn($item) => new $this->modelClass($item));
+                $pageItems = collect($response['value'])->map(fn ($item) => new $this->modelClass($item));
                 call_user_func($this->pageCallback, $pageItems, $pageNumber);
             }
 
-            for ($i = 1; $i < $this->pages; ++$i) {
-                if (!isset($response['@odata.nextLink'])) {
+            for ($i = 1; $i < $this->pages; $i++) {
+                if (! isset($response['@odata.nextLink'])) {
                     break;
                 }
 
@@ -123,7 +132,7 @@ class AbacusODataQueryBuilder
                     ->json();
 
                 if (isset($response['value'])) {
-                    $pageItems = collect($response['value'])->map(fn($item) => new $this->modelClass($item));
+                    $pageItems = collect($response['value'])->map(fn ($item) => new $this->modelClass($item));
 
                     /* Call callback for each page if provided */
                     if ($this->pageCallback !== null) {
@@ -135,14 +144,14 @@ class AbacusODataQueryBuilder
             }
         }
 
-        return collect($allResults)->map(fn($item) => new $this->modelClass($item));
+        return collect($allResults)->map(fn ($item) => new $this->modelClass($item));
     }
 
     /**
      * Fetch entity via primary key
      *
-     * @param int|string|array<string, int|string> $idOrCriteria
-     * @return AbacusModel
+     * @param  int|string|array<string, int|string>  $idOrCriteria
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -162,8 +171,9 @@ class AbacusODataQueryBuilder
      * Execute a POST request (create entity)
      * Valid query methods: select(), expand()
      *
-     * @param array<string, int|string> $data Request body data
+     * @param  array<string, int|string>  $data  Request body data
      * @return AbacusModel The created entity
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -182,8 +192,9 @@ class AbacusODataQueryBuilder
      * Execute a DELETE request
      * Requires: ID set via id()
      *
-     * @param int|string|array<string, int|string> $idOrCriteria
+     * @param  int|string|array<string, int|string>  $idOrCriteria
      * @return void Success status
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -197,11 +208,13 @@ class AbacusODataQueryBuilder
     /**
      * Update an entity
      *
-     * @param int|string|array<string, int|string> $idOrCriteria Single value for simple keys, array for composite keys
-     * @param array<string, int|array> $data Request body data
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  array<string, int|array>  $data  Request body data
      * @return AbacusModel The updated entity
+     *
      * @throws ConnectionException
      * @throws RequestException
+     *
      * @example Simple: Model::update(210, ['Name' => 'Test'])
      */
     public function update(int|string|array $idOrCriteria, array $data): AbacusModel
@@ -230,6 +243,7 @@ class AbacusODataQueryBuilder
     /**
      * Fetch specific property of an entity
      * Example: Subjects::query()->findProperty(2, 'LastName')
+     *
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -245,7 +259,6 @@ class AbacusODataQueryBuilder
     /**
      * Execute query and return first result
      *
-     * @return AbacusModel|null
      * @throws ConnectionException
      * @throws RequestException
      */

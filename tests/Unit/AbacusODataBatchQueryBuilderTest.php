@@ -17,7 +17,7 @@ class AbacusODataBatchQueryBuilderTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = new AbacusODataClient();
+        $this->client = new AbacusODataClient;
     }
 
     #[Test]
@@ -187,7 +187,7 @@ class AbacusODataBatchQueryBuilderTest extends TestCase
     {
         $builder = new AbacusODataBatchQueryBuilder($this->client, 'Subjects', TestSubject::class);
         $builder->where('Status', 'eq', 'Active')
-                ->select(['Id', 'Name']);
+            ->select(['Id', 'Name']);
 
         $query = $builder->toODataQuery();
 

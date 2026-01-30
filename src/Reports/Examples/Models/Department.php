@@ -10,6 +10,5 @@ class Department implements ReportModel
         public readonly ?string $contactNumber,
         public readonly ?string $subjectNumber,
         public readonly ?string $name,
-    ) {
-    }
+    ) {}
 }

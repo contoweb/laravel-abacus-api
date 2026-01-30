@@ -366,9 +366,9 @@ class AbacusServiceIntegrationTest extends TestCase
             $parts[] = $part;
         }
 
-        $body = '--' . $boundary . "\r\n";
-        $body .= implode("\r\n--" . $boundary . "\r\n", $parts);
-        $body .= "\r\n--" . $boundary . "--\r\n";
+        $body = '--'.$boundary."\r\n";
+        $body .= implode("\r\n--".$boundary."\r\n", $parts);
+        $body .= "\r\n--".$boundary."--\r\n";
 
         return $body;
     }

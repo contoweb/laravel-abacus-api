@@ -16,7 +16,7 @@ class TokenCachingTest extends TestCase
     {
         parent::setUp();
         Cache::flush();
-        $this->client = new AbacusODataClient();
+        $this->client = new AbacusODataClient;
     }
 
     #[Test]
@@ -46,7 +46,7 @@ class TokenCachingTest extends TestCase
 
         $cachedValue = Cache::get($cacheKey);
         $this->assertNotNull($cachedValue);
-        
+
         /* Cached value should be encrypted (not plain token) */
         $this->assertNotEquals('test-token-12345', $cachedValue);
 
