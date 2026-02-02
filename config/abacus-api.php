@@ -72,4 +72,16 @@ return [
         'max_next_link_page_resolving' => env('ABACUS_QUERY_BUILDER_MAX_PAGE_RESOLVING', 5),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Request Logging Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Control HTTP request logging for API calls
+    |
+    */
+
+    'request_logging' => [
+        'enabled' => env('ABACUS_REQUEST_LOGGING', true),
+    ],
 ];

@@ -90,6 +90,11 @@ class AbacusODataClient extends AbacusClient
      */
     public function sendBatch(string $path, string $body): Response
     {
+        $this->logger->info('BATCH request', [
+            'path' => $path,
+            'body' => $body,
+        ]);
+
         return $this->callWithTokenRefresh(function () use ($body, $path) {
             return $this->client()
                 ->withBody($body, MultipartEncoder::getContentType())
