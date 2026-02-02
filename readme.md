@@ -48,8 +48,39 @@ ABACUS_REST_API_CLIENT_SECRET=your-client-secret
 
 ## Quick Start
 
-### 1. Create a Model
+### Includes Models
 
+The package already includes the following models which are ready to use:
+
+- `Product` → `Products` endpoint
+- `Stock` → `Stocks` endpoint 
+
+```php
+use Contoweb\AbacusApi\Models\v1\Product;
+use Contoweb\AbacusApi\Models\v1\Stock;
+
+/* Get all products */
+$products = Product::all();
+
+/* Find a specific product */
+$product = Product::find(12345);
+
+/* Query with filters */
+$products = Product::where('ProductNumber', 'eq', 'ART-001')
+    ->select(['ProductNumber', 'Description'])
+    ->get();
+
+/* Get stock information */
+$stocks = Stock::where('Quantity', 'gt', 0)
+    ->expand('Product')
+    ->get();
+```
+
+### Create your own Model
+
+For entities not included in the package, you can easily create custom models for any Abacus endpoint.
+
+#### 1. Generate a Model
 ```bash
 php artisan make:abacus-model Subject --resource=Subjects
 ```
@@ -69,7 +100,7 @@ class Subject extends AbacusModel
 }
 ```
 
-### 2. Generate IDE Helper
+#### 2. Generate IDE Helper
 
 ```bash
 php artisan abacus:generate-ide-helper
@@ -86,7 +117,7 @@ The command:
 
 #### Setting Up Definition Files
 
-1. Download the OpenAPI/Swagger JSON for your endpoints from Abacus. Exapmle: Click button "DOWNLOAD JSON-FILE" on page https://apihub.abacus.ch/apis/2025/entity/products.api
+1. Download the OpenAPI/Swagger JSON for your endpoints from Abacus. Example: Click button "DOWNLOAD JSON-FILE" on page https://apihub.abacus.ch/apis/2025/entity/products.api
 2. Save them to `storage/app/abacus/endpoint-definitions/`
 3. Name them after your resource (lowercase): `{resource}.json`
 
@@ -121,7 +152,7 @@ To see all available entity types:
 php artisan abacus:generate-ide-helper --list
 ```
 
-### 3. Use the Models
+#### 3. Use the Models
 
 ```php
 use App\Models\Abacus\Subject;
