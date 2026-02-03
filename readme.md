@@ -1,5 +1,9 @@
 # Abacus REST API Package for Laravel
 
+<p align="center">
+    <img src="https://contoweb.ch/assets/bcbf8b02-ed68-4a2a-92e5-197366bcd673.png" alt="Banner" style="width: 100%; max-width: 800px;" />
+</p>
+
 [![Tests](https://github.com/contoweb/laravel-abacus-api/actions/workflows/tests.yml/badge.svg)](https://github.com/contoweb/laravel-abacus-api/actions/workflows/tests.yml)
 [![Code Style](https://github.com/contoweb/laravel-abacus-api/actions/workflows/code-style.yml/badge.svg)](https://github.com/contoweb/laravel-abacus-api/actions/workflows/code-style.yml)
 [![Latest Stable Version](https://poser.pugx.org/contoweb/laravel-abacus-api/v/stable)](https://packagist.org/packages/contoweb/laravel-abacus-api)
