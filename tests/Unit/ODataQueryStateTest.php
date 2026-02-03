@@ -6,6 +6,7 @@ use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\Enums\ODataEnum;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\ODataQueryState;
+use Contoweb\AbacusApi\ODataQueryString;
 use Contoweb\AbacusApi\Tests\TestCase;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
@@ -210,6 +211,17 @@ class ODataQueryStateTest extends TestCase
         $enum = ODataEnum::make('ch.abacus.orde.ProductType', 'Article');
         $state = new ODataQueryState;
         $state->where('Type', 'eq', $enum);
+
+        $query = $state->buildODataQuery();
+
+        $this->assertEquals("Type eq ch.abacus.orde.ProductType'Article'", $query['$filter']);
+    }
+
+    #[Test]
+    public function it_formats_odata_enum_values_via_static_helper(): void
+    {
+        $state = new ODataQueryState;
+        $state->where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'));
 
         $query = $state->buildODataQuery();
 

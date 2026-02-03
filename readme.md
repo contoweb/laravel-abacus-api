@@ -283,6 +283,13 @@ Subject::pages(100)
 Subject::cursor()
     ->pages(50)
     ->get(); // Returns Collection of all items
+
+/* Filter with OData Enum values */
+use Contoweb\AbacusApi\ODataQueryString;
+
+Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
+    ->get();
+// Results in: $filter=Type eq ch.abacus.orde.ProductType'Article'
 ```
 
 ### CRUD Operations
