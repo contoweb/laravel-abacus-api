@@ -47,6 +47,10 @@ class BatchRequest
         /* Decode multipart response */
         $results = MultipartDecoder::decode($response->body(), $boundary);
 
-        return collect($results)->map(fn ($result) => BatchResponseDto::fromArray($result));
+        return collect($results)->map(function ($result, $index) {
+            $modelClass = $this->requests[$index]->modelClass;
+
+            return BatchResponseDto::fromArray($result, $modelClass);
+        });
     }
 }
