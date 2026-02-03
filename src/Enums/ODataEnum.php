@@ -10,9 +10,9 @@ namespace Contoweb\AbacusApi\Enums;
  * and must NOT be wrapped in additional quotes.
  *
  * @example
- * // Filter by ProductType enum:
+ * // Filter by ProductType enum
  * Product::query()
- *     ->where('Type', 'eq', ODataEnum::make('ch.abacus.orde.ProductType', 'Article'))
+ *     ->where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
  *     ->get();
  *
  * // Results in: $filter=Type eq ch.abacus.orde.ProductType'Article'
