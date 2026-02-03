@@ -41,9 +41,10 @@ class ODataQueryState
     }
 
     /**
-     * Filter with OData operators
+     * Filter with OData operators or Laravel Eloquent operators
      * Example: ->where('LastName', ODataOperator::EQUALS, 'Müller')
      * Example: ->where('LastName', 'eq', 'Müller')
+     * Example: ->where('LastName', '=', 'Müller')
      *
      * @return $this
      */
@@ -52,12 +53,15 @@ class ODataQueryState
         /* Convert enum to string value */
         $operatorValue = $operator instanceof ODataOperator ? $operator->value : $operator;
 
+        /* Convert Laravel operator to OData if needed */
+        $operatorValue = ODataOperator::fromLaravel($operatorValue) ?? $operatorValue;
+
         /* Supported operators: eq, ge, gt, le, lt */
         $allowedOperators = ['eq', 'lt', 'gt', 'le', 'ge'];
 
         if (! in_array($operatorValue, $allowedOperators)) {
             throw new InvalidArgumentException(
-                "Operator '{$operatorValue}' not supported. Allowed: ".implode(', ', $allowedOperators)
+                "Operator '{$operatorValue}' not supported. Allowed: ".implode(', ', $allowedOperators).' (or Laravel equivalents: =, >, >=, <, <=)'
             );
         }
 

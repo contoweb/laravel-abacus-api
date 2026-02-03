@@ -107,4 +107,34 @@ class ODataOperatorTest extends TestCase
             $this->assertEquals($odataValue, $enum->value);
         }
     }
+
+    #[Test]
+    public function it_converts_laravel_operators_to_odata(): void
+    {
+        $this->assertEquals('eq', ODataOperator::fromLaravel('='));
+        $this->assertEquals('gt', ODataOperator::fromLaravel('>'));
+        $this->assertEquals('ge', ODataOperator::fromLaravel('>='));
+        $this->assertEquals('lt', ODataOperator::fromLaravel('<'));
+        $this->assertEquals('le', ODataOperator::fromLaravel('<='));
+    }
+
+    #[Test]
+    public function it_returns_null_for_unknown_laravel_operators(): void
+    {
+        $this->assertNull(ODataOperator::fromLaravel('eq'));
+        $this->assertNull(ODataOperator::fromLaravel('!='));
+        $this->assertNull(ODataOperator::fromLaravel('<>'));
+        $this->assertNull(ODataOperator::fromLaravel('like'));
+        $this->assertNull(ODataOperator::fromLaravel(''));
+    }
+
+    #[Test]
+    public function it_validates_laravel_operators_as_valid(): void
+    {
+        $this->assertTrue(ODataOperator::isValid('='));
+        $this->assertTrue(ODataOperator::isValid('>'));
+        $this->assertTrue(ODataOperator::isValid('>='));
+        $this->assertTrue(ODataOperator::isValid('<'));
+        $this->assertTrue(ODataOperator::isValid('<='));
+    }
 }

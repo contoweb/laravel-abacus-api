@@ -421,4 +421,84 @@ class ODataQueryStateTest extends TestCase
 
         $this->assertEquals($state->buildODataQuery(), $state->toODataQuery());
     }
+
+    #[Test]
+    public function it_supports_laravel_equals_operator(): void
+    {
+        $state = new ODataQueryState;
+        $state->where('LastName', '=', 'Müller');
+
+        $query = $state->buildODataQuery();
+
+        $this->assertEquals("LastName eq 'Müller'", $query['$filter']);
+    }
+
+    #[Test]
+    public function it_supports_laravel_greater_than_operator(): void
+    {
+        $state = new ODataQueryState;
+        $state->where('Age', '>', 18);
+
+        $query = $state->buildODataQuery();
+
+        $this->assertEquals('Age gt 18', $query['$filter']);
+    }
+
+    #[Test]
+    public function it_supports_laravel_greater_than_or_equal_operator(): void
+    {
+        $state = new ODataQueryState;
+        $state->where('Score', '>=', 80);
+
+        $query = $state->buildODataQuery();
+
+        $this->assertEquals('Score ge 80', $query['$filter']);
+    }
+
+    #[Test]
+    public function it_supports_laravel_less_than_operator(): void
+    {
+        $state = new ODataQueryState;
+        $state->where('Price', '<', 100);
+
+        $query = $state->buildODataQuery();
+
+        $this->assertEquals('Price lt 100', $query['$filter']);
+    }
+
+    #[Test]
+    public function it_supports_laravel_less_than_or_equal_operator(): void
+    {
+        $state = new ODataQueryState;
+        $state->where('Quantity', '<=', 50);
+
+        $query = $state->buildODataQuery();
+
+        $this->assertEquals('Quantity le 50', $query['$filter']);
+    }
+
+    #[Test]
+    public function it_supports_mixed_odata_and_laravel_operators(): void
+    {
+        $state = new ODataQueryState;
+        $state->where('IsActive', 'eq', true)
+            ->where('Age', '>', 18)
+            ->where('Score', 'ge', 80);
+
+        $query = $state->buildODataQuery();
+
+        $this->assertStringContainsString('IsActive eq true', $query['$filter']);
+        $this->assertStringContainsString('Age gt 18', $query['$filter']);
+        $this->assertStringContainsString('Score ge 80', $query['$filter']);
+    }
+
+    #[Test]
+    public function it_shows_laravel_operators_in_error_message(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('(or Laravel equivalents: =, >, >=, <, <=)');
+
+        $state = new ODataQueryState;
+        $state->where('Name', 'invalid', 'Test');
+    }
 }
