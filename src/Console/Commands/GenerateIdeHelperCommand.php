@@ -31,9 +31,20 @@ class GenerateIdeHelperCommand extends Command
         'Edm.Single' => 'float',
     ];
 
-    public function __construct(protected AbacusService $abacusService)
+    protected ?AbacusService $abacusService = null;
+
+    /**
+     * Lazily resolve the AbacusService to avoid DI/eager resolution, since credentials may be missing at boot
+     * and can be configured later by an authenticated user.
+     */
+    protected function abacusService(): AbacusService
     {
-        parent::__construct();
+        /* Because we don't assume we have Abacus credentials set in the config() and the credentials can be also set later by an authenticated user, we don't use the Dependency Injection right in the instructor. */
+        if ($this->abacusService === null) {
+            $this->abacusService = app(AbacusService::class);
+        }
+
+        return $this->abacusService;
     }
 
     public function handle(): int
@@ -102,7 +113,7 @@ class GenerateIdeHelperCommand extends Command
             $this->comment('No local definition files found, fetching from API...');
             $this->info('Fetching OData metadata from Abacus API...');
 
-            $metadataContent = $this->abacusService->metadata();
+            $metadataContent = $this->abacusService()->metadata();
 
             if (empty($metadataContent)) {
                 $this->error('Failed to fetch metadata from API');

@@ -22,6 +22,7 @@ class AbacusServiceProvider extends ServiceProvider
             'abacus-api'
         );
 
+        /* Logger is always available (unconditional) */
         $this->app->singleton('abacus.logger', function ($app) {
             if (config('abacus-api.request_logging.enabled')) {
                 return $app->make(LoggerInterface::class);
@@ -30,15 +31,29 @@ class AbacusServiceProvider extends ServiceProvider
             return new NullLogger;
         });
 
-        /* Register AbacusClient as singleton */
-        $this->app->singleton(AbacusODataClient::class, function ($app) {
-            return new AbacusODataClient(logger: $app->make('abacus.logger'));
-        });
+        /* Only register singletons if credentials are configured */
+        if ($this->hasConfiguredCredentials()) {
+            $this->app->singleton(AbacusODataClient::class, function ($app) {
+                return new AbacusODataClient(logger: $app->make('abacus.logger'));
+            });
 
-        /* Register AbacusService as singleton */
-        $this->app->singleton(AbacusService::class, function ($app) {
-            return new AbacusService($app->make(AbacusODataClient::class));
-        });
+            $this->app->singleton(AbacusService::class, function ($app) {
+                return new AbacusService($app->make(AbacusODataClient::class));
+            });
+        }
+    }
+
+    /**
+     * Check if API credentials are configured.
+     */
+    protected function hasConfiguredCredentials(): bool
+    {
+        $baseUrl = config('abacus-api.rest_api.url');
+        $mandate = config('abacus-api.rest_api.mandate');
+        $clientId = config('abacus-api.rest_api.client_id');
+        $clientSecret = config('abacus-api.rest_api.client_secret');
+
+        return ! empty($baseUrl) && ! empty($mandate) && ! empty($clientId) && ! empty($clientSecret);
     }
 
     /**

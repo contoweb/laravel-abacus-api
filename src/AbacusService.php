@@ -16,6 +16,30 @@ class AbacusService
     }
 
     /**
+     * Create a new AbacusODataClient instance with custom options.
+     * Useful for multi-tenant scenarios where credentials vary per request.
+     *
+     * @param  array{
+     *     base_url?: string,
+     *     mandate?: string,
+     *     client_id?: string,
+     *     client_secret?: string,
+     *     api_version?: string
+     * }  $options
+     */
+    public static function client(array $options = []): AbacusODataClient
+    {
+        return new AbacusODataClient(
+            baseUrl: $options['base_url'] ?? null,
+            mandate: $options['mandate'] ?? null,
+            clientId: $options['client_id'] ?? null,
+            clientSecret: $options['client_secret'] ?? null,
+            apiVersion: $options['api_version'] ?? null,
+            logger: app('abacus.logger') ?? null,
+        );
+    }
+
+    /**
      * List of all available entity IDs
      * GET /api/entity/v1/mandants/{mandate}/
      */
