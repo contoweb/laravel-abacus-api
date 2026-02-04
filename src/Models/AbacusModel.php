@@ -2,7 +2,6 @@
 
 namespace Contoweb\AbacusApi\Models;
 
-use Contoweb\AbacusApi\AbacusODataBatchQueryBuilder;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
@@ -39,18 +38,6 @@ abstract class AbacusModel
     }
 
     /**
-     * Create batch query builder
-     *
-     * @return AbacusODataBatchQueryBuilder<static>
-     */
-    public static function batch(): AbacusODataBatchQueryBuilder
-    {
-        $client = app(AbacusODataClient::class);
-
-        return new AbacusODataBatchQueryBuilder($client, static::$resource, static::class);
-    }
-
-    /**
      * Set the maximum number of pages to retrieve when cursor pagination is enabled
      */
     public static function pages(int $limit): AbacusODataQueryBuilder
@@ -79,12 +66,12 @@ abstract class AbacusModel
     /**
      * Execute query and return all paginated results as Collection
      *
-     * @return Collection<int, static>
+     * @return Collection<int, static>|\Contoweb\AbacusApi\Batch\BatchRequestItem
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function all(): Collection
+    public static function all(): Collection|\Contoweb\AbacusApi\Batch\BatchRequestItem
     {
         return static::query()->get();
     }
@@ -92,12 +79,12 @@ abstract class AbacusModel
     /**
      * Execute query and return all paginated results as Collection
      *
-     * @return Collection<static>
+     * @return Collection<static>|\Contoweb\AbacusApi\Batch\BatchRequestItem
      *
      * @throws RequestException
      * @throws ConnectionException
      */
-    public static function get(): Collection
+    public static function get(): Collection|\Contoweb\AbacusApi\Batch\BatchRequestItem
     {
         return static::query()->get();
     }
@@ -106,12 +93,11 @@ abstract class AbacusModel
      * Find entity via primary key
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
-     * @return AbacusModel
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function find(int|string|array $idOrCriteria): static
+    public static function find(int|string|array $idOrCriteria): static|\Contoweb\AbacusApi\Batch\BatchRequestItem
     {
         return static::query()->find($idOrCriteria);
     }
@@ -175,7 +161,7 @@ abstract class AbacusModel
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function create(array $data): static
+    public static function create(array $data): static|\Contoweb\AbacusApi\Batch\BatchRequestItem
     {
         return static::query()->create($data);
     }
@@ -191,9 +177,9 @@ abstract class AbacusModel
      * @example Single key: Customers::delete(210)
      * @example Composite key: StockBatches::delete(['BatchNumber' => '123', 'ProductId' => 456])
      */
-    public static function delete(int|string|array $idOrCriteria): void
+    public static function delete(int|string|array $idOrCriteria): ?\Contoweb\AbacusApi\Batch\BatchRequestItem
     {
-        static::query()->delete($idOrCriteria);
+        return static::query()->delete($idOrCriteria);
     }
 
     /**
@@ -208,7 +194,7 @@ abstract class AbacusModel
      * @example Simple: Customers::update(210, ['Name' => 'Test'])
      * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
      */
-    public static function update(int|string|array $idOrCriteria, array $data): static
+    public static function update(int|string|array $idOrCriteria, array $data): static|\Contoweb\AbacusApi\Batch\BatchRequestItem
     {
         return static::query()->update($idOrCriteria, $data);
     }

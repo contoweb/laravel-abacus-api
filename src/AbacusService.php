@@ -2,8 +2,7 @@
 
 namespace Contoweb\AbacusApi;
 
-use Contoweb\AbacusApi\Batch\BatchRequest;
-use Contoweb\AbacusApi\Batch\BatchRequestItem;
+use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
 use Illuminate\Support\Facades\Cache;
 
@@ -56,10 +55,43 @@ class AbacusService
     }
 
     /**
-     * Create a new batch request
+     * Create a new fluent batch builder.
+     *
+     * @param  string|null  $name  Optional name for debugging/logging
+     *
+     * @example
+     * ```php
+     * $batch = Abacus::newBatch();
+     * $batch->add(Customer::batch()->find(123));
+     * $results = $batch->send();
+     * ```
      */
-    public function batch(BatchRequestItem ...$requests): BatchRequest
+    public function newBatch(?string $name = null): PendingBatchRequest
     {
-        return new BatchRequest($this->client, ...$requests);
+        return new PendingBatchRequest($this->client, $name);
+    }
+
+    /**
+     * Create a batch with closure (convenience method).
+     *
+     * This is a shorthand for creating a batch and immediately
+     * calling capture() on it. The closure should return an array
+     * of batch items for destructuring.
+     *
+     * @param  callable  $callback  Closure that executes queries
+     *
+     * @example
+     * ```php
+     * [$customer, $products] = Abacus::batch(function() {
+     *     return [
+     *         Customer::find(123),
+     *         Product::where('Price', 'gt', 100)->get(),
+     *     ];
+     * })->send();
+     * ```
+     */
+    public function batch(callable $callback): PendingBatchRequest
+    {
+        return $this->newBatch()->capture($callback);
     }
 }

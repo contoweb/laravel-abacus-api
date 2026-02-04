@@ -4,13 +4,13 @@ namespace Contoweb\AbacusApi\Facades;
 
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusService;
-use Contoweb\AbacusApi\Batch\BatchRequest;
-use Contoweb\AbacusApi\Batch\BatchRequestItem;
+use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static BatchRequest batch(BatchRequestItem ...$requests)
+ * @method static PendingBatchRequest newBatch(?string $name = null) Create a new fluent batch builder
+ * @method static PendingBatchRequest batch(callable $callback) Create batch with capture closure
  * @method static array listEntityIds()
  * @method static string metadata()
  * @method static AbacusODataClient client(AbacusCredentialsProvider $credentialsProvider)

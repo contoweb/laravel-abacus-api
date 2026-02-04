@@ -3,6 +3,8 @@
 namespace Contoweb\AbacusApi;
 
 use Closure;
+use Contoweb\AbacusApi\Batch\BatchContext;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Contoweb\AbacusApi\Traits\HasODataQueryMethods;
 use Illuminate\Http\Client\ConnectionException;
@@ -90,13 +92,21 @@ class AbacusODataQueryBuilder
     /**
      * Execute query and return all paginated results as Collection
      *
-     * @return Collection<int, AbacusModel>
+     * @return Collection<int, AbacusModel>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function get(): Collection
+    public function get(): Collection|BatchRequestItem
     {
+        // Check if we're in a batch context
+        if ($batch = BatchContext::get()) {
+            $item = $this->toBatchItem();
+            $batch->add($item);
+
+            return $item;
+        }
+
         $allResults = [];
 
         $path = $this->client->entityPath($this->resource);
@@ -155,8 +165,17 @@ class AbacusODataQueryBuilder
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function find(int|string|array $idOrCriteria): AbacusModel
+    public function find(int|string|array $idOrCriteria): AbacusModel|BatchRequestItem
     {
+        // Check if we're in a batch context
+        if ($batch = BatchContext::get()) {
+            $this->queryState->id($idOrCriteria);
+            $item = $this->toBatchItem();
+            $batch->add($item);
+
+            return $item;
+        }
+
         $this->queryState->id($idOrCriteria);
         $path = $this->queryState->buildPathWithId($this->client, $this->resource);
 
@@ -172,13 +191,21 @@ class AbacusODataQueryBuilder
      * Valid query methods: select(), expand()
      *
      * @param  array<string, int|string>  $data  Request body data
-     * @return AbacusModel The created entity
+     * @return AbacusModel|BatchRequestItem The created entity
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function create(array $data): AbacusModel
+    public function create(array $data): AbacusModel|BatchRequestItem
     {
+        // Check if we're in a batch context
+        if ($batch = BatchContext::get()) {
+            $item = $this->toBatchItemWithBody('POST', $data);
+            $batch->add($item);
+
+            return $item;
+        }
+
         $path = $this->client->entityPath($this->resource);
 
         $response = $this->client
@@ -193,16 +220,27 @@ class AbacusODataQueryBuilder
      * Requires: ID set via id()
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria
-     * @return void Success status
+     * @return BatchRequestItem|null Returns BatchRequestItem in batch mode, null otherwise
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function delete(int|string|array $idOrCriteria): void
+    public function delete(int|string|array $idOrCriteria): ?BatchRequestItem
     {
+        // Check if we're in a batch context
+        if ($batch = BatchContext::get()) {
+            $this->queryState->id($idOrCriteria);
+            $item = $this->toBatchItemWithMethod('DELETE');
+            $batch->add($item);
+
+            return $item;
+        }
+
         $this->queryState->id($idOrCriteria);
         $path = $this->queryState->buildPathWithId($this->client, $this->resource);
         $this->client->delete($path);
+
+        return null;
     }
 
     /**
@@ -210,15 +248,24 @@ class AbacusODataQueryBuilder
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @param  array<string, int|array>  $data  Request body data
-     * @return AbacusModel The updated entity
+     * @return AbacusModel|BatchRequestItem The updated entity
      *
      * @throws ConnectionException
      * @throws RequestException
      *
      * @example Simple: Model::update(210, ['Name' => 'Test'])
      */
-    public function update(int|string|array $idOrCriteria, array $data): AbacusModel
+    public function update(int|string|array $idOrCriteria, array $data): AbacusModel|BatchRequestItem
     {
+        // Check if we're in a batch context
+        if ($batch = BatchContext::get()) {
+            $this->queryState->id($idOrCriteria);
+            $item = $this->toBatchItemWithBody('PATCH', $data);
+            $batch->add($item);
+
+            return $item;
+        }
+
         $this->queryState->id($idOrCriteria);
         $path = $this->queryState->buildPathWithId($this->client, $this->resource);
 
@@ -232,10 +279,12 @@ class AbacusODataQueryBuilder
     /**
      * Execute query and return all paginated results as Collection
      *
+     * @return Collection<int, AbacusModel>|BatchRequestItem
+     *
      * @throws RequestException
      * @throws ConnectionException
      */
-    public function all(): Collection
+    public function all(): Collection|BatchRequestItem
     {
         return $this->get();
     }
@@ -262,12 +311,79 @@ class AbacusODataQueryBuilder
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function first(): ?AbacusModel
+    /**
+     * Get the first result
+     */
+    public function first(): AbacusModel|BatchRequestItem|null
     {
         $this->queryState->top(1);
 
         $results = $this->get();
 
+        // If we got a BatchRequestItem, return it as-is
+        if ($results instanceof BatchRequestItem) {
+            return $results;
+        }
+
         return $results->first();
+    }
+
+    /**
+     * Convert current query state to a BatchRequestItem for GET requests.
+     */
+    protected function toBatchItem(): BatchRequestItem
+    {
+        $path = $this->queryState->hasId()
+            ? $this->queryState->buildPathWithId($this->client, $this->resource)
+            : $this->client->entityPath($this->resource);
+
+        $odataParams = $this->queryState->buildODataQuery();
+
+        if (! empty($odataParams)) {
+            $path .= '?'.$this->client->buildQueryString($odataParams);
+        }
+
+        return new BatchRequestItem($this->modelClass, 'GET', $path, null);
+    }
+
+    /**
+     * Convert current query state to a BatchRequestItem with a request body.
+     *
+     * @param  string  $method  HTTP method (POST, PATCH, etc.)
+     * @param  array<string, mixed>  $data  Request body data
+     */
+    protected function toBatchItemWithBody(string $method, array $data): BatchRequestItem
+    {
+        $path = $this->queryState->hasId()
+            ? $this->queryState->buildPathWithId($this->client, $this->resource)
+            : $this->client->entityPath($this->resource);
+
+        $odataParams = $this->queryState->buildODataQuery();
+
+        if (! empty($odataParams)) {
+            $path .= '?'.$this->client->buildQueryString($odataParams);
+        }
+
+        return new BatchRequestItem($this->modelClass, $method, $path, $data);
+    }
+
+    /**
+     * Convert current query state to a BatchRequestItem with a specific method.
+     *
+     * @param  string  $method  HTTP method (DELETE, etc.)
+     */
+    protected function toBatchItemWithMethod(string $method): BatchRequestItem
+    {
+        $path = $this->queryState->hasId()
+            ? $this->queryState->buildPathWithId($this->client, $this->resource)
+            : $this->client->entityPath($this->resource);
+
+        $odataParams = $this->queryState->buildODataQuery();
+
+        if (! empty($odataParams)) {
+            $path .= '?'.$this->client->buildQueryString($odataParams);
+        }
+
+        return new BatchRequestItem($this->modelClass, $method, $path, null);
     }
 }

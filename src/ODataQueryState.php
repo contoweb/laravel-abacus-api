@@ -41,6 +41,14 @@ class ODataQueryState
     }
 
     /**
+     * Check if an entity ID has been set
+     */
+    public function hasId(): bool
+    {
+        return $this->entityId !== null || ! empty($this->compositeKey);
+    }
+
+    /**
      * Filter with OData operators or Laravel Eloquent operators
      * Example: ->where('LastName', ODataOperator::EQUALS, 'Müller')
      * Example: ->where('LastName', 'eq', 'Müller')

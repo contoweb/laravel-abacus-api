@@ -305,9 +305,15 @@ class BatchRequestTest extends TestCase
             ),
         ]);
 
+        $batchQueryBuilder = new \Contoweb\AbacusApi\AbacusODataBatchQueryBuilder(
+            $this->client,
+            TestSubject::getResource(),
+            TestSubject::class
+        );
+
         $batch = new BatchRequest(
             $this->client,
-            TestSubject::batch()->create(['FirstName' => 'Created'])
+            $batchQueryBuilder->create(['FirstName' => 'Created'])
         );
 
         $results = $batch->send();

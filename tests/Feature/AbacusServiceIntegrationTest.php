@@ -189,11 +189,12 @@ class AbacusServiceIntegrationTest extends TestCase
             ),
         ]);
 
-        $batch = $this->service->batch(
-            TestSubject::batch()->create(['FirstName' => 'Alice', 'LastName' => 'Smith']),
-            TestSubject::batch()->create(['FirstName' => 'Bob', 'LastName' => 'Jones']),
-            TestSubject::batch()->get()
-        );
+        $batch = $this->service->newBatch();
+        $batch->capture(function () {
+            TestSubject::create(['FirstName' => 'Alice', 'LastName' => 'Smith']);
+            TestSubject::create(['FirstName' => 'Bob', 'LastName' => 'Jones']);
+            TestSubject::get();
+        });
 
         $results = $batch->send();
 
