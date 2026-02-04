@@ -275,7 +275,7 @@ $subject->delete();
 
 Execute multiple operations in a single HTTP request to reduce network overhead and improve performance.
 
-**IMPORTANT:** Batch requests are NOT transactional. If one operation fails, other operations remain persisted.
+**IMPORTANT:** Batch requests are NOT transactional in Abacus. If one request fails, the others may still be processed and persisted.
 
 #### Overview
 
@@ -284,8 +284,6 @@ Batch requests allow you to combine multiple API calls into a single HTTP reques
 - Improves application performance
 - Efficiently handles bulk operations
 - Maintains individual operation independence (non-transactional)
-
-The new batch API provides an elegant, Laravel-like experience with automatic query capture.
 
 #### Basic Usage (Recommended)
 
@@ -415,7 +413,7 @@ Works seamlessly with composite key entities:
 
 #### Response Handling
 
-The new `BatchResponseCollection` provides convenient helpers:
+You can check the status of each operation individually:
 
 ```php
 $results = Abacus::batch(function() {
@@ -426,10 +424,11 @@ $results = Abacus::batch(function() {
     ];
 })->send();
 
-// Check batch status
 if ($results->allSuccessful()) {
     // All operations succeeded
-} elseif ($results->hasFailures()) {
+} 
+
+if ($results->hasFailures()) {
     // Some operations failed
 }
 
@@ -527,66 +526,6 @@ $results = Abacus::batch(function() {
 // Split into multiple batches if needed
 $batch1 = Abacus::batch(/* first 50 operations */)->send();
 $batch2 = Abacus::batch(/* next 50 operations */)->send();
-```
-
-**Error Handling:**
-```php
-// Always check for failures
-$results = $batch->send();
-
-if ($results->hasFailures()) {
-    // Log errors
-    Log::error('Batch had failures', [
-        'failed_count' => $results->failed()->count(),
-        'errors' => $results->errors()->toArray(),
-    ]);
-
-    // Notify or retry failed operations
-    dispatch(new RetryFailedBatchOperations($results->failed()));
-}
-
-// Process successful results
-$data = $results->successful()->models();
-```
-
-#### Important Notes
-
-1. **Non-Transactional**: Each operation in a batch is independent. If operation 3 fails, operations 1 and 2 remain persisted.
-
-2. **Order Preservation**: Results are returned in the same order as requests.
-
-3. **Array Destructuring**: Use array destructuring for clean, readable result access.
-
-4. **Error Isolation**: A failed operation doesn't prevent other operations from executing.
-
-5. **Response Size**: Be mindful of response payload size when fetching large datasets in batches.
-
-#### Migration from Old API
-
-If you're upgrading from an earlier version:
-
-```php
-// OLD API (no longer supported)
-$results = Abacus::batch(
-    Customer::batch()->find(123),
-    Product::batch()->find(456)
-)->send();
-
-// NEW API - Capture pattern (cleanest)
-[$customer, $product] = Abacus::batch(function() {
-    return [
-        Customer::find(123),
-        Product::find(456),
-    ];
-})->send();
-
-// Or access by index
-$results = Abacus::batch(function() {
-    return [Customer::find(123), Product::find(456)];
-})->send();
-
-$customer = $results[0]->getModels()->first();
-$product = $results[1]->getModels()->first();
 ```
 
 ### Working Directly with the Service
