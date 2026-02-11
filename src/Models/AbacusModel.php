@@ -2,7 +2,6 @@
 
 namespace Contoweb\AbacusApi\Models;
 
-use Contoweb\AbacusApi\AbacusODataBatchQueryBuilder;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
