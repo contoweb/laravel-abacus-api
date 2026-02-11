@@ -5,9 +5,10 @@ namespace Contoweb\AbacusApi;
 use Contoweb\AbacusApi\Console\Commands\GenerateIdeHelperCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusModelCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusReportCommand;
+use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
+use InvalidArgumentException;
 
 class AbacusServiceProvider extends ServiceProvider
 {
@@ -22,13 +23,14 @@ class AbacusServiceProvider extends ServiceProvider
             'abacus-api'
         );
 
-        /* Logger is always available (unconditional) */
-        $this->app->singleton('abacus.logger', function ($app) {
-            if (config('abacus-api.request_logging.enabled')) {
-                return $app->make(LoggerInterface::class);
+        $this->app->bind(AbacusCredentialsProvider::class, function (Application $app) {
+            $provider = $app->make($app['config']->get('abacus-api.credentials_provider'));
+
+            if (! $provider instanceof AbacusCredentialsProvider) {
+                throw new InvalidArgumentException('The credentials provider must implement the AbacusCredentialsProvider interface');
             }
 
-            return new NullLogger;
+            return $provider;
         });
 
         /* Only register singletons if credentials are configured */
@@ -37,10 +39,9 @@ class AbacusServiceProvider extends ServiceProvider
                 return new AbacusODataClient(logger: $app->make('abacus.logger'));
             });
 
-            $this->app->singleton(AbacusService::class, function ($app) {
-                return new AbacusService($app->make(AbacusODataClient::class));
-            });
-        }
+        $this->app->singleton(AbacusService::class, function (Application $app) {
+            return new AbacusService($app->make(AbacusODataClient::class));
+        });
     }
 
     /**

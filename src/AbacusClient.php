@@ -2,14 +2,14 @@
 
 namespace Contoweb\AbacusApi;
 
+use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
+use Contoweb\AbacusApi\Events\AbacusRequestSend;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 
 abstract class AbacusClient
 {
@@ -25,22 +25,16 @@ abstract class AbacusClient
 
     protected string $apiVersion;
 
-    protected LoggerInterface $logger;
-
     public function __construct(
-        ?string $baseUrl = null,
-        ?string $mandate = null,
-        ?string $clientId = null,
-        ?string $clientSecret = null,
-        ?string $apiVersion = null,
-        ?LoggerInterface $logger = null,
+        AbacusCredentialsProvider $credentialsProvider,
     ) {
-        $this->baseUrl = $baseUrl ?? config('abacus-api.rest_api.url');
-        $this->mandate = $mandate ?? config('abacus-api.rest_api.mandate');
-        $this->clientId = $clientId ?? config('abacus-api.rest_api.client_id');
-        $this->clientSecret = $clientSecret ?? config('abacus-api.rest_api.client_secret');
-        $this->apiVersion = $apiVersion ?? config('abacus-api.rest_api.version');
-        $this->logger = $logger ?: new NullLogger;
+        $credentials = $credentialsProvider->getCredentials();
+
+        $this->baseUrl = $credentials->baseUrl;
+        $this->mandate = $credentials->mandate;
+        $this->clientId = $credentials->clientId;
+        $this->clientSecret = $credentials->clientSecret;
+        $this->apiVersion = $credentials->apiVersion;
     }
 
     /*

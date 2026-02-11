@@ -1,5 +1,7 @@
 <?php
 
+use Contoweb\AbacusApi\Credentials\ConfigCredentialsProvider;
+
 return [
 
     /*
@@ -74,14 +76,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Request Logging Configuration
+    | Credentials Provider
     |--------------------------------------------------------------------------
     |
-    | Control HTTP request logging for API calls
+    | The class responsible for providing API credentials (client ID, client secret, etc.) to the Abacus API client
+    |
+    | Available: ConfigCredentialsProvider, UserCredentialsProvider
+    | Custom providers must implement the AbacusCredentialsProvider interface
     |
     */
 
-    'request_logging' => [
-        'enabled' => env('ABACUS_REQUEST_LOGGING', true),
-    ],
+    'credentials_provider' => ConfigCredentialsProvider::class,
 ];
