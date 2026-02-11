@@ -4,6 +4,7 @@ namespace Contoweb\AbacusApi\Models;
 
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -28,7 +29,7 @@ abstract class AbacusModel
     /**
      * Create query builder
      *
-     * @return AbacusODataQueryBuilder<static>
+     * @return AbacusODataQueryBuilder
      */
     public static function query(): AbacusODataQueryBuilder
     {
@@ -66,12 +67,12 @@ abstract class AbacusModel
     /**
      * Execute query and return all paginated results as Collection
      *
-     * @return Collection<int, static>|\Contoweb\AbacusApi\Batch\BatchRequestItem
+     * @return Collection<int, static>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function all(): Collection|\Contoweb\AbacusApi\Batch\BatchRequestItem
+    public static function all(): Collection|BatchRequestItem
     {
         return static::query()->get();
     }
@@ -79,12 +80,12 @@ abstract class AbacusModel
     /**
      * Execute query and return all paginated results as Collection
      *
-     * @return Collection<static>|\Contoweb\AbacusApi\Batch\BatchRequestItem
+     * @return Collection<static>|BatchRequestItem
      *
      * @throws RequestException
      * @throws ConnectionException
      */
-    public static function get(): Collection|\Contoweb\AbacusApi\Batch\BatchRequestItem
+    public static function get(): Collection|BatchRequestItem
     {
         return static::query()->get();
     }
@@ -97,7 +98,7 @@ abstract class AbacusModel
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function find(int|string|array $idOrCriteria): static|\Contoweb\AbacusApi\Batch\BatchRequestItem
+    public static function find(int|string|array $idOrCriteria): static|BatchRequestItem
     {
         return static::query()->find($idOrCriteria);
     }
@@ -106,7 +107,10 @@ abstract class AbacusModel
      * Start where query
      * Example: Project::where('Id', 'eq', 9100)->get()
      *
-     * @return AbacusODataQueryBuilder<static>
+     * @param string $field
+     * @param ODataOperator|string $operator
+     * @param mixed $value
+     * @return AbacusODataQueryBuilder
      */
     public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusODataQueryBuilder
     {
@@ -116,7 +120,8 @@ abstract class AbacusModel
     /**
      * Start select query
      *
-     * @return AbacusODataQueryBuilder<static>
+     * @param array|string $fields
+     * @return AbacusODataQueryBuilder
      */
     public static function select(array|string $fields): AbacusODataQueryBuilder
     {
@@ -126,7 +131,8 @@ abstract class AbacusModel
     /**
      * Top N Entities
      *
-     * @return AbacusODataQueryBuilder<static>
+     * @param int $limit
+     * @return AbacusODataQueryBuilder
      */
     public static function top(int $limit): AbacusODataQueryBuilder
     {
@@ -136,7 +142,9 @@ abstract class AbacusModel
     /**
      * OrderBy-Query starten
      *
-     * @return AbacusODataQueryBuilder<static>
+     * @param string $field
+     * @param string $direction
+     * @return AbacusODataQueryBuilder
      */
     public static function orderBy(string $field, string $direction = 'asc'): AbacusODataQueryBuilder
     {
@@ -146,7 +154,8 @@ abstract class AbacusModel
     /**
      * Expand Navigation Properties
      *
-     * @return AbacusODataQueryBuilder<static>
+     * @param array|string $relations
+     * @return AbacusODataQueryBuilder
      */
     public static function expand(array|string $relations): AbacusODataQueryBuilder
     {
@@ -161,7 +170,7 @@ abstract class AbacusModel
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function create(array $data): static|\Contoweb\AbacusApi\Batch\BatchRequestItem
+    public static function create(array $data): static|BatchRequestItem
     {
         return static::query()->create($data);
     }
@@ -177,7 +186,7 @@ abstract class AbacusModel
      * @example Single key: Customers::delete(210)
      * @example Composite key: StockBatches::delete(['BatchNumber' => '123', 'ProductId' => 456])
      */
-    public static function delete(int|string|array $idOrCriteria): ?\Contoweb\AbacusApi\Batch\BatchRequestItem
+    public static function delete(int|string|array $idOrCriteria): ?BatchRequestItem
     {
         return static::query()->delete($idOrCriteria);
     }
@@ -194,7 +203,7 @@ abstract class AbacusModel
      * @example Simple: Customers::update(210, ['Name' => 'Test'])
      * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
      */
-    public static function update(int|string|array $idOrCriteria, array $data): static|\Contoweb\AbacusApi\Batch\BatchRequestItem
+    public static function update(int|string|array $idOrCriteria, array $data): static|BatchRequestItem
     {
         return static::query()->update($idOrCriteria, $data);
     }
