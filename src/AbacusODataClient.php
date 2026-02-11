@@ -3,6 +3,7 @@
 namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Batch\MultipartEncoder;
+use Contoweb\AbacusApi\Events\AbacusRequestSend;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
@@ -90,10 +91,8 @@ class AbacusODataClient extends AbacusClient
      */
     public function sendBatch(string $path, string $body): Response
     {
-        $this->logger->info('BATCH request', [
-            'path' => $path,
-            'body' => $body,
-        ]);
+
+        event(new AbacusRequestSend('POST', $path, [$body]));
 
         return $this->callWithTokenRefresh(function () use ($body, $path) {
             return $this->client()

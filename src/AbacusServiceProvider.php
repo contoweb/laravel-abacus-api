@@ -33,11 +33,11 @@ class AbacusServiceProvider extends ServiceProvider
             return $provider;
         });
 
-        /* Only register singletons if credentials are configured */
-        if ($this->hasConfiguredCredentials()) {
-            $this->app->singleton(AbacusODataClient::class, function ($app) {
-                return new AbacusODataClient(logger: $app->make('abacus.logger'));
-            });
+        $this->app->singleton(AbacusODataClient::class, function (Application $app) {
+            return new AbacusODataClient(
+                credentialsProvider: $app->make(AbacusCredentialsProvider::class),
+            );
+        });
 
         $this->app->singleton(AbacusService::class, function (Application $app) {
             return new AbacusService($app->make(AbacusODataClient::class));

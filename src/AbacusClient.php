@@ -157,9 +157,7 @@ abstract class AbacusClient
                 $path .= '?'.$this->buildQueryString($queryString);
             }
 
-            $this->logger->info('GET request', [
-                'path' => $path,
-            ]);
+            event(new AbacusRequestSend('GET', $path));
 
             return $this->client()->get($path, $queryString);
         })->throw();
@@ -178,10 +176,7 @@ abstract class AbacusClient
                 $path .= '?'.$this->buildQueryString($queryString);
             }
 
-            $this->logger->info('POST request', [
-                'path' => $path,
-                'body' => $data,
-            ]);
+            event(new AbacusRequestSend('POST', $path, $data));
 
             return $this->client()->post($path, $data);
         })->throw();
@@ -200,10 +195,7 @@ abstract class AbacusClient
                 $path .= '?'.$this->buildQueryString($queryString);
             }
 
-            $this->logger->info('PATCH request', [
-                'path' => $path,
-                'body' => $data,
-            ]);
+            event(new AbacusRequestSend('PATCH', $path, $data));
 
             return $this->client()->patch($path, $data);
         })->throw();
@@ -222,10 +214,7 @@ abstract class AbacusClient
                 $path .= '?'.$this->buildQueryString($queryString);
             }
 
-            $this->logger->info('PUT request', [
-                'path' => $path,
-                'body' => $data,
-            ]);
+            event(new AbacusRequestSend('PUT', $path, $data));
 
             return $this->client()->put($path, $data);
         })->throw();
@@ -240,9 +229,7 @@ abstract class AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($path) {
 
-            $this->logger->info('DELETE request', [
-                'path' => $path,
-            ]);
+            event(new AbacusRequestSend('DELETE', $path));
 
             return $this->client()->delete($path);
         })->throw();
