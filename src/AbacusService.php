@@ -19,9 +19,6 @@ class AbacusService
     /**
      * Create a new AbacusODataClient instance with custom options.
      * Useful for multi-tenant scenarios where credentials vary per request.
-     *
-     * @param AbacusCredentialsProvider $credentialsProvider
-     * @return AbacusODataClient
      */
     public static function client(AbacusCredentialsProvider $credentialsProvider): AbacusODataClient
     {
