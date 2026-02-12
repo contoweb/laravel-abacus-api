@@ -130,7 +130,7 @@ class GenerateIdeHelperCommand extends Command
                 foreach ($entityTypes[$entityType] as $prop) {
                     $phpType = isset($prop['navigation']) ? 'array' : $this->mapODataType($prop['type']);
 
-                    $isNullable = ($prop['nullable'] ?? 'true') === 'true';
+                    $isNullable = $prop['nullable'] === 'true';
 
                     $description = ! empty($prop['maxLength']) ? "Max length: {$prop['maxLength']}" : '';
 
