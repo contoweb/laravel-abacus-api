@@ -28,8 +28,6 @@ abstract class AbacusModel
 
     /**
      * Create query builder
-     *
-     * @return AbacusODataQueryBuilder
      */
     public static function query(): AbacusODataQueryBuilder
     {
@@ -106,11 +104,6 @@ abstract class AbacusModel
     /**
      * Start where query
      * Example: Project::where('Id', 'eq', 9100)->get()
-     *
-     * @param string $field
-     * @param ODataOperator|string $operator
-     * @param mixed $value
-     * @return AbacusODataQueryBuilder
      */
     public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusODataQueryBuilder
     {
@@ -119,9 +112,6 @@ abstract class AbacusModel
 
     /**
      * Start select query
-     *
-     * @param array|string $fields
-     * @return AbacusODataQueryBuilder
      */
     public static function select(array|string $fields): AbacusODataQueryBuilder
     {
@@ -130,9 +120,6 @@ abstract class AbacusModel
 
     /**
      * Top N Entities
-     *
-     * @param int $limit
-     * @return AbacusODataQueryBuilder
      */
     public static function top(int $limit): AbacusODataQueryBuilder
     {
@@ -141,10 +128,6 @@ abstract class AbacusModel
 
     /**
      * OrderBy-Query starten
-     *
-     * @param string $field
-     * @param string $direction
-     * @return AbacusODataQueryBuilder
      */
     public static function orderBy(string $field, string $direction = 'asc'): AbacusODataQueryBuilder
     {
@@ -153,9 +136,6 @@ abstract class AbacusModel
 
     /**
      * Expand Navigation Properties
-     *
-     * @param array|string $relations
-     * @return AbacusODataQueryBuilder
      */
     public static function expand(array|string $relations): AbacusODataQueryBuilder
     {
