@@ -16,7 +16,7 @@ class TokenCachingTest extends TestCase
     {
         parent::setUp();
         Cache::flush();
-        $this->client = new AbacusODataClient;
+        $this->client = new AbacusODataClient($this->makeCredentialsProvider());
     }
 
     #[Test]
@@ -62,8 +62,18 @@ class TokenCachingTest extends TestCase
     #[Test]
     public function it_handles_cache_key_correctly(): void
     {
-        $client1 = new AbacusODataClient('api1.example.com', 'mandate1', 'client1', 'secret1');
-        $client2 = new AbacusODataClient('api2.example.com', 'mandate2', 'client2', 'secret2');
+        $client1 = new AbacusODataClient($this->makeCustomCredentialsProvider(
+            baseUrl: 'api1.example.com',
+            mandate: 'mandate1',
+            clientId: 'client1',
+            clientSecret: 'secret1',
+        ));
+        $client2 = new AbacusODataClient($this->makeCustomCredentialsProvider(
+            baseUrl: 'api2.example.com',
+            mandate: 'mandate2',
+            clientId: 'client2',
+            clientSecret: 'secret2',
+        ));
 
         $reflection = new \ReflectionClass($client1);
         $method = $reflection->getMethod('getCacheKey');

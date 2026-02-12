@@ -49,7 +49,7 @@ class ReportsWorkflowTest extends TestCase
         parent::setUp();
 
         Cache::flush();
-        $client = new AbacusReportsClient;
+        $client = new AbacusReportsClient($this->makeCredentialsProvider());
         $this->service = new AbacusReportsService($client);
     }
 

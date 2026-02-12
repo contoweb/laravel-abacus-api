@@ -18,7 +18,7 @@ class ODataQueryStateTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = new AbacusODataClient;
+        $this->client = new AbacusODataClient($this->makeCredentialsProvider());
     }
 
     #[Test]

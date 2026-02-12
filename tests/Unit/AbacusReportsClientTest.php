@@ -16,7 +16,7 @@ class AbacusReportsClientTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = new AbacusReportsClient;
+        $this->client = new AbacusReportsClient($this->makeCredentialsProvider());
     }
 
     #[Test]
