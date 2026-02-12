@@ -105,56 +105,11 @@ class Subject extends AbacusModel
 ```
 
 #### 2. Generate IDE Helper
-
 ```bash
 php artisan abacus:generate-ide-helper
 ```
 
-This automatically generates PHPDoc for all properties based on endpoint definition files.
-
-#### How It Works
-
-The command:
-1. Scans your models directory for model classes
-2. For each model, looks for a definition file at `storage/app/abacus/endpoint-definitions/{resource}.json`
-3. Extracts entity schema and generates IDE hints
-
-#### Setting Up Definition Files
-
-1. Download the OpenAPI/Swagger JSON for your endpoints from Abacus. Example: Click button "DOWNLOAD JSON-FILE" on page https://apihub.abacus.ch/apis/2025/entity/products.api
-2. Save them to `storage/app/abacus/endpoint-definitions/`
-3. Name them after your resource (lowercase): `{resource}.json`
-
-**Example:**
-
-```php
-<?php
-
-namespace App\Models\Abacus;
-
-use Contoweb\AbacusApi\Models\AbacusModel;
-
-class Product extends AbacusModel
-{
-    protected static string $resource = 'Products';
-}
-```
-
-Save the Products endpoint definition as: `storage/app/abacus/endpoint-definitions/products.json`
-
-The IDE helper will extract the entity schema (e.g., `ProductData`) from the definition file and generate autocomplete hints for your `Product` model.
-
-#### Fallback to API Metadata
-
-If no local definition files are found, the IDE helper will automatically fetch metadata from the API endpoint. This will generate hints for all available entities.
-
-#### Listing Available Entities
-
-To see all available entity types:
-
-```bash
-php artisan abacus:generate-ide-helper --list
-```
+This automatically generates PHPDoc annotations for all available Abacus entities, providing full IDE autocomplete support.
 
 #### 3. Use the Models
 
