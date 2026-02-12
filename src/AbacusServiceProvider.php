@@ -45,19 +45,6 @@ class AbacusServiceProvider extends ServiceProvider
     }
 
     /**
-     * Check if API credentials are configured.
-     */
-    protected function hasConfiguredCredentials(): bool
-    {
-        $baseUrl = config('abacus-api.rest_api.url');
-        $mandate = config('abacus-api.rest_api.mandate');
-        $clientId = config('abacus-api.rest_api.client_id');
-        $clientSecret = config('abacus-api.rest_api.client_secret');
-
-        return ! empty($baseUrl) && ! empty($mandate) && ! empty($clientId) && ! empty($clientSecret);
-    }
-
-    /**
      * Bootstrap services.
      */
     public function boot(): void
