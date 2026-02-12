@@ -5,9 +5,3 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: src/AbacusODataQueryBuilder.php
-
-		-
-			message: '#^PHPDoc tag @return contains generic type Contoweb\\AbacusApi\\AbacusODataQueryBuilder\<static\(Contoweb\\AbacusApi\\Models\\AbacusModel\)\> but class Contoweb\\AbacusApi\\AbacusODataQueryBuilder is not generic\.$#'
-			identifier: generics.notGeneric
-			count: 6
-			path: src/Models/AbacusModel.php
