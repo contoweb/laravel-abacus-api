@@ -4,8 +4,6 @@ namespace Contoweb\AbacusApi\Batch;
 
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\RequestException;
 use RuntimeException;
 
 class PendingBatchRequest
