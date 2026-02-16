@@ -299,7 +299,7 @@ use Contoweb\AbacusApi\Facades\Abacus;
         Product::where('Price', 'gt', 100)->get(),
         Order::create(['CustomerId' => 456, 'Total' => 99.99]),
     ];
-})->send();
+})->send()->models();
 
 // Results are ready to use immediately
 echo $customer->FirstName;

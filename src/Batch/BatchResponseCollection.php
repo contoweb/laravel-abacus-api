@@ -3,6 +3,7 @@
 namespace Contoweb\AbacusApi\Batch;
 
 use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
+use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Support\Collection;
 
 /**
@@ -66,7 +67,7 @@ class BatchResponseCollection extends Collection
     /**
      * Get all models from successful responses.
      *
-     * @return Collection<int, mixed>
+     * @return Collection<int|string, AbacusModel>
      */
     public function models(): Collection
     {

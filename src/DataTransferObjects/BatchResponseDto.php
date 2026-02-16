@@ -2,19 +2,30 @@
 
 namespace Contoweb\AbacusApi\DataTransferObjects;
 
+use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Support\Collection;
 
+/**
+ * @template TModel of AbacusModel
+ */
 class BatchResponseDto
 {
+    /**
+     * @param  class-string<TModel>  $modelClass
+     */
     public function __construct(
         public readonly bool $success,
         public readonly int $status,
         public readonly array $headers,
-        public readonly mixed $body,
+        public readonly ?array $body,
         public readonly string $modelClass,
         public readonly ?string $error = null,
     ) {}
 
+    /**
+     * @param  class-string<TModel>  $modelClass
+     * @return self<TModel>
+     */
     public static function fromArray(array $data, string $modelClass): self
     {
         return new self(
@@ -32,7 +43,7 @@ class BatchResponseDto
      */
     public function getValue(): array
     {
-        return $this->body['value'] ?? [];
+        return $this->body['value'] ?? $this->body ?? [];
     }
 
     /**
@@ -61,10 +72,16 @@ class BatchResponseDto
 
     /**
      * Get OData value array as model instances
+     *
+     * @return Collection<int, TModel>
      */
     public function getModels(): Collection
     {
-        return collect($this->getValue())
-            ->map(fn ($item) => new $this->modelClass($item));
+        if (isset($this->body['value'])) {
+            return collect($this->body['value'])
+                ->map(fn ($item) => new $this->modelClass($item));
+        }
+
+        return collect([new $this->modelClass($this->body)]);
     }
 }

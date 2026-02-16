@@ -4,6 +4,8 @@ namespace Contoweb\AbacusApi\Batch;
 
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use RuntimeException;
 
 /**
@@ -201,6 +203,9 @@ class PendingBatchRequest
      * Execute the batch and return results.
      *
      * @return BatchResponseCollection<string|int, BatchResponseDto>
+     *
+     * @throws ConnectionException
+     * @throws RequestException
      *
      * @example
      * ```php
