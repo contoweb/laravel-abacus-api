@@ -22,9 +22,7 @@ class AbacusService
      */
     public static function client(AbacusCredentialsProvider $credentialsProvider): AbacusODataClient
     {
-        return new AbacusODataClient(
-            credentialsProvider: $credentialsProvider,
-        );
+        return new AbacusODataClient($credentialsProvider);
     }
 
     /**
