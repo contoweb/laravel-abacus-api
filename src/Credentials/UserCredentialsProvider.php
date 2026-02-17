@@ -3,7 +3,9 @@
 namespace Contoweb\AbacusApi\Credentials;
 
 use Contoweb\AbacusApi\DataTransferObjects\AbacusApiCredentialsDto;
+use Contoweb\AbacusApi\Exceptions\MissingCredentialsException;
 use Exception;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Guard;
 
 class UserCredentialsProvider implements AbacusCredentialsProvider
@@ -19,8 +21,12 @@ class UserCredentialsProvider implements AbacusCredentialsProvider
     {
         $user = $this->auth->user();
 
+        if ($user === null) {
+            throw new AuthenticationException('No authenticated user found');
+        }
+
         if (! $user instanceof ProvidesApiCredentials) {
-            throw new Exception('User must implement ProvidesApiCredentials');
+            throw new MissingCredentialsException('User must implement ProvidesApiCredentials');
         }
 
         return $user->abacusCredentials();
