@@ -8,7 +8,8 @@ use Illuminate\Console\Command;
 class GenerateIdeHelperCommand extends Command
 {
     protected $signature = 'abacus:generate-ide-helper
-                          {--output= : Override output file from config}';
+                          {--output= : Override output file from config}
+                          {--source= : Relative path from storage/ to the OData metadata XML file (e.g. app/metadata.xml)}';
 
     protected $description = 'Generate IDE helper file from Abacus OData metadata';
 
@@ -36,11 +37,15 @@ class GenerateIdeHelperCommand extends Command
 
             return 0;
         }
-
+        $this->info($this->option('source'));
         $outputFile = base_path($this->option('output') ?? config('abacus-api.ide_helper.output_file'));
 
         try {
-            $metadataPath = dirname(__DIR__, 3).'/resources/metadata/metadata.xml';
+            if ($this->option('source')) {
+                $metadataPath = storage_path($this->option('source'));
+            } else {
+                $metadataPath = dirname(__DIR__, 3).'/resources/metadata/metadata.xml';
+            }
 
             if (! file_exists($metadataPath)) {
                 $this->error('Metadata file not found: '.$metadataPath);
