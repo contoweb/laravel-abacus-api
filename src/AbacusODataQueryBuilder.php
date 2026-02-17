@@ -13,6 +13,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
+use Symfony\Component\HttpFoundation\Request;
 
 class AbacusODataQueryBuilder
 {
@@ -115,7 +116,7 @@ class AbacusODataQueryBuilder
     {
         // Check if we're in a batch context
         if ($batch = BatchContext::get()) {
-            $item = $this->toBatchItem();
+            $item = $this->toBatchItem(Request::METHOD_GET);
             $batch->add($item);
 
             return $item;
@@ -184,7 +185,7 @@ class AbacusODataQueryBuilder
         // Check if we're in a batch context
         if ($batch = BatchContext::get()) {
             $this->id($idOrCriteria);
-            $item = $this->toBatchItem();
+            $item = $this->toBatchItem(Request::METHOD_GET);
             $batch->add($item);
 
             return $item;
@@ -214,7 +215,7 @@ class AbacusODataQueryBuilder
     {
         // Check if we're in a batch context
         if ($batch = BatchContext::get()) {
-            $item = $this->toBatchItemWithBody('POST', $data);
+            $item = $this->toBatchItem(Request::METHOD_POST, $data);
             $batch->add($item);
 
             return $item;
@@ -244,7 +245,7 @@ class AbacusODataQueryBuilder
         // Check if we're in a batch context
         if ($batch = BatchContext::get()) {
             $this->id($idOrCriteria);
-            $item = $this->toBatchItemWithMethod('DELETE');
+            $item = $this->toBatchItem(Request::METHOD_DELETE);
             $batch->add($item);
 
             return $item;
@@ -274,7 +275,7 @@ class AbacusODataQueryBuilder
         // Check if we're in a batch context
         if ($batch = BatchContext::get()) {
             $this->id($idOrCriteria);
-            $item = $this->toBatchItemWithBody('PATCH', $data);
+            $item = $this->toBatchItem(Request::METHOD_PATCH, $data);
             $batch->add($item);
 
             return $item;
@@ -340,30 +341,9 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Convert current query state to a BatchRequestItem for GET requests.
+     * Convert current query to a BatchRequestItem
      */
-    protected function toBatchItem(): BatchRequestItem
-    {
-        $path = $this->hasId()
-            ? $this->buildPathWithId($this->client, $this->resource)
-            : $this->client->entityPath($this->resource);
-
-        $odataParams = $this->buildODataQuery();
-
-        if (! empty($odataParams)) {
-            $path .= '?'.$this->client->buildQueryString($odataParams);
-        }
-
-        return new BatchRequestItem($this->modelClass, 'GET', $path, null);
-    }
-
-    /**
-     * Convert current query state to a BatchRequestItem with a request body.
-     *
-     * @param  string  $method  HTTP method (POST, PATCH, etc.)
-     * @param  array<string, mixed>  $data  Request body data
-     */
-    protected function toBatchItemWithBody(string $method, array $data): BatchRequestItem
+    protected function toBatchItem(string $method, ?array $data = null): BatchRequestItem
     {
         $path = $this->hasId()
             ? $this->buildPathWithId($this->client, $this->resource)
@@ -376,26 +356,6 @@ class AbacusODataQueryBuilder
         }
 
         return new BatchRequestItem($this->modelClass, $method, $path, $data);
-    }
-
-    /**
-     * Convert current query state to a BatchRequestItem with a specific method.
-     *
-     * @param  string  $method  HTTP method (DELETE, etc.)
-     */
-    protected function toBatchItemWithMethod(string $method): BatchRequestItem
-    {
-        $path = $this->hasId()
-            ? $this->buildPathWithId($this->client, $this->resource)
-            : $this->client->entityPath($this->resource);
-
-        $odataParams = $this->buildODataQuery();
-
-        if (! empty($odataParams)) {
-            $path .= '?'.$this->client->buildQueryString($odataParams);
-        }
-
-        return new BatchRequestItem($this->modelClass, $method, $path, null);
     }
 
     /**
