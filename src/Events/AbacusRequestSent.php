@@ -2,7 +2,7 @@
 
 namespace Contoweb\AbacusApi\Events;
 
-class AbacusRequestSend
+class AbacusRequestSent
 {
     public function __construct(
         public readonly string $method,

@@ -3,13 +3,14 @@
 namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
-use Contoweb\AbacusApi\Events\AbacusRequestSend;
+use Contoweb\AbacusApi\Events\AbacusRequestSent;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpFoundation\Request;
 
 abstract class AbacusClient
 {
@@ -157,7 +158,7 @@ abstract class AbacusClient
                 $path .= '?'.$this->buildQueryString($queryString);
             }
 
-            event(new AbacusRequestSend('GET', $path));
+            event(new AbacusRequestSent(Request::METHOD_GET, $path));
 
             return $this->client()->get($path, $queryString);
         })->throw();
@@ -176,7 +177,7 @@ abstract class AbacusClient
                 $path .= '?'.$this->buildQueryString($queryString);
             }
 
-            event(new AbacusRequestSend('POST', $path, $data));
+            event(new AbacusRequestSent(Request::METHOD_POST, $path, $data));
 
             return $this->client()->post($path, $data);
         })->throw();
@@ -195,7 +196,7 @@ abstract class AbacusClient
                 $path .= '?'.$this->buildQueryString($queryString);
             }
 
-            event(new AbacusRequestSend('PATCH', $path, $data));
+            event(new AbacusRequestSent(Request::METHOD_PATCH, $path, $data));
 
             return $this->client()->patch($path, $data);
         })->throw();
@@ -214,7 +215,7 @@ abstract class AbacusClient
                 $path .= '?'.$this->buildQueryString($queryString);
             }
 
-            event(new AbacusRequestSend('PUT', $path, $data));
+            event(new AbacusRequestSent(Request::METHOD_PUT, $path, $data));
 
             return $this->client()->put($path, $data);
         })->throw();
@@ -229,7 +230,7 @@ abstract class AbacusClient
     {
         return $this->callWithTokenRefresh(function () use ($path) {
 
-            event(new AbacusRequestSend('DELETE', $path));
+            event(new AbacusRequestSent(Request::METHOD_DELETE, $path));
 
             return $this->client()->delete($path);
         })->throw();

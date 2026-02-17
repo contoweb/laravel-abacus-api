@@ -3,7 +3,7 @@
 namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\AbacusODataClient;
-use Contoweb\AbacusApi\Events\AbacusRequestSend;
+use Contoweb\AbacusApi\Events\AbacusRequestSent;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -36,11 +36,11 @@ class RequestEventTest extends TestCase
     public function it_dispatches_event_on_get_request(): void
     {
         $this->mockTokenAndApiResponse();
-        Event::fake([AbacusRequestSend::class]);
+        Event::fake([AbacusRequestSent::class]);
 
         $this->client->get('/api/entities');
 
-        Event::assertDispatched(AbacusRequestSend::class, function (AbacusRequestSend $event) {
+        Event::assertDispatched(AbacusRequestSent::class, function (AbacusRequestSent $event) {
             return $event->method === 'GET' && str_contains($event->path, '/api/entities');
         });
     }
@@ -49,11 +49,11 @@ class RequestEventTest extends TestCase
     public function it_dispatches_event_on_post_request(): void
     {
         $this->mockTokenAndApiResponse();
-        Event::fake([AbacusRequestSend::class]);
+        Event::fake([AbacusRequestSent::class]);
 
         $this->client->post('/api/entities', ['Name' => 'Test']);
 
-        Event::assertDispatched(AbacusRequestSend::class, function (AbacusRequestSend $event) {
+        Event::assertDispatched(AbacusRequestSent::class, function (AbacusRequestSent $event) {
             return $event->method === 'POST'
                 && str_contains($event->path, '/api/entities')
                 && $event->body === ['Name' => 'Test'];
@@ -64,11 +64,11 @@ class RequestEventTest extends TestCase
     public function it_dispatches_event_on_patch_request(): void
     {
         $this->mockTokenAndApiResponse();
-        Event::fake([AbacusRequestSend::class]);
+        Event::fake([AbacusRequestSent::class]);
 
         $this->client->patch('/api/entities/1', ['Name' => 'Updated']);
 
-        Event::assertDispatched(AbacusRequestSend::class, function (AbacusRequestSend $event) {
+        Event::assertDispatched(AbacusRequestSent::class, function (AbacusRequestSent $event) {
             return $event->method === 'PATCH'
                 && str_contains($event->path, '/api/entities/1')
                 && $event->body === ['Name' => 'Updated'];
@@ -79,11 +79,11 @@ class RequestEventTest extends TestCase
     public function it_dispatches_event_on_put_request(): void
     {
         $this->mockTokenAndApiResponse();
-        Event::fake([AbacusRequestSend::class]);
+        Event::fake([AbacusRequestSent::class]);
 
         $this->client->put('/api/entities/1', ['Name' => 'Replaced']);
 
-        Event::assertDispatched(AbacusRequestSend::class, function (AbacusRequestSend $event) {
+        Event::assertDispatched(AbacusRequestSent::class, function (AbacusRequestSent $event) {
             return $event->method === 'PUT'
                 && str_contains($event->path, '/api/entities/1')
                 && $event->body === ['Name' => 'Replaced'];
@@ -100,11 +100,11 @@ class RequestEventTest extends TestCase
             ], 200),
             '*' => Http::response(null, 204),
         ]);
-        Event::fake([AbacusRequestSend::class]);
+        Event::fake([AbacusRequestSent::class]);
 
         $this->client->delete('/api/entities/1');
 
-        Event::assertDispatched(AbacusRequestSend::class, function (AbacusRequestSend $event) {
+        Event::assertDispatched(AbacusRequestSent::class, function (AbacusRequestSent $event) {
             return $event->method === 'DELETE'
                 && str_contains($event->path, '/api/entities/1');
         });
@@ -114,11 +114,11 @@ class RequestEventTest extends TestCase
     public function it_dispatches_event_on_batch_request(): void
     {
         $this->mockTokenAndApiResponse();
-        Event::fake([AbacusRequestSend::class]);
+        Event::fake([AbacusRequestSent::class]);
 
         $this->client->sendBatch($this->client->batchPath(), 'batch-body-content');
 
-        Event::assertDispatched(AbacusRequestSend::class, function (AbacusRequestSend $event) {
+        Event::assertDispatched(AbacusRequestSent::class, function (AbacusRequestSent $event) {
             return $event->method === 'POST'
                 && $event->body === ['batch-body-content'];
         });
