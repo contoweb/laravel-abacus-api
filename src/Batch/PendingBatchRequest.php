@@ -56,19 +56,12 @@ class PendingBatchRequest
     private int $nextKey = 0;
 
     /**
-     * Optional name for this batch (for debugging/logging).
-     */
-    private ?string $name = null;
-
-    /**
      * Create a new pending batch request.
      */
     public function __construct(
         private readonly AbacusODataClient $client,
-        ?string $name = null
-    ) {
-        $this->name = $name;
-    }
+        private readonly ?string $name = null
+    ) {}
 
     /**
      * Add a single batch request item.
