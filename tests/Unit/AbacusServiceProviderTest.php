@@ -6,8 +6,15 @@ use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
 use Contoweb\AbacusApi\Credentials\ConfigCredentialsProvider;
+use Contoweb\AbacusApi\Credentials\ProvidesApiCredentials;
+use Contoweb\AbacusApi\Credentials\UserCredentialsProvider;
+use Contoweb\AbacusApi\DataTransferObjects\AbacusApiCredentialsDto;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Guard;
 use InvalidArgumentException;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 
 class AbacusServiceProviderTest extends TestCase
@@ -49,5 +56,75 @@ class AbacusServiceProviderTest extends TestCase
 
         $this->assertInstanceOf(AbacusService::class, $service1);
         $this->assertSame($service1, $service2);
+    }
+
+    #[Test]
+    public function it_resolves_fresh_client_with_new_credentials_on_user_switch(): void
+    {
+        config()->set('abacus-api.credentials_provider', UserCredentialsProvider::class);
+
+        $userA = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
+        $userA->shouldReceive('abacusCredentials')->andReturn(new AbacusApiCredentialsDto(
+            'https://api.example.com', 'mandate-a', 'client-a', 'secret-a', 'v1',
+        ));
+
+        $userB = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
+        $userB->shouldReceive('abacusCredentials')->andReturn(new AbacusApiCredentialsDto(
+            'https://api.example.com', 'mandate-b', 'client-b', 'secret-b', 'v1',
+        ));
+
+        $currentUser = $userA;
+
+        $guard = Mockery::mock(Guard::class);
+        $guard->shouldReceive('user')->andReturnUsing(function () use (&$currentUser) {
+            return $currentUser;
+        });
+
+        $this->app->instance(Guard::class, $guard);
+
+        // User A is logged in
+        $clientA = $this->app->make(AbacusODataClient::class);
+        $this->assertEquals('mandate-a', $clientA->getMandate());
+
+        // Simulate request boundary (user switch)
+        $this->app->forgetScopedInstances();
+        $currentUser = $userB;
+
+        // User B is now logged in
+        $clientB = $this->app->make(AbacusODataClient::class);
+        $this->assertEquals('mandate-b', $clientB->getMandate());
+        $this->assertNotSame($clientA, $clientB);
+    }
+
+    #[Test]
+    public function it_throws_exception_when_user_logs_out_and_client_is_resolved(): void
+    {
+        config()->set('abacus-api.credentials_provider', UserCredentialsProvider::class);
+
+        $user = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
+        $user->shouldReceive('abacusCredentials')->andReturn(new AbacusApiCredentialsDto(
+            'https://api.example.com', 'mandate-a', 'client-a', 'secret-a', 'v1',
+        ));
+
+        $currentUser = $user;
+
+        $guard = Mockery::mock(Guard::class);
+        $guard->shouldReceive('user')->andReturnUsing(function () use (&$currentUser) {
+            return $currentUser;
+        });
+
+        $this->app->instance(Guard::class, $guard);
+
+        // User is logged in — resolving works
+        $client = $this->app->make(AbacusODataClient::class);
+        $this->assertEquals('mandate-a', $client->getMandate());
+
+        // Simulate logout
+        $this->app->forgetScopedInstances();
+        $currentUser = null;
+
+        // Resolving after logout throws exception
+        $this->expectException(AuthenticationException::class);
+        $this->app->make(AbacusODataClient::class);
     }
 }

@@ -33,13 +33,11 @@ class AbacusServiceProvider extends ServiceProvider
             return $provider;
         });
 
-        $this->app->singleton(AbacusODataClient::class, function (Application $app) {
-            return new AbacusODataClient(
-                credentialsProvider: $app->make(AbacusCredentialsProvider::class),
-            );
+        $this->app->scoped(AbacusODataClient::class, function (Application $app) {
+            return new AbacusODataClient($app->make(AbacusCredentialsProvider::class));
         });
 
-        $this->app->singleton(AbacusService::class, function (Application $app) {
+        $this->app->scoped(AbacusService::class, function (Application $app) {
             return new AbacusService($app->make(AbacusODataClient::class));
         });
     }
