@@ -21,11 +21,6 @@ class PendingBatchRequest
     private int $nextKey = 0;
 
     /**
-     * Optional name for this batch (for debugging/logging).
-     */
-    private ?string $name = null;
-
-    /**
      * Create a new pending batch request.
      */
     public function __construct(
