@@ -39,61 +39,23 @@ class AbacusServiceProviderTest extends TestCase
     }
 
     #[Test]
-    public function it_registers_odata_client_as_singleton(): void
+    public function it_resolves_fresh_odata_client_instance_on_each_make(): void
     {
         $client1 = $this->app->make(AbacusODataClient::class);
         $client2 = $this->app->make(AbacusODataClient::class);
 
         $this->assertInstanceOf(AbacusODataClient::class, $client1);
-        $this->assertSame($client1, $client2);
+        $this->assertNotSame($client1, $client2);
     }
 
     #[Test]
-    public function it_registers_abacus_service_as_singleton(): void
+    public function it_resolves_fresh_abacus_service_instance_on_each_make(): void
     {
         $service1 = $this->app->make(AbacusService::class);
         $service2 = $this->app->make(AbacusService::class);
 
         $this->assertInstanceOf(AbacusService::class, $service1);
-        $this->assertSame($service1, $service2);
-    }
-
-    #[Test]
-    public function it_resolves_fresh_client_with_new_credentials_on_user_switch(): void
-    {
-        config()->set('abacus-api.credentials_provider', UserCredentialsProvider::class);
-
-        $userA = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
-        $userA->shouldReceive('abacusCredentials')->andReturn(new AbacusApiCredentialsDto(
-            'https://api.example.com', 'mandate-a', 'client-a', 'secret-a', 'v1',
-        ));
-
-        $userB = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
-        $userB->shouldReceive('abacusCredentials')->andReturn(new AbacusApiCredentialsDto(
-            'https://api.example.com', 'mandate-b', 'client-b', 'secret-b', 'v1',
-        ));
-
-        $currentUser = $userA;
-
-        $guard = Mockery::mock(Guard::class);
-        $guard->shouldReceive('user')->andReturnUsing(function () use (&$currentUser) {
-            return $currentUser;
-        });
-
-        $this->app->instance(Guard::class, $guard);
-
-        // User A is logged in
-        $clientA = $this->app->make(AbacusODataClient::class);
-        $this->assertEquals('mandate-a', $clientA->getMandate());
-
-        // Simulate request boundary (user switch)
-        $this->app->forgetScopedInstances();
-        $currentUser = $userB;
-
-        // User B is now logged in
-        $clientB = $this->app->make(AbacusODataClient::class);
-        $this->assertEquals('mandate-b', $clientB->getMandate());
-        $this->assertNotSame($clientA, $clientB);
+        $this->assertNotSame($service1, $service2);
     }
 
     #[Test]
@@ -120,11 +82,85 @@ class AbacusServiceProviderTest extends TestCase
         $this->assertEquals('mandate-a', $client->getMandate());
 
         // Simulate logout
-        $this->app->forgetScopedInstances();
         $currentUser = null;
 
         // Resolving after logout throws exception
         $this->expectException(AuthenticationException::class);
         $this->app->make(AbacusODataClient::class);
+    }
+
+    #[Test]
+    public function it_resolves_fresh_client_with_new_config_credentials_on_each_make(): void
+    {
+        // Initial config
+        config()->set('abacus-api.rest_api.mandate', 'mandate-initial');
+        config()->set('abacus-api.rest_api.client_id', 'client-initial');
+        config()->set('abacus-api.rest_api.url', 'https://api-initial.example.com');
+
+        // First client with initial credentials
+        $client1 = $this->app->make(AbacusODataClient::class);
+        $this->assertEquals('mandate-initial', $client1->getMandate());
+        $this->assertEquals('https://api-initial.example.com', $client1->getUrl());
+
+        // Change config at runtime
+        config()->set('abacus-api.rest_api.mandate', 'mandate-changed');
+        config()->set('abacus-api.rest_api.client_id', 'client-changed');
+        config()->set('abacus-api.rest_api.url', 'https://api-changed.example.com');
+
+        // Second client should have new credentials
+        $client2 = $this->app->make(AbacusODataClient::class);
+        $this->assertEquals('mandate-changed', $client2->getMandate());
+        $this->assertEquals('https://api-changed.example.com', $client2->getUrl());
+
+        // Verify they are different instances
+        $this->assertNotSame($client1, $client2);
+
+        // Verify first client still has old credentials (immutable after construction)
+        $this->assertEquals('mandate-initial', $client1->getMandate());
+    }
+
+    #[Test]
+    public function it_resolves_fresh_client_with_new_user_credentials_on_user_switch(): void
+    {
+        config()->set('abacus-api.credentials_provider', UserCredentialsProvider::class);
+
+        // Create two different users with different credentials
+        $userA = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
+        $userA->shouldReceive('abacusCredentials')->andReturn(new AbacusApiCredentialsDto(
+            'https://api-a.example.com', 'mandate-a', 'client-a', 'secret-a', 'v1',
+        ));
+
+        $userB = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
+        $userB->shouldReceive('abacusCredentials')->andReturn(new AbacusApiCredentialsDto(
+            'https://api-b.example.com', 'mandate-b', 'client-b', 'secret-b', 'v1',
+        ));
+
+        // Mock Guard with dynamic user switching
+        $currentUser = $userA;
+        $guard = Mockery::mock(Guard::class);
+        $guard->shouldReceive('user')->andReturnUsing(function () use (&$currentUser) {
+            return $currentUser;
+        });
+
+        $this->app->instance(Guard::class, $guard);
+
+        // User A is active
+        $clientA = $this->app->make(AbacusODataClient::class);
+        $this->assertEquals('mandate-a', $clientA->getMandate());
+        $this->assertEquals('https://api-a.example.com', $clientA->getUrl());
+
+        // Switch to User B (NO forgetScopedInstances needed!)
+        $currentUser = $userB;
+
+        // User B is now active - should get fresh instance with new credentials
+        $clientB = $this->app->make(AbacusODataClient::class);
+        $this->assertEquals('mandate-b', $clientB->getMandate());
+        $this->assertEquals('https://api-b.example.com', $clientB->getUrl());
+
+        // Verify they are different instances
+        $this->assertNotSame($clientA, $clientB);
+
+        // Verify first client still has User A credentials (immutable after construction)
+        $this->assertEquals('mandate-a', $clientA->getMandate());
     }
 }

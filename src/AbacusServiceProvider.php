@@ -33,11 +33,15 @@ class AbacusServiceProvider extends ServiceProvider
             return $provider;
         });
 
-        $this->app->scoped(AbacusODataClient::class, function (Application $app) {
+        /*
+         * We use bind() so that the credentials for the Abacus REST API can change during the request lifecycle.
+         * This ensures a fresh instance is resolved each time, so we always get the current credentials.
+         */
+        $this->app->bind(AbacusODataClient::class, function (Application $app) {
             return new AbacusODataClient($app->make(AbacusCredentialsProvider::class));
         });
 
-        $this->app->scoped(AbacusService::class, function (Application $app) {
+        $this->app->bind(AbacusService::class, function (Application $app) {
             return new AbacusService($app->make(AbacusODataClient::class));
         });
     }
