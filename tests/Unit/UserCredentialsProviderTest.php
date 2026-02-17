@@ -5,8 +5,8 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 use Contoweb\AbacusApi\Credentials\ProvidesApiCredentials;
 use Contoweb\AbacusApi\Credentials\UserCredentialsProvider;
 use Contoweb\AbacusApi\DataTransferObjects\AbacusApiCredentialsDto;
+use Contoweb\AbacusApi\Exceptions\MissingCredentialsException;
 use Contoweb\AbacusApi\Tests\TestCase;
-use Exception;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
@@ -63,8 +63,7 @@ class UserCredentialsProviderTest extends TestCase
 
         $provider = new UserCredentialsProvider($guard);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('User must implement ProvidesApiCredentials');
+        $this->expectException(MissingCredentialsException::class);
 
         $provider->getCredentials();
     }

@@ -26,7 +26,7 @@ class UserCredentialsProvider implements AbacusCredentialsProvider
         }
 
         if (! $user instanceof ProvidesApiCredentials) {
-            throw new MissingCredentialsException('User must implement ProvidesApiCredentials');
+            throw new MissingCredentialsException('The authenticated user model must implement '.ProvidesApiCredentials::class);
         }
 
         return $user->abacusCredentials();
