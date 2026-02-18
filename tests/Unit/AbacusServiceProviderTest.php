@@ -45,6 +45,7 @@ class AbacusServiceProviderTest extends TestCase
         $client2 = $this->app->make(AbacusODataClient::class);
 
         $this->assertInstanceOf(AbacusODataClient::class, $client1);
+        $this->assertInstanceOf(AbacusODataClient::class, $client2);
         $this->assertNotSame($client1, $client2);
     }
 
@@ -55,6 +56,7 @@ class AbacusServiceProviderTest extends TestCase
         $service2 = $this->app->make(AbacusService::class);
 
         $this->assertInstanceOf(AbacusService::class, $service1);
+        $this->assertInstanceOf(AbacusService::class, $service2);
         $this->assertNotSame($service1, $service2);
     }
 
