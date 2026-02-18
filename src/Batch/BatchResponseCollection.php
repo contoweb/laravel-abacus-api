@@ -67,12 +67,12 @@ class BatchResponseCollection extends Collection
     /**
      * Get all models from successful responses.
      *
-     * @return Collection<int|string, AbacusModel>
+     * @return Collection<int, AbacusModel|Collection<int, AbacusModel>>
      */
     public function models(): Collection
     {
         return $this->successful()
-            ->flatMap(fn (BatchResponseDto $response) => $response->getModels());
+            ->map(fn (BatchResponseDto $response) => $response->getModels());
     }
 
     /**

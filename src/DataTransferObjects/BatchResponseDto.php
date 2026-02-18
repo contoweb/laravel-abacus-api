@@ -73,15 +73,15 @@ class BatchResponseDto
     /**
      * Get OData value array as model instances
      *
-     * @return Collection<int, TModel>
+     * @return Collection<int, AbacusModel>|AbacusModel
      */
-    public function getModels(): Collection
+    public function getModels(): Collection|AbacusModel
     {
         if (isset($this->body['value'])) {
             return collect($this->body['value'])
                 ->map(fn ($item) => new $this->modelClass($item));
         }
 
-        return collect([new $this->modelClass($this->body)]);
+        return new $this->modelClass($this->body);
     }
 }

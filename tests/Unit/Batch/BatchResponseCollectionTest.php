@@ -169,18 +169,18 @@ class BatchResponseCollectionTest extends TestCase
     }
 
     #[Test]
-    public function it_can_extract_models_from_successful_responses(): void
+    public function it_can_extract_single_abacus_models_from_successful_responses(): void
     {
         $model1 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
         $model2 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
 
         $response1 = Mockery::mock(BatchResponseDto::class);
         $response1->shouldReceive('isSuccess')->andReturn(true);
-        $response1->shouldReceive('getModels')->andReturn(collect([$model1]));
+        $response1->shouldReceive('getModels')->andReturn($model1);
 
         $response2 = Mockery::mock(BatchResponseDto::class);
         $response2->shouldReceive('isSuccess')->andReturn(true);
-        $response2->shouldReceive('getModels')->andReturn(collect([$model2]));
+        $response2->shouldReceive('getModels')->andReturn($model2);
 
         $response3 = Mockery::mock(BatchResponseDto::class);
         $response3->shouldReceive('isSuccess')->andReturn(false);
@@ -193,6 +193,41 @@ class BatchResponseCollectionTest extends TestCase
         $this->assertCount(2, $models);
         $this->assertSame($model1, $models->first());
         $this->assertSame($model2, $models->last());
+    }
+
+    #[Test]
+    public function it_can_extract_collections_with_abacus_models_from_successful_responses(): void
+    {
+        $model1 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
+        $model2 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
+        $model3 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
+
+        $response1 = Mockery::mock(BatchResponseDto::class);
+        $response1->shouldReceive('isSuccess')->andReturn(true);
+        $response1->shouldReceive('getModels')->andReturn(collect([$model1, $model2]));
+
+        $response2 = Mockery::mock(BatchResponseDto::class);
+        $response2->shouldReceive('isSuccess')->andReturn(true);
+        $response2->shouldReceive('getModels')->andReturn(collect([$model3]));
+
+        $response3 = Mockery::mock(BatchResponseDto::class);
+        $response3->shouldReceive('isSuccess')->andReturn(false);
+
+        $responses = new BatchResponseCollection([$response1, $response2, $response3]);
+
+        $models = $responses->models();
+
+        $this->assertInstanceOf(Collection::class, $models);
+        $this->assertCount(2, $models);
+
+        $this->assertInstanceOf(Collection::class, $models->first());
+        $this->assertCount(2, $models->first());
+        $this->assertSame($model1, $models->first()[0]);
+        $this->assertSame($model2, $models->first()[1]);
+
+        $this->assertInstanceOf(Collection::class, $models->last());
+        $this->assertCount(1, $models->last());
+        $this->assertSame($model3, $models->last()[0]);
     }
 
     #[Test]
