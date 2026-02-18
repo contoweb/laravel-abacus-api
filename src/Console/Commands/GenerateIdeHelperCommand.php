@@ -9,7 +9,7 @@ class GenerateIdeHelperCommand extends Command
 {
     protected $signature = 'abacus:generate-ide-helper
                           {--output= : Override output file from config}
-                          {--source= : Relative path from storage/ to the OData metadata XML file (e.g. app/metadata.xml)}';
+                          {--source= : Absolute path to the OData metadata XML file}';
 
     protected $description = 'Generate IDE helper file from Abacus OData metadata';
 
@@ -42,9 +42,9 @@ class GenerateIdeHelperCommand extends Command
 
         try {
             if ($this->option('source')) {
-                $metadataPath = storage_path($this->option('source'));
+                $metadataPath = $this->option('source');
             } else {
-                $metadataPath = dirname(__DIR__, 3).'/resources/metadata/metadata.xml';
+                $metadataPath = dirname(__DIR__, 3).'/resources/metadata/metadata-2025-203-p-2025-10-15.xml';
             }
 
             if (! file_exists($metadataPath)) {
