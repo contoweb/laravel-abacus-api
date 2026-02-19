@@ -119,14 +119,6 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
-    public function it_starts_top_query(): void
-    {
-        $query = TestSubject::top(10);
-
-        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
-    }
-
-    #[Test]
     public function it_starts_order_by_query(): void
     {
         $query = TestSubject::orderBy('Name', 'desc');
@@ -303,7 +295,7 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
-    public function it_returns_model_collection_when_using_where_get(): void
+    public function it_returns_model_collection_when_using_where_paginate(): void
     {
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
@@ -318,13 +310,13 @@ class AbacusModelTest extends TestCase
             ], 200),
         ]);
 
-        $subjects = TestSubject::where('IsActive', 'eq', true)->get();
+        $subjects = TestSubject::where('IsActive', 'eq', true)->paginate();
 
-        $this->assertCount(2, $subjects);
-        $this->assertInstanceOf(TestSubject::class, $subjects->first());
-        $this->assertInstanceOf(TestSubject::class, $subjects->last());
-        $this->assertEquals('First', $subjects->first()->Name);
-        $this->assertEquals('Second', $subjects->last()->Name);
+        $this->assertCount(2, $subjects->items());
+        $this->assertInstanceOf(TestSubject::class, $subjects->items()->first());
+        $this->assertInstanceOf(TestSubject::class, $subjects->items()->last());
+        $this->assertEquals('First', $subjects->items()->first()->Name);
+        $this->assertEquals('Second', $subjects->items()->last()->Name);
     }
 
     #[Test]
@@ -446,5 +438,54 @@ class AbacusModelTest extends TestCase
 
         $this->assertInstanceOf(TestSubject::class, $subject);
         $this->assertEquals('Chained Update', $subject->Name);
+    }
+
+    #[Test]
+    public function it_paginate_returns_odata_paginator_via_static_call(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*' => Http::response([
+                'value' => [
+                    ['Id' => 1, 'Name' => 'First'],
+                    ['Id' => 2, 'Name' => 'Second'],
+                ],
+            ], 200),
+        ]);
+
+        $paginator = TestSubject::paginate();
+
+        $this->assertInstanceOf(\Contoweb\AbacusApi\OdataPaginator::class, $paginator);
+        $this->assertCount(2, $paginator->items());
+        $this->assertEquals('First', $paginator->items()->first()->Name);
+        $this->assertEquals('Second', $paginator->items()->last()->Name);
+    }
+
+    #[Test]
+    public function it_paginate_with_limit_applies_top_to_query(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*' => Http::response([
+                'value' => [
+                    ['Id' => 1, 'Name' => 'First'],
+                ],
+            ], 200),
+        ]);
+
+        $paginator = TestSubject::paginate(50);
+
+        $this->assertInstanceOf(\Contoweb\AbacusApi\OdataPaginator::class, $paginator);
+
+        // Verify that the request was made with $top=50 (URL encoded as %24top)
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '%24top=50');
+        });
     }
 }

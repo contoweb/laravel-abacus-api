@@ -2,7 +2,6 @@
 
 namespace Contoweb\AbacusApi;
 
-use Closure;
 use Contoweb\AbacusApi\Batch\BatchContext;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataEnum;
@@ -11,7 +10,6 @@ use Contoweb\AbacusApi\Models\AbacusModel;
 use DateTime;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -22,12 +20,6 @@ class AbacusODataQueryBuilder
     protected string $resource;
 
     protected string $modelClass;
-
-    private int $pages;
-
-    private bool $cursor;
-
-    protected ?Closure $pageCallback = null;
 
     protected array $filters = [];
 
@@ -50,61 +42,29 @@ class AbacusODataQueryBuilder
         $this->client = $client;
         $this->resource = $resource;
         $this->modelClass = $modelClass;
-        $this->pages = config('abacus-api.query_builder.max_next_link_page_resolving') ?? 0;
-        $this->cursor = false;
     }
 
     /**
-     * Set the maximum number of pages to retrieve when cursor pagination is enabled
+     * Executes the query and returns a paginated result
      *
-     * @return $this
-     */
-    public function pages(int $limit): static
-    {
-        $this->pages = $limit;
-
-        return $this;
-    }
-
-    /**
-     * Enable automatic pagination through OData nextLink
-     *
-     * @return $this
-     */
-    public function cursor(): static
-    {
-        $this->cursor = true;
-
-        return $this;
-    }
-
-    /**
-     * Enable automatic pagination with a callback for each page
-     * Useful for processing large datasets without loading everything into memory
-     * Note: Automatically enables cursor pagination
-     *
-     * @param  callable  $callback  Callback function receiving (Collection $items, int $pageNumber)
-     * @return $this
-     */
-    public function cursorWithCallback(callable $callback): static
-    {
-        $this->cursor = true;
-        $this->pageCallback = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Execute query and return all paginated results as Collection
-     *
-     * @return Collection<int, AbacusModel>|BatchRequestItem
+     * Applies OData $top when $limit is specified to restrict the page size
+     * Returns a BatchRequestItem in batch context, otherwise an OdataPaginator
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws InvalidArgumentException
      */
-    public function get(): Collection|BatchRequestItem
+    public function paginate(?int $limit = null): OdataPaginator|BatchRequestItem
     {
-        // Check if we're in a batch context
+        if ($limit <= 0 && $limit !== null) {
+            throw new InvalidArgumentException('Limit should be greater than 0');
+        }
+
+        if ($limit !== null) {
+            $this->top($limit);
+        }
+
+        /* Check if we're in a batch context */
         if ($batch = BatchContext::get()) {
             $item = $this->toBatchItem(Request::METHOD_GET);
             $batch->add($item);
@@ -112,7 +72,7 @@ class AbacusODataQueryBuilder
             return $item;
         }
 
-        $allResults = [];
+        $items = [];
 
         $path = $this->client->entityPath($this->resource);
 
@@ -123,43 +83,15 @@ class AbacusODataQueryBuilder
 
         /* Collect results of first page */
         if (isset($response['value'])) {
-            $allResults = array_merge($allResults, $response['value']);
+            $items = $response['value'];
         }
 
-        if ($this->cursor) {
-            $pageNumber = 1;
-
-            /* Call callback for first page if provided */
-            if ($this->pageCallback !== null && isset($response['value'])) {
-                $pageItems = collect($response['value'])->map(fn ($item) => new $this->modelClass($item));
-                call_user_func($this->pageCallback, $pageItems, $pageNumber);
-            }
-
-            for ($i = 1; $i < $this->pages; $i++) {
-                if (! isset($response['@odata.nextLink'])) {
-                    break;
-                }
-
-                $pageNumber++;
-
-                $response = $this->client
-                    ->getNextLink($response['@odata.nextLink'])
-                    ->json();
-
-                if (isset($response['value'])) {
-                    $pageItems = collect($response['value'])->map(fn ($item) => new $this->modelClass($item));
-
-                    /* Call callback for each page if provided */
-                    if ($this->pageCallback !== null) {
-                        call_user_func($this->pageCallback, $pageItems, $pageNumber);
-                    }
-
-                    $allResults = array_merge($allResults, $response['value']);
-                }
-            }
-        }
-
-        return collect($allResults)->map(fn ($item) => new $this->modelClass($item));
+        return new OdataPaginator(
+            $items,
+            $this->client,
+            $this->modelClass,
+            $response['@odata.nextLink'] ?? null,
+        );
     }
 
     /**
@@ -203,7 +135,7 @@ class AbacusODataQueryBuilder
      */
     public function create(array $data): AbacusModel|BatchRequestItem
     {
-        // Check if we're in a batch context
+        /* Check if we're in a batch context */
         if ($batch = BatchContext::get()) {
             $item = $this->toBatchItem(Request::METHOD_POST, $data);
             $batch->add($item);
@@ -232,7 +164,7 @@ class AbacusODataQueryBuilder
      */
     public function delete(int|string|array $idOrCriteria): ?BatchRequestItem
     {
-        // Check if we're in a batch context
+        /* Check if we're in a batch context */
         if ($batch = BatchContext::get()) {
             $this->id($idOrCriteria);
             $item = $this->toBatchItem(Request::METHOD_DELETE);
@@ -260,7 +192,7 @@ class AbacusODataQueryBuilder
      */
     public function update(int|string|array $idOrCriteria, array $data): AbacusModel|BatchRequestItem
     {
-        // Check if we're in a batch context
+        /* Check if we're in a batch context */
         if ($batch = BatchContext::get()) {
             $this->id($idOrCriteria);
             $item = $this->toBatchItem(Request::METHOD_PATCH, $data);
@@ -277,19 +209,6 @@ class AbacusODataQueryBuilder
             ->json();
 
         return new $this->modelClass($result);
-    }
-
-    /**
-     * Execute query and return all paginated results as Collection
-     *
-     * @return Collection<int, AbacusModel>|BatchRequestItem
-     *
-     * @throws RequestException
-     * @throws ConnectionException
-     */
-    public function all(): Collection|BatchRequestItem
-    {
-        return $this->get();
     }
 
     /**
@@ -315,16 +234,14 @@ class AbacusODataQueryBuilder
      */
     public function first(): AbacusModel|BatchRequestItem|null
     {
-        $this->top(1);
-
-        $results = $this->get();
+        $results = $this->paginate(1);
 
         // If we got a BatchRequestItem, return it as-is
         if ($results instanceof BatchRequestItem) {
             return $results;
         }
 
-        return $results->first();
+        return $results->items()->first();
     }
 
     /**
@@ -421,27 +338,9 @@ class AbacusODataQueryBuilder
     /**
      * $top - Return only top N elements
      */
-    public function top(int $limit): static
+    private function top(int $limit): void
     {
         $this->top = $limit;
-
-        return $this;
-    }
-
-    /**
-     * Alias for top() (Laravel-like)
-     */
-    public function limit(int $limit): static
-    {
-        return $this->top($limit);
-    }
-
-    /**
-     * Alias for top() (Laravel-like)
-     */
-    public function take(int $limit): static
-    {
-        return $this->top($limit);
     }
 
     /**

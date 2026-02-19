@@ -35,49 +35,11 @@ class QueryBuilderIntegrationTest extends TestCase
             ->where('Age', ODataOperator::GREATER_THAN, 18)
             ->select(['Id', 'FirstName', 'LastName', 'Age'])
             ->orderBy('FirstName', 'asc')
-            ->top(10)
-            ->get();
+            ->paginate(10);
 
-        $this->assertCount(2, $results);
-        $this->assertEquals('John', $results[0]->FirstName);
-        $this->assertEquals(25, $results[0]->Age);
-    }
-
-    #[Test]
-    public function it_follows_pagination_automatically(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
-                'value' => [
-                    ['Id' => 1, 'FirstName' => 'Item 1'],
-                    ['Id' => 2, 'FirstName' => 'Item 2'],
-                ],
-                '@odata.nextLink' => 'https://api.example.com/page2',
-            ], 200),
-            'https://api.example.com/page2' => Http::response([
-                'value' => [
-                    ['Id' => 3, 'FirstName' => 'Item 3'],
-                    ['Id' => 4, 'FirstName' => 'Item 4'],
-                ],
-                '@odata.nextLink' => 'https://api.example.com/page3',
-            ], 200),
-            'https://api.example.com/page3' => Http::response([
-                'value' => [
-                    ['Id' => 5, 'FirstName' => 'Item 5'],
-                ],
-            ], 200),
-        ]);
-
-        $results = TestSubject::cursor()->pages(10)->get();
-
-        /* Should automatically fetch all 3 pages */
-        $this->assertCount(5, $results);
-        $this->assertEquals('Item 1', $results[0]->FirstName);
-        $this->assertEquals('Item 5', $results[4]->FirstName);
+        $this->assertCount(2, $results->items());
+        $this->assertEquals('John', $results->items()[0]->FirstName);
+        $this->assertEquals(25, $results->items()[0]->Age);
     }
 
     #[Test]
@@ -104,12 +66,12 @@ class QueryBuilderIntegrationTest extends TestCase
             ], 200),
         ]);
 
-        $results = TestSubject::expand(['Addresses', 'Contacts'])->get();
+        $results = TestSubject::expand(['Addresses', 'Contacts'])->paginate();
 
-        $this->assertCount(1, $results);
-        $this->assertIsArray($results[0]->Addresses);
-        $this->assertIsArray($results[0]->Contacts);
-        $this->assertEquals('123 Main St', $results[0]->Addresses[0]['Street']);
+        $this->assertCount(1, $results->items());
+        $this->assertIsArray($results->items()[0]->Addresses);
+        $this->assertIsArray($results->items()[0]->Contacts);
+        $this->assertEquals('123 Main St', $results->items()[0]->Addresses[0]['Street']);
     }
 
     #[Test]
@@ -133,11 +95,10 @@ class QueryBuilderIntegrationTest extends TestCase
             ->where('Score', 'gt', 80)
             ->select(['Id', 'FirstName', 'Age', 'Status', 'Score'])
             ->orderBy('Score', 'desc')
-            ->top(5)
-            ->get();
+            ->paginate(5);
 
-        $this->assertCount(1, $results);
-        $this->assertEquals('Match', $results[0]->FirstName);
+        $this->assertCount(1, $results->items());
+        $this->assertEquals('Match', $results->items()[0]->FirstName);
 
         Http::assertSent(function ($request) {
             $url = $request->url();
@@ -214,7 +175,7 @@ class QueryBuilderIntegrationTest extends TestCase
             ], 200),
         ]);
 
-        $results = TestSubject::where('FirstName', 'eq', "O'Brien")->get();
+        $results = TestSubject::where('FirstName', 'eq', "O'Brien")->paginate();
 
         Http::assertSent(function ($request) {
             /* Single quotes should be escaped as double single quotes and URL encoded */
@@ -237,7 +198,7 @@ class QueryBuilderIntegrationTest extends TestCase
             ->select('Email')
             ->expand('Addresses')
             ->expand(['Contacts', 'Orders'])
-            ->get();
+            ->paginate();
 
         Http::assertSent(function ($request) {
             $url = $request->url();
@@ -249,48 +210,5 @@ class QueryBuilderIntegrationTest extends TestCase
                    str_contains($url, 'Contacts') &&
                    str_contains($url, 'Orders');
         });
-    }
-
-    #[Test]
-    public function it_handles_cursor_pagination_with_callback(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
-                'value' => [
-                    ['Id' => 1, 'FirstName' => 'Page1'],
-                    ['Id' => 2, 'FirstName' => 'Page1'],
-                ],
-                '@odata.nextLink' => 'https://api.example.com/page2',
-            ], 200),
-            'https://api.example.com/page2' => Http::response([
-                'value' => [
-                    ['Id' => 3, 'FirstName' => 'Page2'],
-                ],
-            ], 200),
-        ]);
-
-        $processedPages = [];
-
-        TestSubject::pages(10)
-            ->cursorWithCallback(function ($items, $pageNumber) use (&$processedPages) {
-                $processedPages[] = [
-                    'page' => $pageNumber,
-                    'count' => $items->count(),
-                    'first_name' => $items->first()->FirstName,
-                ];
-            })
-            ->get();
-
-        $this->assertCount(2, $processedPages);
-        $this->assertEquals(1, $processedPages[0]['page']);
-        $this->assertEquals(2, $processedPages[0]['count']);
-        $this->assertEquals('Page1', $processedPages[0]['first_name']);
-        $this->assertEquals(2, $processedPages[1]['page']);
-        $this->assertEquals(1, $processedPages[1]['count']);
-        $this->assertEquals('Page2', $processedPages[1]['first_name']);
     }
 }

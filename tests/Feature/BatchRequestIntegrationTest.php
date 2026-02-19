@@ -39,8 +39,8 @@ class BatchRequestIntegrationTest extends TestCase
 
         $results = $this->service->batch(function () {
             return [
-                TestSubject::where('ProductNumber', 'ge', 200)->get(),
-                TestSubject::where('Id', 'ge', 2222)->get(),
+                TestSubject::where('ProductNumber', 'ge', 200)->paginate(),
+                TestSubject::where('Id', 'ge', 2222)->paginate(),
             ];
         })->send();
 
@@ -175,7 +175,7 @@ class BatchRequestIntegrationTest extends TestCase
 
         $results = $this->service->batch(function () {
             return [
-                TestSubject::where('Id', 'eq', 1)->get(),                     // GET
+                TestSubject::where('Id', 'eq', 1)->paginate(),                // GET
                 TestSubject::create(['FirstName' => 'New Subject']),          // POST
                 TestSubject::update(50, ['FirstName' => 'Updated Subject']),  // PATCH
                 TestSubject::delete(100),                                     // DELETE

@@ -1,7 +1,2 @@
 parameters:
 	ignoreErrors:
-		-
-			message: '#^Method Contoweb\\AbacusApi\\AbacusODataQueryBuilder\:\:get\(\) should return Contoweb\\AbacusApi\\Batch\\BatchRequestItem\|Illuminate\\Support\\Collection\<int, Contoweb\\AbacusApi\\Models\\AbacusModel\> but returns Illuminate\\Support\\Collection\<\(int\|string\), object\>\.$#'
-			identifier: return.type
-			count: 1
-			path: src/AbacusODataQueryBuilder.php

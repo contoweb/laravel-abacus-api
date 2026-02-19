@@ -172,7 +172,7 @@ class AbacusServiceTest extends TestCase
     {
         $batch = $this->service->newBatch();
         $batch->capture(function () {
-            TestSubject::get();
+            TestSubject::paginate();
             TestSubject::create(['FirstName' => 'New']);
             TestSubject::update(123, ['FirstName' => 'Updated']);
             TestSubject::delete(456);

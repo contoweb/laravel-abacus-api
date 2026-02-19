@@ -57,14 +57,11 @@ ABACUS_REST_API_CLIENT_SECRET=your-client-secret
 The package already includes the following models which are ready to use:
 
 - `Product` → `Products` endpoint
-- `Stock` → `Stocks` endpoint 
+- `Stock` → `Stocks` endpoint
 
 ```php
 use Contoweb\AbacusApi\Models\v1\Product;
 use Contoweb\AbacusApi\Models\v1\Stock;
-
-/* Get all products */
-$products = Product::all();
 
 /* Find a specific product */
 $product = Product::find(12345);
@@ -72,12 +69,14 @@ $product = Product::find(12345);
 /* Query with filters */
 $products = Product::where('ProductNumber', 'eq', 'ART-001')
     ->select(['ProductNumber', 'Description'])
-    ->get();
+    ->paginate()
+    ->items();
 
 /* Get stock information */
 $stocks = Stock::where('Quantity', 'gt', 0)
     ->expand('Product')
-    ->get();
+    ->paginate()
+    ->items();
 ```
 
 ### Create your own Model
@@ -160,9 +159,6 @@ php artisan abacus:generate-ide-helper --list
 ```php
 use App\Models\Abacus\Subject;
 
-/* All Subjects */
-$subjects = Subject::all();
-
 /* Find a Subject */
 $subject = Subject::find(1);
 
@@ -176,8 +172,8 @@ $subject = Subject::select(['ProductNumber'])
 $subjects = Subject::where('LastName', 'eq', 'Müller')
     ->where('City', 'eq', 'Zürich')
     ->orderBy('FirstName', 'asc')
-    ->top(10)
-    ->get();
+    ->paginate()
+    ->items();
 
 /* Create */
 $subject = Subject::create([
@@ -195,99 +191,52 @@ $subject->delete(1);
 
 ## Usage
 
-### Cursor Pagination
-
-Handle large datasets efficiently using OData's `@odata.nextLink` pagination:
-
-```php
-/* Basic cursor pagination - loads all pages into memory */
-$subjects = Subject::cursor()
-    ->pages(100)  // Max 100 pages
-    ->get();
-
-/* Process items page-by-page without loading everything into memory */
-Subject::pages(100)
-    ->cursorWithCallback(function($items, $pageNumber) {
-        // Process each page as it's loaded
-        foreach ($items as $item) {
-            DB::table('processed')->insert([
-                'item_id' => $item->Id,
-                'processed_at' => now(),
-            ]);
-        }
-        
-        Log::info("Processed page {$pageNumber}: {$items->count()} items");
-    })
-    ->get();
-```
-
-**When to use `cursorWithCallback()`:**
-- Processing large datasets (10,000+ records)
-- Memory-intensive operations
-- Long-running batch jobs
-- Real-time progress logging
-
-**Note:** `cursorWithCallback()` automatically enables cursor pagination, so calling `cursor()` is optional.
-
-**Configuration:**
-```php
-// config/abacus-api.php
-'query_builder' => [
-    'max_next_link_page_resolving' => 5  // Default page limit
-]
-```
-
 ### Query Builder
 
 ```php
 /* Filter with supported operators: eq, lt, gt, le, ge */
 Subject::where('LastName', 'eq', 'Müller')
     ->where('Active', 'eq', true)
-    ->get();
+    ->paginate()
+    ->items();
 
 /* Select specific properties */
 Subject::select(['FirstName', 'LastName', 'Email'])
-    ->get();
+    ->paginate()
+    ->items();
 
 /* OrderBy (only one orderBy per query) */
 Subject::orderBy('LastName', 'desc')
-    ->get();
-
-/* Top N elements */
-Subject::top(10)->get();
+    ->paginate()
+    ->items();
 
 /* Expand Navigation Properties */
-Subject::expand('Addresses')->get();
+Subject::expand('Addresses')
+    ->paginate()
+    ->items();
 
 /* Combined */
 Subject::where('City', 'eq', 'Zürich')
     ->select(['FirstName', 'LastName', 'Email'])
     ->orderBy('LastName', 'asc')
     ->expand('Addresses')
-    ->top(5)
-    ->get();
+    ->paginate();
 
-/* Cursor Pagination - Process large datasets page by page */
-Subject::pages(100)
-    ->cursorWithCallback(function($items, $pageNumber) {
-        foreach ($items as $subject) {
-            // Process each item immediately
-            $this->processSubject($subject);
-        }
-        Log::info("Processed page {$pageNumber} with {$items->count()} subjects");
-    })
-    ->get();
+/* Pagination - automatically handles paging when returning collections */
+$paginator = Subject::where('Active', 'eq', true)->paginate(20); // Limits the amount of items on one page $top=20
 
-/* Cursor Pagination - Load all pages into memory */
-Subject::cursor()
-    ->pages(50)
-    ->get(); // Returns Collection of all items
+if ($paginator->hasMorePages()) {
+    $paginator->getNextPage(); // Load next page and append to items collection
+}
+
+$items = $paginator->items();
 
 /* Filter with OData Enum values */
 use Contoweb\AbacusApi\ODataQueryString;
 
 Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
-    ->get();
+    ->paginate()
+    ->items();
 // Results in: $filter=Type eq ch.abacus.orde.ProductType'Article'
 ```
 
@@ -302,13 +251,9 @@ $subject = Subject::create([
 
 /* Read */
 $subject = Subject::find(1);
-$subjects = Subject::all();
+$subjects = Subject::paginate()->items();
 
 /* Update */
-$subject->Email = 'new@example.com';
-$subject->save();
-
-/* or */
 $subject->update(['Email' => 'new@example.com']);
 
 /* Delete */
@@ -340,7 +285,7 @@ use Contoweb\AbacusApi\Facades\Abacus;
 [$customer, $products, $order] = Abacus::batch(function() {
     return [
         Customer::find(123),
-        Product::where('Price', 'gt', 100)->get(),
+        Product::where('Price', 'gt', 100)->paginate(),
         Order::create(['CustomerId' => 456, 'Total' => 99.99]),
     ];
 })->send()->mapped();
@@ -358,7 +303,7 @@ foreach ($products as $product) {
 $results = Abacus::batch(function() {
     return [
         Customer::find(123),
-        Product::where('Price', 'gt', 100)->get(),
+        Product::where('Price', 'gt', 100)->paginate(),
         Order::create(['CustomerId' => 456, 'Total' => 99.99]),
     ];
 })->send();
@@ -383,13 +328,13 @@ $batch->capture(function() {
 
 if ($includeProducts) {
     $batch->capture(function() {
-        Product::where('Active', 'eq', true)->get();
+        Product::where('Active', 'eq', true)->paginate();
     });
 }
 
 if ($includeOrders) {
     $batch->capture(function() {
-        Order::where('CustomerId', 'eq', 123)->get();
+        Order::where('CustomerId', 'eq', 123)->paginate();
     });
 }
 
@@ -406,8 +351,8 @@ Use array destructuring for clean result access:
 [$customer, $products, $orders] = Abacus::batch(function() {
     return [
         Customer::find(123),
-        Product::where('Price', 'gt', 100)->get(),
-        Order::where('CustomerId', 'eq', 123)->get(),
+        Product::where('Price', 'gt', 100)->paginate(),
+        Order::where('CustomerId', 'eq', 123)->paginate(),
     ];
 })->send();
 
@@ -532,7 +477,7 @@ $batch = Abacus::newBatch('customer-data-fetch');
 // Add queries via capture
 $batch->capture(function() {
     Customer::find(123);
-    Order::where('CustomerId', 'eq', 123)->get();
+    Order::where('CustomerId', 'eq', 123)->paginate();
 });
 
 // Inspect before sending
@@ -561,8 +506,8 @@ $results = $batch->send();
 // Good: Targeted queries with filters
 $results = Abacus::batch(function() {
     return [
-        Customer::where('Status', 'eq', 'Active')->select(['Id', 'Name'])->get(),
-        Order::where('Date', 'gt', '2024-01-01')->get(),
+        Customer::where('Status', 'eq', 'Active')->select(['Id', 'Name'])->paginate(),
+        Order::where('Date', 'gt', '2024-01-01')->paginate(),
     ];
 })->send();
 
@@ -661,7 +606,7 @@ Http::fake([
     ], 200)
 ]);
 
-$subjects = Subject::all();
+$subjects = Subject::paginate()->items();
 $this->assertCount(1, $subjects);
 ```
 
