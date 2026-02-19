@@ -1,6 +1,6 @@
 <?php
 
-namespace Contoweb\AbacusApi\Tests\Feature;
+namespace Contoweb\AbacusApi\Tests\Integration;
 
 use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Contoweb\AbacusApi\Tests\Feature;
+namespace Contoweb\AbacusApi\Tests\Integration;
 
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
