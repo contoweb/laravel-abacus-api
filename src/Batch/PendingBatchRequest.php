@@ -75,14 +75,6 @@ class PendingBatchRequest
      * @return $this
      *
      * @throws RuntimeException If nested batch capture is attempted
-     *
-     * @example
-     * ```php
-     * $batch->capture(function() {
-     *     Customer::find(123);
-     *     Product::where('Price', 'gt', 100)->get();
-     * });
-     * ```
      */
     public function capture(callable $callback): self
     {
@@ -166,15 +158,6 @@ class PendingBatchRequest
      *
      * @throws ConnectionException
      * @throws RequestException
-     *
-     * @example
-     * ```php
-     * $results = $batch->send();
-     *
-     * if ($results->allSuccessful()) {
-     *     $models = $results->models();
-     * }
-     * ```
      */
     public function send(): BatchResponseCollection
     {

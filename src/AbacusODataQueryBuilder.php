@@ -85,16 +85,6 @@ class AbacusODataQueryBuilder
      *
      * @param  callable  $callback  Callback function receiving (Collection $items, int $pageNumber)
      * @return $this
-     *
-     * @example
-     * Subject::pages(100)
-     *     ->cursorWithCallback(function($items, $pageNumber) {
-     *         foreach ($items as $item) {
-     *             $this->processItem($item);
-     *         }
-     *         Log::info("Processed page {$pageNumber} with {$items->count()} items");
-     *     })
-     *     ->get();
      */
     public function cursorWithCallback(callable $callback): static
     {
@@ -267,8 +257,6 @@ class AbacusODataQueryBuilder
      *
      * @throws ConnectionException
      * @throws RequestException
-     *
-     * @example Simple: Model::update(210, ['Name' => 'Test'])
      */
     public function update(int|string|array $idOrCriteria, array $data): AbacusModel|BatchRequestItem
     {
@@ -306,7 +294,6 @@ class AbacusODataQueryBuilder
 
     /**
      * Fetch specific property of an entity
-     * Example: Subjects::query()->findProperty(2, 'LastName')
      *
      * @throws ConnectionException
      * @throws RequestException
@@ -383,10 +370,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Filter with OData operators or Laravel Eloquent operators
-     * Example: ->where('LastName', ODataOperator::EQUALS, 'Müller')
-     * Example: ->where('LastName', 'eq', 'Müller')
-     * Example: ->where('LastName', '=', 'Müller')
+     * Filter with OData operators or Laravel Eloquent operators.
      *
      * @return $this
      */
@@ -423,7 +407,6 @@ class AbacusODataQueryBuilder
 
     /**
      * $select - Query only specific properties
-     * Example: ->select(['LastName', 'AddressNumber'])
      */
     public function select(array|string $fields): static
     {
@@ -437,7 +420,6 @@ class AbacusODataQueryBuilder
 
     /**
      * $top - Return only top N elements
-     * Example: ->top(10)
      */
     public function top(int $limit): static
     {
@@ -464,8 +446,6 @@ class AbacusODataQueryBuilder
 
     /**
      * $orderby - Sort by attribute (asc or desc)
-     * Example: ->orderBy('LastName', 'desc')
-     * IMPORTANT: Only one orderBy possible, further calls override previous ones
      */
     public function orderBy(string $field, string $direction = 'asc'): static
     {
@@ -480,7 +460,6 @@ class AbacusODataQueryBuilder
 
     /**
      * $expand - Expand navigation properties
-     * Example: ->expand('Addresses') or ->expand(['Addresses', 'Contacts'])
      */
     public function expand(array|string $relations): static
     {
@@ -505,9 +484,6 @@ class AbacusODataQueryBuilder
     /**
      * Build the entity ID segment for the path
      * Handles both simple IDs and composite keys
-     *
-     * @example Simple: "123"
-     * @example Composite: "BatchNumber='5436',BatchSequenceNumber=0,ProductId=12276,VariantId=0"
      */
     private function buildEntityIdSegment(): string
     {

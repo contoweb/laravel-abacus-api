@@ -103,7 +103,6 @@ abstract class AbacusModel
 
     /**
      * Start where query.
-     * Example: Project::where('Id', 'eq', 9100)->get()
      */
     public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusODataQueryBuilder
     {
@@ -162,9 +161,6 @@ abstract class AbacusModel
      *
      * @throws ConnectionException
      * @throws RequestException
-     *
-     * @example Single key: Customers::delete(210)
-     * @example Composite key: StockBatches::delete(['BatchNumber' => '123', 'ProductId' => 456])
      */
     public static function delete(int|string|array $idOrCriteria): ?BatchRequestItem
     {
@@ -179,9 +175,6 @@ abstract class AbacusModel
      *
      * @throws ConnectionException
      * @throws RequestException
-     *
-     * @example Simple: Customers::update(210, ['Name' => 'Test'])
-     * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
      */
     public static function update(int|string|array $idOrCriteria, array $data): static|BatchRequestItem
     {

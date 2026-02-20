@@ -63,13 +63,6 @@ class AbacusService
      * Create a new fluent batch builder.
      *
      * @param  string|null  $name  Optional name for debugging/logging
-     *
-     * @example
-     * ```php
-     * $batch = Abacus::newBatch();
-     * $batch->add(Customer::batch()->find(123));
-     * $results = $batch->send();
-     * ```
      */
     public function newBatch(?string $name = null): PendingBatchRequest
     {
@@ -84,16 +77,6 @@ class AbacusService
      * of batch items for destructuring.
      *
      * @param  callable  $callback  Closure that executes queries
-     *
-     * @example
-     * ```php
-     * [$customer, $products] = Abacus::batch(function() {
-     *     return [
-     *         Customer::find(123),
-     *         Product::where('Price', 'gt', 100)->get(),
-     *     ];
-     * })->send();
-     * ```
      */
     public function batch(callable $callback): PendingBatchRequest
     {
