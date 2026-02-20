@@ -8,6 +8,7 @@ use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 
 class OdataPaginatorTest extends TestCase
 {
@@ -133,6 +134,11 @@ class OdataPaginatorTest extends TestCase
         $this->assertTrue($paginator->hasMorePages());
         $paginator->nextPage();
         $this->assertTrue($paginator->hasMorePages());
+
+        $reflection = new ReflectionClass($paginator);
+        $property = $reflection->getProperty('nextLink');
+        $property->setAccessible(true);
+        $this->assertEquals('https://example.com/Subjects?$skiptoken=def456', $property->getValue($paginator));
     }
 
     #[Test]
