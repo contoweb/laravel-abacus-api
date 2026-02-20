@@ -41,7 +41,7 @@ class BatchResponseDto
     /**
      * Get OData value array
      */
-    public function getValue(): array
+    public function value(): array
     {
         return $this->body['value'] ?? $this->body ?? [];
     }
@@ -57,7 +57,7 @@ class BatchResponseDto
     /**
      * Get HTTP error status text
      */
-    public function getError(): ?string
+    public function error(): ?string
     {
         return $this->error ?? null;
     }
@@ -65,9 +65,17 @@ class BatchResponseDto
     /**
      * Get detailed API error message from response body
      */
-    public function getErrorMessage(): ?string
+    public function errorMessage(): ?string
     {
         return $this->body['error']['message'] ?? null;
+    }
+
+    /**
+     * Get HTTP error status code
+     */
+    public function errorCode(): ?int
+    {
+        return $this->body['error']['code'] ?? null;
     }
 
     /**
@@ -75,7 +83,7 @@ class BatchResponseDto
      *
      * @return Collection<int, AbacusModel>|AbacusModel
      */
-    public function getModels(): Collection|AbacusModel
+    public function models(): Collection|AbacusModel
     {
         if (isset($this->body['value'])) {
             return collect($this->body['value'])

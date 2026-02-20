@@ -254,7 +254,7 @@ class BatchRequestTest extends TestCase
 
         $this->assertCount(1, $results);
         $this->assertArrayHasKey('value', $results[0]->body);
-        $this->assertCount(2, $results[0]->getValue());
+        $this->assertCount(2, $results[0]->value());
     }
 
     #[Test]

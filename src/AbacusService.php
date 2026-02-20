@@ -4,6 +4,8 @@ namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 
 class AbacusService
@@ -27,6 +29,9 @@ class AbacusService
     /**
      * List of all available entity IDs
      * GET /api/entity/v1/mandants/{mandate}/
+     *
+     * @throws RequestException
+     * @throws ConnectionException
      */
     public function listEntityIds(): array
     {

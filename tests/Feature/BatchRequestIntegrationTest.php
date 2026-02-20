@@ -49,7 +49,7 @@ class BatchRequestIntegrationTest extends TestCase
         $this->assertTrue($results[1]->isSuccess());
         $this->assertEquals(200, $results[0]->status);
         $this->assertEquals(200, $results[1]->status);
-        $this->assertCount(1, $results[0]->getValue());
+        $this->assertCount(1, $results[0]->value());
         $this->assertEquals(200, $results[0]->body['value'][0]['ProductNumber']);
     }
 
