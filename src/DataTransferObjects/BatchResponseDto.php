@@ -2,19 +2,30 @@
 
 namespace Contoweb\AbacusApi\DataTransferObjects;
 
+use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Support\Collection;
 
+/**
+ * @template TModel of AbacusModel
+ */
 class BatchResponseDto
 {
+    /**
+     * @param  class-string<TModel>  $modelClass
+     */
     public function __construct(
         public readonly bool $success,
         public readonly int $status,
         public readonly array $headers,
-        public readonly mixed $body,
+        public readonly ?array $body,
         public readonly string $modelClass,
         public readonly ?string $error = null,
     ) {}
 
+    /**
+     * @param  class-string<TModel>  $modelClass
+     * @return self<TModel>
+     */
     public static function fromArray(array $data, string $modelClass): self
     {
         return new self(
@@ -28,15 +39,15 @@ class BatchResponseDto
     }
 
     /**
-     * Get OData value array
+     * Get OData value array.
      */
-    public function getValue(): array
+    public function value(): array
     {
-        return $this->body['value'] ?? [];
+        return $this->body['value'] ?? $this->body ?? [];
     }
 
     /**
-     * Check if response is successful
+     * Check if response is successful.
      */
     public function isSuccess(): bool
     {
@@ -44,27 +55,42 @@ class BatchResponseDto
     }
 
     /**
-     * Get HTTP error status text
+     * Get HTTP error status text.
      */
-    public function getError(): ?string
+    public function error(): ?string
     {
         return $this->error ?? null;
     }
 
     /**
-     * Get detailed API error message from response body
+     * Get detailed API error message from response body.
      */
-    public function getErrorMessage(): ?string
+    public function errorMessage(): ?string
     {
         return $this->body['error']['message'] ?? null;
     }
 
     /**
-     * Get OData value array as model instances
+     * Get HTTP error status code.
      */
-    public function getModels(): Collection
+    public function errorCode(): ?int
     {
-        return collect($this->getValue())
-            ->map(fn ($item) => new $this->modelClass($item));
+        return $this->body['error']['code'] ?? null;
+    }
+
+    /**
+     * Returns a collection of model instances if the response contains multiple items,
+     * otherwise returns a single model instance.
+     *
+     * @return Collection<int, AbacusModel>|AbacusModel
+     */
+    public function mapped(): Collection|AbacusModel
+    {
+        if (isset($this->body['value'])) {
+            return collect($this->body['value'])
+                ->map(fn ($item) => new $this->modelClass($item));
+        }
+
+        return new $this->modelClass($this->body);
     }
 }

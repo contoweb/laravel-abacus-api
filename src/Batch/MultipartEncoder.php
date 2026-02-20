@@ -7,7 +7,7 @@ class MultipartEncoder
     protected const BOUNDARY = 'batch_boundary';
 
     /**
-     * Encode array of requests into multipart/mixed format
+     * Encode array of requests into multipart/mixed format.
      *
      * @param  BatchRequestItem[]  $requests
      */
@@ -28,7 +28,7 @@ class MultipartEncoder
     }
 
     /**
-     * Get the boundary string
+     * Get the boundary string.
      */
     public static function getBoundary(): string
     {
@@ -36,7 +36,7 @@ class MultipartEncoder
     }
 
     /**
-     * Get the full content-type header value
+     * Get the full content-type header value.
      */
     public static function getContentType(): string
     {
@@ -44,7 +44,7 @@ class MultipartEncoder
     }
 
     /**
-     * Encode a single request into multipart format
+     * Encode a single request into multipart format.
      */
     protected static function encodeRequest(BatchRequestItem $request): string
     {

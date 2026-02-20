@@ -254,7 +254,7 @@ class BatchRequestTest extends TestCase
 
         $this->assertCount(1, $results);
         $this->assertArrayHasKey('value', $results[0]->body);
-        $this->assertCount(2, $results[0]->getValue());
+        $this->assertCount(2, $results[0]->value());
     }
 
     #[Test]
@@ -305,10 +305,14 @@ class BatchRequestTest extends TestCase
             ),
         ]);
 
-        $batch = new BatchRequest(
-            $this->client,
-            TestSubject::batch()->create(['FirstName' => 'Created'])
+        $item = new BatchRequestItem(
+            TestSubject::class,
+            'POST',
+            '/api/entity/v1/mandants/test-mandate/Subjects',
+            ['FirstName' => 'Created']
         );
+
+        $batch = new BatchRequest($this->client, $item);
 
         $results = $batch->send();
 

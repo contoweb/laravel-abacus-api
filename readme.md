@@ -273,40 +273,259 @@ $subject->delete();
 
 ### Batch Requests
 
-Execute multiple operations in a single HTTP request to reduce network overhead.
+Execute multiple operations in a single HTTP request to reduce network overhead and improve performance.
 
-**IMPORTANT:** Batch requests are NOT transactional. If Operation 2 fails, Operation 1 remains persisted.
+**IMPORTANT:** Batch requests are NOT transactional in Abacus. If one request fails, the others may still be processed and persisted.
+
+#### Overview
+
+Batch requests allow you to combine multiple API calls into a single HTTP request, which:
+- Reduces network round trips and latency
+- Improves application performance
+- Efficiently handles bulk operations
+- Maintains individual operation independence (non-transactional)
+
+#### Basic Usage (Recommended)
+
+**Capture Pattern** - Write normal queries that automatically batch:
+
 ```php
 use Contoweb\AbacusApi\Facades\Abacus;
 
-/* Basic usage */
-$results = Abacus::batch(
-    Customer::batch()->find(123),
-    Product::batch()->where('Price', 'gt', 100)->get(),
-    Order::batch()->create(['CustomerId' => 456, 'Total' => 99.99])
-)->send();
+// Cleanest syntax - queries execute in batch context
+[$customer, $products, $order] = Abacus::batch(function() {
+    return [
+        Customer::find(123),
+        Product::where('Price', 'gt', 100)->get(),
+        Order::create(['CustomerId' => 456, 'Total' => 99.99]),
+    ];
+})->send()->mapped();
 
-/* Mixed CRUD operations */
-$results = Abacus::batch(
-    Customer::batch()->find(100),
-    Order::batch()->create(['CustomerId' => 200, 'Total' => 99.99]),
-    Customer::batch()->update(100, ['Status' => 'Active']),
-    Product::batch()->delete(999)
-)->send();
+// Results are ready to use immediately
+echo $customer->FirstName;
+foreach ($products as $product) {
+    echo $product->Name;
+}
+```
 
-/* Composite keys */
-$results = Abacus::batch(
-    StockBatch::batch()->find(['BatchNumber' => '5436', 'ProductId' => 12276]),
-    StockBatch::batch()->update(
-        ['BatchNumber' => '5436', 'ProductId' => 12276],
-        ['Remark' => 'Updated']
-    )
-)->send();
+**Access Results by Index:**
 
-/* Filter successful results */
-$successfulModels = $results
-    ->filter(fn($result) => $result->isSuccess())
-    ->map(fn($result) => $result->getModel());
+```php
+$results = Abacus::batch(function() {
+    return [
+        Customer::find(123),
+        Product::where('Price', 'gt', 100)->get(),
+        Order::create(['CustomerId' => 456, 'Total' => 99.99]),
+    ];
+})->send();
+
+// Access results by index
+$customer = $results[0]->mapped()->first();
+$products = $results[1]->mapped();
+$order = $results[2]->mapped()->first();
+```
+
+#### Progressive Building
+
+Build batches dynamically based on conditions:
+
+```php
+$batch = Abacus::newBatch();
+
+// Add queries conditionally
+$batch->capture(function() {
+    Customer::find(123);
+});
+
+if ($includeProducts) {
+    $batch->capture(function() {
+        Product::where('Active', 'eq', true)->get();
+    });
+}
+
+if ($includeOrders) {
+    $batch->capture(function() {
+        Order::where('CustomerId', 'eq', 123)->get();
+    });
+}
+
+// Execute only the queries you added
+$results = $batch->send();
+```
+
+#### Accessing Results
+
+Use array destructuring for clean result access:
+
+```php
+// Destructure directly (recommended)
+[$customer, $products, $orders] = Abacus::batch(function() {
+    return [
+        Customer::find(123),
+        Product::where('Price', 'gt', 100)->get(),
+        Order::where('CustomerId', 'eq', 123)->get(),
+    ];
+})->send();
+
+// Or access by index
+$results = Abacus::batch(function() {
+    return [Customer::find(123), Product::find(456)];
+})->send();
+
+$customer = $results[0]->mapped()->first();
+$product = $results[1]->mapped()->first();
+```
+
+#### Mixed CRUD Operations
+
+Combine different operation types in a single batch:
+
+```php
+[$found, $created, $updated, $deleted] = Abacus::batch(function() {
+    return [
+        Customer::find(100),                                    // GET
+        Order::create(['CustomerId' => 200, 'Total' => 99.99]), // POST
+        Customer::update(100, ['Status' => 'Active']),          // PATCH
+        Product::delete(999),                                   // DELETE
+    ];
+})->send();
+```
+
+#### Composite Keys
+
+Works seamlessly with composite key entities:
+
+```php
+[$stockBatch, $updated] = Abacus::batch(function() {
+    return [
+        StockBatch::find([
+            'BatchNumber' => '5436',
+            'ProductId' => 12276,
+            'VariantId' => 0
+        ]),
+        StockBatch::update(
+            ['BatchNumber' => '5436', 'ProductId' => 12276, 'VariantId' => 0],
+            ['Remark' => 'Updated via batch']
+        ),
+    ];
+})->send();
+```
+
+#### Response Handling
+
+You can check the status of each operation individually:
+
+```php
+$results = Abacus::batch(function() {
+    return [
+        Customer::find(123),
+        Product::find(999), // Non-existent, will fail
+        Order::create(['CustomerId' => 456, 'Total' => 99.99]),
+    ];
+})->send();
+
+if ($results->allSuccessful()) {
+    // All operations succeeded
+} 
+
+if ($results->hasFailures()) {
+    // Some operations failed
+}
+
+// Filter by success/failure
+$successful = $results->successful(); // Only successful responses
+$failed = $results->failed();         // Only failed responses
+
+// Extract all models from successful operations
+$allModels = $results->successful()->mapped();
+
+// Get error details from failed operations
+foreach ($results->failed() as $result) {
+    echo "Status: {$result->status}\n";
+    echo "Error: {$result->getError()}\n";
+    echo "Message: {$result->getErrorMessage()}\n";
+}
+```
+
+#### Error Handling
+
+Handle partial failures gracefully:
+
+```php
+$results = Abacus::batch(function() {
+    return [
+        Customer::find(1),
+        Product::find(999),  // Will fail - non-existent
+        Order::find(1),
+    ];
+})->send();
+
+// Get errors collection
+$errors = $results->errors();
+foreach ($errors as $error) {
+    Log::error('Batch operation failed', [
+        'status' => $error['status'],
+        'error' => $error['error'],
+        'message' => $error['message'],
+    ]);
+}
+
+// Continue with successful results
+$successfulData = $results->successful();
+foreach ($successfulData as $result) {
+    // Process successful results
+    $models = $result->mapped();
+}
+```
+
+#### Inspection Methods
+
+Inspect batch contents before sending:
+
+```php
+$batch = Abacus::newBatch('customer-data-fetch');
+
+// Add queries via capture
+$batch->capture(function() {
+    Customer::find(123);
+    Order::where('CustomerId', 'eq', 123)->get();
+});
+
+// Inspect before sending
+echo "Batch name: " . $batch->getName() . "\n";
+echo "Item count: " . $batch->count() . "\n";
+echo "Is empty: " . ($batch->isEmpty() ? 'yes' : 'no') . "\n";
+
+// Clear and rebuild if needed
+$batch->clear();
+$batch->capture(function() {
+    Customer::find(456);
+});
+
+$results = $batch->send();
+```
+
+#### Best Practices
+
+**Batch Size Recommendations:**
+- Keep batches under 50 operations for optimal performance
+- For large datasets, process in chunks
+- Monitor response times and adjust batch sizes accordingly
+
+**Performance Tips:**
+```php
+// Good: Targeted queries with filters
+$results = Abacus::batch(function() {
+    return [
+        Customer::where('Status', 'eq', 'Active')->select(['Id', 'Name'])->get(),
+        Order::where('Date', 'gt', '2024-01-01')->get(),
+    ];
+})->send();
+
+// Avoid: Too many operations in a single batch
+// Split into multiple batches if needed
+$batch1 = Abacus::batch(/* first 50 operations */)->send();
+$batch2 = Abacus::batch(/* next 50 operations */)->send();
 ```
 
 ### Working Directly with the Service

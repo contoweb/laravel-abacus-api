@@ -8,14 +8,6 @@ namespace Contoweb\AbacusApi\Enums;
  * Use this class to pass enum values to where() filters.
  * Enum values in OData have a special format: Namespace.Type'Value'
  * and must NOT be wrapped in additional quotes.
- *
- * @example
- * // Filter by ProductType enum
- * Product::query()
- *     ->where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
- *     ->get();
- *
- * // Results in: $filter=Type eq ch.abacus.orde.ProductType'Article'
  */
 class ODataEnum
 {

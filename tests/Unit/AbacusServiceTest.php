@@ -4,7 +4,7 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusService;
-use Contoweb\AbacusApi\Batch\BatchRequest;
+use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
@@ -145,36 +145,41 @@ class AbacusServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_creates_batch_request_with_variadic_parameters(): void
+    public function it_creates_batch_request_with_capture(): void
     {
-        $batch = $this->service->batch(
-            TestSubject::batch()->create(['FirstName' => 'Alice']),
-            TestSubject::batch()->create(['FirstName' => 'Bob']),
-            TestSubject::batch()->create(['FirstName' => 'Charlie'])
-        );
+        $batch = $this->service->newBatch();
+        $batch->capture(function () {
+            TestSubject::create(['FirstName' => 'Alice']);
+            TestSubject::create(['FirstName' => 'Bob']);
+            TestSubject::create(['FirstName' => 'Charlie']);
+        });
 
-        $this->assertInstanceOf(BatchRequest::class, $batch);
+        $this->assertInstanceOf(PendingBatchRequest::class, $batch);
+        $this->assertEquals(3, $batch->count());
     }
 
     #[Test]
     public function it_creates_empty_batch_request(): void
     {
-        $batch = $this->service->batch();
+        $batch = $this->service->newBatch();
 
-        $this->assertInstanceOf(BatchRequest::class, $batch);
+        $this->assertInstanceOf(PendingBatchRequest::class, $batch);
+        $this->assertTrue($batch->isEmpty());
     }
 
     #[Test]
     public function it_creates_batch_with_mixed_operations(): void
     {
-        $batch = $this->service->batch(
-            TestSubject::batch()->get(),
-            TestSubject::batch()->create(['FirstName' => 'New']),
-            TestSubject::batch()->update(123, ['FirstName' => 'Updated']),
-            TestSubject::batch()->delete(456)
-        );
+        $batch = $this->service->newBatch();
+        $batch->capture(function () {
+            TestSubject::get();
+            TestSubject::create(['FirstName' => 'New']);
+            TestSubject::update(123, ['FirstName' => 'Updated']);
+            TestSubject::delete(456);
+        });
 
-        $this->assertInstanceOf(BatchRequest::class, $batch);
+        $this->assertInstanceOf(PendingBatchRequest::class, $batch);
+        $this->assertEquals(4, $batch->count());
     }
 
     #[Test]
@@ -194,9 +199,9 @@ class AbacusServiceTest extends TestCase
             ),
         ]);
 
-        $batch = $this->service->batch(
-            TestSubject::batch()->create(['FirstName' => 'Test'])
-        );
+        $batch = $this->service->batch(function () {
+            return [TestSubject::create(['FirstName' => 'Test'])];
+        });
 
         $results = $batch->send();
 

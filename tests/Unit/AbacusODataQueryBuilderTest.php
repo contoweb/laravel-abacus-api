@@ -5,6 +5,9 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\AbacusService;
+use Contoweb\AbacusApi\Batch\BatchContext;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
+use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
@@ -22,6 +25,12 @@ class AbacusODataQueryBuilderTest extends TestCase
 
         $this->client = new AbacusODataClient($this->makeCredentialsProvider());
         $this->service = new AbacusService($this->client);
+    }
+
+    protected function tearDown(): void
+    {
+        BatchContext::clear();
+        parent::tearDown();
     }
 
     #[Test]
@@ -496,5 +505,87 @@ class AbacusODataQueryBuilderTest extends TestCase
 
         /* Assert result */
         $this->assertCount(1, $results);
+    }
+
+    #[Test]
+    public function it_returns_batch_request_item_for_get_in_batch_context(): void
+    {
+        $batch = new PendingBatchRequest($this->client);
+        BatchContext::set($batch);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
+        $result = $builder->where('IsActive', 'eq', true)->select(['Id', 'Name'])->get();
+
+        $this->assertInstanceOf(BatchRequestItem::class, $result);
+        $this->assertEquals('GET', $result->method);
+        $this->assertStringContainsString('Subjects', $result->path);
+        $this->assertStringContainsString('$filter=', $result->path);
+        $this->assertStringContainsString('$select=', $result->path);
+        $this->assertNull($result->body);
+        $this->assertEquals(1, $batch->count());
+    }
+
+    #[Test]
+    public function it_returns_batch_request_item_for_find_in_batch_context(): void
+    {
+        $batch = new PendingBatchRequest($this->client);
+        BatchContext::set($batch);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
+        $result = $builder->find(42);
+
+        $this->assertInstanceOf(BatchRequestItem::class, $result);
+        $this->assertEquals('GET', $result->method);
+        $this->assertStringContainsString('Subjects(42)', $result->path);
+        $this->assertNull($result->body);
+        $this->assertEquals(1, $batch->count());
+    }
+
+    #[Test]
+    public function it_returns_batch_request_item_for_create_in_batch_context(): void
+    {
+        $batch = new PendingBatchRequest($this->client);
+        BatchContext::set($batch);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
+        $result = $builder->create(['FirstName' => 'Test']);
+
+        $this->assertInstanceOf(BatchRequestItem::class, $result);
+        $this->assertEquals('POST', $result->method);
+        $this->assertStringContainsString('Subjects', $result->path);
+        $this->assertEquals(['FirstName' => 'Test'], $result->body);
+        $this->assertEquals(1, $batch->count());
+    }
+
+    #[Test]
+    public function it_returns_batch_request_item_for_update_in_batch_context(): void
+    {
+        $batch = new PendingBatchRequest($this->client);
+        BatchContext::set($batch);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
+        $result = $builder->update(42, ['FirstName' => 'Updated']);
+
+        $this->assertInstanceOf(BatchRequestItem::class, $result);
+        $this->assertEquals('PATCH', $result->method);
+        $this->assertStringContainsString('Subjects(42)', $result->path);
+        $this->assertEquals(['FirstName' => 'Updated'], $result->body);
+        $this->assertEquals(1, $batch->count());
+    }
+
+    #[Test]
+    public function it_returns_batch_request_item_for_delete_in_batch_context(): void
+    {
+        $batch = new PendingBatchRequest($this->client);
+        BatchContext::set($batch);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', \Contoweb\AbacusApi\Tests\Fixtures\TestSubject::class);
+        $result = $builder->delete(42);
+
+        $this->assertInstanceOf(BatchRequestItem::class, $result);
+        $this->assertEquals('DELETE', $result->method);
+        $this->assertStringContainsString('Subjects(42)', $result->path);
+        $this->assertNull($result->body);
+        $this->assertEquals(1, $batch->count());
     }
 }

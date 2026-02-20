@@ -37,17 +37,19 @@ class BatchRequestIntegrationTest extends TestCase
             ),
         ]);
 
-        $results = $this->service->batch(
-            TestSubject::batch()->where('ProductNumber', 'ge', 200)->get(),
-            TestSubject::batch()->where('Id', 'ge', 2222)->get()
-        )->send();
+        $results = $this->service->batch(function () {
+            return [
+                TestSubject::where('ProductNumber', 'ge', 200)->get(),
+                TestSubject::where('Id', 'ge', 2222)->get(),
+            ];
+        })->send();
 
         $this->assertCount(2, $results);
         $this->assertTrue($results[0]->isSuccess());
         $this->assertTrue($results[1]->isSuccess());
         $this->assertEquals(200, $results[0]->status);
         $this->assertEquals(200, $results[1]->status);
-        $this->assertCount(1, $results[0]->getValue());
+        $this->assertCount(1, $results[0]->value());
         $this->assertEquals(200, $results[0]->body['value'][0]['ProductNumber']);
     }
 
@@ -70,11 +72,13 @@ class BatchRequestIntegrationTest extends TestCase
             ),
         ]);
 
-        $results = $this->service->batch(
-            TestSubject::batch()->create(['FirstName' => 'Alice', 'LastName' => 'Smith']),
-            TestSubject::batch()->create(['FirstName' => 'Bob', 'LastName' => 'Jones']),
-            TestSubject::batch()->create(['FirstName' => 'Charlie', 'LastName' => 'Brown'])
-        )->send();
+        $results = $this->service->batch(function () {
+            return [
+                TestSubject::create(['FirstName' => 'Alice', 'LastName' => 'Smith']),
+                TestSubject::create(['FirstName' => 'Bob', 'LastName' => 'Jones']),
+                TestSubject::create(['FirstName' => 'Charlie', 'LastName' => 'Brown']),
+            ];
+        })->send();
 
         $this->assertCount(3, $results);
 
@@ -103,10 +107,12 @@ class BatchRequestIntegrationTest extends TestCase
             ),
         ]);
 
-        $results = $this->service->batch(
-            TestSubject::batch()->update(50, ['FirstName' => 'Updated Alice']),
-            TestSubject::batch()->update(51, ['FirstName' => 'Updated Bob'])
-        )->send();
+        $results = $this->service->batch(function () {
+            return [
+                TestSubject::update(50, ['FirstName' => 'Updated Alice']),
+                TestSubject::update(51, ['FirstName' => 'Updated Bob']),
+            ];
+        })->send();
 
         $this->assertCount(2, $results);
         $this->assertTrue($results[0]->isSuccess());
@@ -133,10 +139,12 @@ class BatchRequestIntegrationTest extends TestCase
             ),
         ]);
 
-        $results = $this->service->batch(
-            TestSubject::batch()->delete(100),
-            TestSubject::batch()->delete(101)
-        )->send();
+        $results = $this->service->batch(function () {
+            return [
+                TestSubject::delete(100),
+                TestSubject::delete(101),
+            ];
+        })->send();
 
         $this->assertCount(2, $results);
         $this->assertTrue($results[0]->isSuccess());
@@ -165,12 +173,14 @@ class BatchRequestIntegrationTest extends TestCase
             ),
         ]);
 
-        $results = $this->service->batch(
-            TestSubject::batch()->where('Id', 'eq', 1)->get(),           // GET
-            TestSubject::batch()->create(['FirstName' => 'New Subject']), // POST
-            TestSubject::batch()->update(50, ['FirstName' => 'Updated Subject']), // PATCH
-            TestSubject::batch()->delete(100)                              // DELETE
-        )->send();
+        $results = $this->service->batch(function () {
+            return [
+                TestSubject::where('Id', 'eq', 1)->get(),                     // GET
+                TestSubject::create(['FirstName' => 'New Subject']),          // POST
+                TestSubject::update(50, ['FirstName' => 'Updated Subject']),  // PATCH
+                TestSubject::delete(100),                                     // DELETE
+            ];
+        })->send();
 
         $this->assertCount(4, $results);
 
@@ -214,12 +224,14 @@ class BatchRequestIntegrationTest extends TestCase
             ),
         ]);
 
-        $results = $this->service->batch(
-            TestSubject::batch()->find(1),
-            TestSubject::batch()->create(['invalid' => 'data']),
-            TestSubject::batch()->find(999),
-            TestSubject::batch()->find(4)
-        )->send();
+        $results = $this->service->batch(function () {
+            return [
+                TestSubject::find(1),
+                TestSubject::create(['invalid' => 'data']),
+                TestSubject::find(999),
+                TestSubject::find(4),
+            ];
+        })->send();
 
         $this->assertCount(4, $results);
 
@@ -259,10 +271,12 @@ class BatchRequestIntegrationTest extends TestCase
             ),
         ]);
 
-        $results = $this->service->batch(
-            TestSubject::batch()->find(['BatchNumber' => '123', 'ProductId' => 456]),
-            TestSubject::batch()->find(['BatchNumber' => '456', 'ProductId' => 789])
-        )->send();
+        $results = $this->service->batch(function () {
+            return [
+                TestSubject::find(['BatchNumber' => '123', 'ProductId' => 456]),
+                TestSubject::find(['BatchNumber' => '456', 'ProductId' => 789]),
+            ];
+        })->send();
 
         $this->assertCount(2, $results);
         $this->assertTrue($results[0]->isSuccess());

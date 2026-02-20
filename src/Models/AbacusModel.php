@@ -2,9 +2,9 @@
 
 namespace Contoweb\AbacusApi\Models;
 
-use Contoweb\AbacusApi\AbacusODataBatchQueryBuilder;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
+use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -27,9 +27,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Create query builder
-     *
-     * @return AbacusODataQueryBuilder<static>
+     * Create query builder.
      */
     public static function query(): AbacusODataQueryBuilder
     {
@@ -39,19 +37,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Create batch query builder
-     *
-     * @return AbacusODataBatchQueryBuilder<static>
-     */
-    public static function batch(): AbacusODataBatchQueryBuilder
-    {
-        $client = app(AbacusODataClient::class);
-
-        return new AbacusODataBatchQueryBuilder($client, static::$resource, static::class);
-    }
-
-    /**
-     * Set the maximum number of pages to retrieve when cursor pagination is enabled
+     * Set the maximum number of pages to retrieve when cursor pagination is enabled.
      */
     public static function pages(int $limit): AbacusODataQueryBuilder
     {
@@ -59,7 +45,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Enable automatic pagination through OData nextLink
+     * Enable automatic pagination through OData nextLink.
      */
     public static function cursor(): AbacusODataQueryBuilder
     {
@@ -67,7 +53,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Enable automatic pagination with a callback for each page
+     * Enable automatic pagination with a callback for each page.
      *
      * @param  callable  $callback  Callback function receiving (Collection $items, int $pageNumber)
      */
@@ -77,50 +63,46 @@ abstract class AbacusModel
     }
 
     /**
-     * Execute query and return all paginated results as Collection
+     * Execute query and return all paginated results as Collection.
      *
-     * @return Collection<int, static>
+     * @return Collection<int, static>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function all(): Collection
+    public static function all(): Collection|BatchRequestItem
     {
         return static::query()->get();
     }
 
     /**
-     * Execute query and return all paginated results as Collection
+     * Execute query and return all paginated results as Collection.
      *
-     * @return Collection<static>
+     * @return Collection<static>|BatchRequestItem
      *
      * @throws RequestException
      * @throws ConnectionException
      */
-    public static function get(): Collection
+    public static function get(): Collection|BatchRequestItem
     {
         return static::query()->get();
     }
 
     /**
-     * Find entity via primary key
+     * Find entity via primary key.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
-     * @return AbacusModel
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function find(int|string|array $idOrCriteria): static
+    public static function find(int|string|array $idOrCriteria): static|BatchRequestItem
     {
         return static::query()->find($idOrCriteria);
     }
 
     /**
-     * Start where query
-     * Example: Project::where('Id', 'eq', 9100)->get()
-     *
-     * @return AbacusODataQueryBuilder<static>
+     * Start where query.
      */
     public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusODataQueryBuilder
     {
@@ -128,9 +110,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Start select query
-     *
-     * @return AbacusODataQueryBuilder<static>
+     * Start select query.
      */
     public static function select(array|string $fields): AbacusODataQueryBuilder
     {
@@ -138,9 +118,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Top N Entities
-     *
-     * @return AbacusODataQueryBuilder<static>
+     * Top N Entities.
      */
     public static function top(int $limit): AbacusODataQueryBuilder
     {
@@ -148,9 +126,7 @@ abstract class AbacusModel
     }
 
     /**
-     * OrderBy-Query starten
-     *
-     * @return AbacusODataQueryBuilder<static>
+     * OrderBy-Query starten.
      */
     public static function orderBy(string $field, string $direction = 'asc'): AbacusODataQueryBuilder
     {
@@ -158,9 +134,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Expand Navigation Properties
-     *
-     * @return AbacusODataQueryBuilder<static>
+     * Expand Navigation Properties.
      */
     public static function expand(array|string $relations): AbacusODataQueryBuilder
     {
@@ -168,53 +142,47 @@ abstract class AbacusModel
     }
 
     /**
-     * Create entity
+     * Create entity.
      *
      * @param  array<string, int|string>  $data
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function create(array $data): static
+    public static function create(array $data): static|BatchRequestItem
     {
         return static::query()->create($data);
     }
 
     /**
-     * Delete entity by ID
+     * Delete entity by ID.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      *
      * @throws ConnectionException
      * @throws RequestException
-     *
-     * @example Single key: Customers::delete(210)
-     * @example Composite key: StockBatches::delete(['BatchNumber' => '123', 'ProductId' => 456])
      */
-    public static function delete(int|string|array $idOrCriteria): void
+    public static function delete(int|string|array $idOrCriteria): ?BatchRequestItem
     {
-        static::query()->delete($idOrCriteria);
+        return static::query()->delete($idOrCriteria);
     }
 
     /**
-     * Update entity by ID
+     * Update entity by ID.
      *
      * @param  int|string|array<string, int|array>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @param  array<string, int|string>  $data  Data to update
      *
      * @throws ConnectionException
      * @throws RequestException
-     *
-     * @example Simple: Customers::update(210, ['Name' => 'Test'])
-     * @example Composite: StockBatches::update(['BatchNumber' => '123', ...], ['Remark' => 'Test'])
      */
-    public static function update(int|string|array $idOrCriteria, array $data): static
+    public static function update(int|string|array $idOrCriteria, array $data): static|BatchRequestItem
     {
         return static::query()->update($idOrCriteria, $data);
     }
 
     /**
-     * Get attribute
+     * Get attribute.
      */
     public function getAttribute(string $key): mixed
     {
@@ -222,7 +190,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Set attribute
+     * Set attribute.
      */
     public function setAttribute(string $key, mixed $value): void
     {
@@ -230,7 +198,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Get all attributes
+     * Get all attributes.
      */
     public function getAttributes(): array
     {
@@ -238,7 +206,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Return model as array
+     * Return model as array.
      */
     public function toArray(): array
     {
@@ -246,7 +214,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Magic getter
+     * Magic getter.
      */
     public function __get(string $name): mixed
     {
@@ -254,7 +222,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Magic setter
+     * Magic setter.
      */
     public function __set(string $name, mixed $value): void
     {
@@ -262,7 +230,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Magic isset
+     * Magic isset.
      */
     public function __isset(string $name): bool
     {
@@ -270,7 +238,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Get resource name
+     * Get resource name.
      */
     public static function getResource(): string
     {
@@ -278,7 +246,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Get the primary key(s) for the model
+     * Get the primary key(s) for the model.
      *
      * @return string|array Single key name or array of key names for composite keys
      */
@@ -288,7 +256,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Determine if the model has a single primary key
+     * Determine if the model has a single primary key.
      */
     public static function hasSinglePrimaryKey(): bool
     {
@@ -296,7 +264,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Determine if the model has a composite primary key
+     * Determine if the model has a composite primary key.
      */
     public static function hasCompositePrimaryKey(): bool
     {
