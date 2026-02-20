@@ -5,9 +5,10 @@ namespace Contoweb\AbacusApi;
 use Contoweb\AbacusApi\Console\Commands\GenerateIdeHelperCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusModelCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusReportCommand;
+use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
+use InvalidArgumentException;
 
 class AbacusServiceProvider extends ServiceProvider
 {
@@ -22,21 +23,25 @@ class AbacusServiceProvider extends ServiceProvider
             'abacus-api'
         );
 
-        $this->app->singleton('abacus.logger', function ($app) {
-            if (config('abacus-api.request_logging.enabled')) {
-                return $app->make(LoggerInterface::class);
+        $this->app->bind(AbacusCredentialsProvider::class, function (Application $app) {
+            $provider = $app->make($app['config']->get('abacus-api.credentials_provider'));
+
+            if (! $provider instanceof AbacusCredentialsProvider) {
+                throw new InvalidArgumentException('The credentials provider must implement the AbacusCredentialsProvider interface');
             }
 
-            return new NullLogger;
+            return $provider;
         });
 
-        /* Register AbacusClient as singleton */
-        $this->app->singleton(AbacusODataClient::class, function ($app) {
-            return new AbacusODataClient(logger: $app->make('abacus.logger'));
+        /*
+         * We use bind() so that the credentials for the Abacus REST API can change during the request lifecycle.
+         * This ensures a fresh instance is resolved each time, so we always get the current credentials.
+         */
+        $this->app->bind(AbacusODataClient::class, function (Application $app) {
+            return new AbacusODataClient($app->make(AbacusCredentialsProvider::class));
         });
 
-        /* Register AbacusService as singleton */
-        $this->app->singleton(AbacusService::class, function ($app) {
+        $this->app->bind(AbacusService::class, function (Application $app) {
             return new AbacusService($app->make(AbacusODataClient::class));
         });
     }

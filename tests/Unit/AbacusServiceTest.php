@@ -22,7 +22,7 @@ class AbacusServiceTest extends TestCase
         parent::setUp();
 
         Cache::flush();
-        $this->client = new AbacusODataClient;
+        $this->client = new AbacusODataClient($this->makeCredentialsProvider());
         $this->service = new AbacusService($this->client);
     }
 
@@ -256,12 +256,12 @@ class AbacusServiceTest extends TestCase
     #[Test]
     public function it_can_be_instantiated_with_custom_client(): void
     {
-        $customClient = new AbacusODataClient(
-            'https://custom.api.com',
-            'custom-mandate',
-            'custom-client-id',
-            'custom-client-secret'
-        );
+        $customClient = new AbacusODataClient($this->makeCustomCredentialsProvider(
+            baseUrl: 'https://custom.api.com',
+            mandate: 'custom-mandate',
+            clientId: 'custom-client-id',
+            clientSecret: 'custom-client-secret',
+        ));
 
         $customService = new AbacusService($customClient);
 

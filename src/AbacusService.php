@@ -4,6 +4,7 @@ namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Batch\BatchRequest;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
+use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
 use Illuminate\Support\Facades\Cache;
 
 class AbacusService
@@ -13,6 +14,15 @@ class AbacusService
     public function __construct(AbacusODataClient $client)
     {
         $this->client = $client;
+    }
+
+    /**
+     * Create a new AbacusODataClient instance with custom options.
+     * Useful for multi-tenant scenarios where credentials vary per request.
+     */
+    public static function client(AbacusCredentialsProvider $credentialsProvider): AbacusODataClient
+    {
+        return new AbacusODataClient($credentialsProvider);
     }
 
     /**

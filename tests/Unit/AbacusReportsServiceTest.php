@@ -74,7 +74,7 @@ class AbacusReportsServiceTest extends TestCase
         parent::setUp();
 
         Cache::flush();
-        $this->client = new AbacusReportsClient;
+        $this->client = new AbacusReportsClient($this->makeCredentialsProvider());
         $this->service = new AbacusReportsService($this->client);
     }
 

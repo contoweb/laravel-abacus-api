@@ -19,28 +19,28 @@ class AbacusClientTest extends TestCase
         parent::setUp();
 
         Cache::flush();
-        $this->client = new AbacusODataClient;
+        $this->client = new AbacusODataClient($this->makeCredentialsProvider());
     }
 
     #[Test]
-    public function it_constructs_with_config_values(): void
+    public function it_constructs_with_credentials_provider(): void
     {
-        $client = new AbacusODataClient;
+        $client = new AbacusODataClient($this->makeCredentialsProvider());
 
         $this->assertEquals('https://api.example.com', $client->getUrl());
         $this->assertEquals('test-mandate', $client->getMandate());
     }
 
     #[Test]
-    public function it_constructs_with_custom_values(): void
+    public function it_constructs_with_custom_credentials_provider(): void
     {
-        $client = new AbacusODataClient(
-            'https://custom-api.example.com',
-            'custom-mandate',
-            'custom-client-id',
-            'custom-secret',
-            '/custom/token'
-        );
+        $client = new AbacusODataClient($this->makeCustomCredentialsProvider(
+            baseUrl: 'https://custom-api.example.com',
+            mandate: 'custom-mandate',
+            clientId: 'custom-client-id',
+            clientSecret: 'custom-secret',
+            apiVersion: 'v2',
+        ));
 
         $this->assertEquals('https://custom-api.example.com', $client->getUrl());
         $this->assertEquals('custom-mandate', $client->getMandate());
@@ -49,7 +49,7 @@ class AbacusClientTest extends TestCase
     #[Test]
     public function it_prepends_https_to_base_url_if_missing(): void
     {
-        $client = new AbacusODataClient('api.example.com');
+        $client = new AbacusODataClient($this->makeCustomCredentialsProvider(baseUrl: 'api.example.com'));
 
         $this->assertEquals('https://api.example.com', $client->getUrl());
     }
@@ -57,7 +57,7 @@ class AbacusClientTest extends TestCase
     #[Test]
     public function it_does_not_prepend_https_if_already_present(): void
     {
-        $client = new AbacusODataClient('https://api.example.com');
+        $client = new AbacusODataClient($this->makeCustomCredentialsProvider(baseUrl: 'https://api.example.com'));
 
         $this->assertEquals('https://api.example.com', $client->getUrl());
     }
@@ -65,7 +65,7 @@ class AbacusClientTest extends TestCase
     #[Test]
     public function it_respects_http_protocol(): void
     {
-        $client = new AbacusODataClient('http://api.example.com');
+        $client = new AbacusODataClient($this->makeCustomCredentialsProvider(baseUrl: 'http://api.example.com'));
 
         $this->assertEquals('http://api.example.com', $client->getUrl());
     }
@@ -385,8 +385,16 @@ class AbacusClientTest extends TestCase
     #[Test]
     public function it_generates_unique_cache_key(): void
     {
-        $client1 = new AbacusODataClient('https://api1.example.com', 'mandate1', 'client1');
-        $client2 = new AbacusODataClient('https://api2.example.com', 'mandate2', 'client2');
+        $client1 = new AbacusODataClient($this->makeCustomCredentialsProvider(
+            baseUrl: 'https://api1.example.com',
+            mandate: 'mandate1',
+            clientId: 'client1',
+        ));
+        $client2 = new AbacusODataClient($this->makeCustomCredentialsProvider(
+            baseUrl: 'https://api2.example.com',
+            mandate: 'mandate2',
+            clientId: 'client2',
+        ));
 
         $reflection = new \ReflectionClass($client1);
         $method = $reflection->getMethod('getCacheKey');

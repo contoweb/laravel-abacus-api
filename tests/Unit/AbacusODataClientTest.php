@@ -16,7 +16,7 @@ class AbacusODataClientTest extends TestCase
     {
         parent::setUp();
 
-        $this->client = new AbacusODataClient;
+        $this->client = new AbacusODataClient($this->makeCredentialsProvider());
     }
 
     #[Test]
@@ -116,10 +116,9 @@ class AbacusODataClientTest extends TestCase
     #[Test]
     public function it_uses_correct_mandate_in_paths(): void
     {
-        $customClient = new AbacusODataClient(
-            'https://api.example.com',
-            'custom-mandate-123'
-        );
+        $customClient = new AbacusODataClient($this->makeCustomCredentialsProvider(
+            mandate: 'custom-mandate-123',
+        ));
 
         $path = $customClient->entityPath('Invoices');
 

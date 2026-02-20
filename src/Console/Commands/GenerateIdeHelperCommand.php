@@ -2,15 +2,14 @@
 
 namespace Contoweb\AbacusApi\Console\Commands;
 
-use Contoweb\AbacusApi\AbacusService;
+use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 
 class GenerateIdeHelperCommand extends Command
 {
     protected $signature = 'abacus:generate-ide-helper
                           {--output= : Override output file from config}
-                          {--list : List all available entity types from metadata}';
+                          {--source= : Absolute path to the OData metadata XML file}';
 
     protected $description = 'Generate IDE helper file from Abacus OData metadata';
 
@@ -31,11 +30,6 @@ class GenerateIdeHelperCommand extends Command
         'Edm.Single' => 'float',
     ];
 
-    public function __construct(protected AbacusService $abacusService)
-    {
-        parent::__construct();
-    }
-
     public function handle(): int
     {
         if (! config('abacus-api.ide_helper.enabled')) {
@@ -43,556 +37,142 @@ class GenerateIdeHelperCommand extends Command
 
             return 0;
         }
-
+        $this->info($this->option('source'));
         $outputFile = base_path($this->option('output') ?? config('abacus-api.ide_helper.output_file'));
 
         try {
-            /* First, scan user models */
-            $this->info('Scanning user models...');
-
-            $namespace = config('abacus-api.models_namespace');
-            $modelsPath = $this->namespaceToPath($namespace);
-            $userModelsInfo = [];
-
-            if (is_dir($modelsPath)) {
-                $files = File::glob($modelsPath.'/*.php');
-
-                foreach ($files as $file) {
-                    $modelInfo = $this->extractModelInfo($file, $namespace);
-                    if ($modelInfo) {
-                        $userModelsInfo[] = $modelInfo;
-                    }
-                }
-            }
-
-            /* Try to load from local definition files based on user models */
-            if (! empty($userModelsInfo)) {
-                $this->info('Looking for local endpoint definition files...');
-
-                $definitionsPath = storage_path('app/abacus/endpoint-definitions');
-                $models = [];
-
-                if (is_dir($definitionsPath)) {
-                    $models = $this->loadDefinitionsForModels($definitionsPath, $userModelsInfo);
-                }
-
-                if (! empty($models)) {
-                    $this->info('Loaded '.count($models).' entity definitions from local files');
-
-                    /* If --list flag is set, display all entities and exit */
-                    if ($this->option('list')) {
-                        $this->listEntities($models);
-
-                        return 0;
-                    }
-
-                    $this->info('Generating IDE helper file...');
-                    $content = $this->generateIdeHelper($models);
-
-                    File::put($outputFile, $content);
-
-                    $this->info("✓ IDE helper generated: {$outputFile}");
-                    $this->comment('Restart your IDE or run "File → Invalidate Caches" in PhpStorm');
-
-                    return 0;
-                }
-            }
-
-            /* Fallback: Fetch OData metadata from API */
-            $this->comment('No local definition files found, fetching from API...');
-            $this->info('Fetching OData metadata from Abacus API...');
-
-            $metadataContent = $this->abacusService->metadata();
-
-            if (empty($metadataContent)) {
-                $this->error('Failed to fetch metadata from API');
-
-                return 1;
-            }
-
-            /* Detect format: XML or JSON */
-            $this->info('Parsing OData metadata...');
-
-            $isXml = str_starts_with(trim($metadataContent), '<');
-            $this->comment('Detected format: '.($isXml ? 'XML' : 'JSON'));
-
-            if ($isXml) {
-                /* Parse XML metadata */
-                libxml_use_internal_errors(true);
-                $xml = simplexml_load_string($metadataContent);
-
-                if ($xml === false) {
-                    $this->error('Failed to parse XML metadata:');
-                    foreach (libxml_get_errors() as $error) {
-                        $this->error("  Line {$error->line}: {$error->message}");
-                    }
-                    libxml_clear_errors();
-
-                    return 1;
-                }
-
-                /* Register namespaces */
-                $xml->registerXPathNamespace('edmx', 'http://docs.oasis-open.org/odata/ns/edmx');
-                $xml->registerXPathNamespace('edm', 'http://docs.oasis-open.org/odata/ns/edm');
-
-                /* Extract entity types from XML */
-                $entityTypeElements = $xml->xpath('//edm:EntityType');
-
-                if (empty($entityTypeElements)) {
-                    $this->error('No EntityTypes found in XML metadata');
-
-                    return 1;
-                }
-
-                $models = $this->parseXmlEntityTypes($entityTypeElements);
+            if ($this->option('source')) {
+                $metadataPath = $this->option('source');
             } else {
-                /* Parse JSON metadata */
-                $metadata = json_decode($metadataContent, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    $this->error('Failed to parse JSON metadata: '.json_last_error_msg());
-                    $this->comment('First 500 characters of response:');
-                    $this->line(substr($metadataContent, 0, 500));
-
-                    return 1;
-                }
-
-                /* Extract entity types from JSON */
-                $entityTypes = $this->extractEntityTypesFromJson($metadata);
-
-                if (empty($entityTypes)) {
-                    $this->error('No EntityTypes found in metadata');
-
-                    return 1;
-                }
-
-                $this->info('Found '.count($entityTypes).' entity types');
-                $this->info('Parsing entity definitions...');
-                $models = $this->parseEntityTypes($entityTypes);
+                $metadataPath = dirname(__DIR__, 3).'/resources/metadata/metadata-2025-203-p-2025-10-15.xml';
             }
 
-            if (empty($models)) {
-                $this->error('No entity models could be parsed');
+            if (! file_exists($metadataPath)) {
+                $this->error('Metadata file not found: '.$metadataPath);
 
                 return 1;
             }
 
-            $this->info('Found '.count($models).' entity types');
+            $doc = simplexml_load_file($metadataPath);
 
-            /* If --list flag is set, display all entities and exit */
-            if ($this->option('list')) {
-                $this->listEntities($models);
+            if ($doc === false) {
+                $this->error('Failed to parse metadata XML');
 
-                return 0;
+                return 1;
             }
 
-            /* Scan for user's model classes and map them to entities */
-            $userModels = $this->scanUserModels($models);
+            $namespaces = $doc->getNamespaces(true);
+            $doc->registerXPathNamespace('edmx', $namespaces['edmx'] ?? 'http://docs.oasis-open.org/odata/ns/edmx');
+            $doc->registerXPathNamespace('edm', $namespaces[''] ?? 'http://docs.oasis-open.org/odata/ns/edm');
+
+            /* Collect all EntityTypes with their properties */
+            $entityTypes = [];
+
+            foreach ($doc->xpath('//edm:Schema') as $schema) {
+
+                $schema->registerXPathNamespace(
+                    'edm',
+                    'http://docs.oasis-open.org/odata/ns/edm'
+                );
+
+                $ns = (string) $schema['Namespace'];
+
+                foreach ($schema->xpath('edm:EntityType') as $et) {
+
+                    $et->registerXPathNamespace(
+                        'edm',
+                        'http://docs.oasis-open.org/odata/ns/edm'
+                    );
+
+                    $name = (string) $et['Name'];
+                    $fqn = "$ns.$name";
+
+                    $props = [];
+
+                    foreach ($et->xpath('edm:Property') as $prop) {
+                        $props[] = [
+                            'name' => (string) $prop['Name'],
+                            'type' => (string) $prop['Type'],
+                            'nullable' => (string) ($prop['Nullable'] ?? 'true'),
+                            'maxLength' => (string) ($prop['MaxLength'] ?? ''),
+                        ];
+                    }
+
+                    foreach ($et->xpath('edm:NavigationProperty') as $nav) {
+                        $props[] = [
+                            'name' => (string) $nav['Name'],
+                            'type' => (string) $nav['Type'],
+                            'nullable' => '',
+                            'maxLength' => '',
+                            'navigation' => true,
+                        ];
+                    }
+
+                    $entityTypes[$fqn] = $props;
+                }
+            }
+
+            /* Collect EntitySets from EntityContainer (endpoint -> EntityType mapping) */
+            $entitySets = [];
+            foreach ($doc->xpath('//edm:EntityContainer/edm:EntitySet') as $es) {
+                $entitySets[] = [
+                    'resource' => (string) $es['Name'],
+                    'entityType' => (string) $es['EntityType'],
+                ];
+            }
+
+            /* Build entity models keyed by resource name with PHP types */
+            $entityModels = [];
+            foreach ($entitySets as $es) {
+                $resource = $es['resource'];
+                $entityType = $es['entityType'];
+
+                if (! isset($entityTypes[$entityType])) {
+                    continue;
+                }
+
+                $properties = [];
+                foreach ($entityTypes[$entityType] as $prop) {
+                    $phpType = isset($prop['navigation']) ? 'array' : $this->mapODataType($prop['type']);
+
+                    $isNullable = $prop['nullable'] === 'true';
+
+                    $description = ! empty($prop['maxLength']) ? "Max length: {$prop['maxLength']}" : '';
+
+                    $properties[$prop['name']] = [
+                        'type' => $phpType,
+                        'nullable' => $isNullable,
+                        'description' => $description,
+                    ];
+                }
+
+                $entityModels[$resource] = [
+                    'properties' => $properties,
+                    'description' => null,
+                ];
+            }
+
+            $this->info('Found '.count($entityModels).' entity types in metadata');
 
             $this->info('Generating IDE helper file...');
-            $content = $this->generateIdeHelper($userModels);
+            $content = $this->generateIdeHelper($entityModels);
 
-            File::put($outputFile, $content);
+            file_put_contents($outputFile, $content);
 
             $this->info("✓ IDE helper generated: {$outputFile}");
             $this->comment('Restart your IDE or run "File → Invalidate Caches" in PhpStorm');
 
             return 0;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("Error: {$e->getMessage()}");
 
             return 1;
         }
     }
 
-    protected function loadDefinitionsForModels(string $definitionsPath, array $userModelsInfo): array
-    {
-        $models = [];
-
-        foreach ($userModelsInfo as $modelInfo) {
-            $className = $modelInfo['class'];
-            $resource = $modelInfo['resource'];
-
-            /* Convert resource name to filename (e.g., Products → products.json) */
-            $fileName = strtolower($resource).'.json';
-            $filePath = $definitionsPath.'/'.$fileName;
-
-            if (! File::exists($filePath)) {
-                $this->warn("  {$className}: Definition file not found: {$fileName}");
-
-                continue;
-            }
-
-            $this->comment("  {$className}: Loading {$fileName}...");
-
-            $content = File::get($filePath);
-            $swagger = json_decode($content, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->warn('    Failed to parse: '.json_last_error_msg());
-
-                continue;
-            }
-
-            /* Extract the schema name from the GET response */
-            $schemaName = $this->extractSchemaName($swagger);
-
-            if (! $schemaName) {
-                $this->warn('    Could not find schema reference');
-
-                continue;
-            }
-
-            /* Extract the schema definition */
-            $schema = $swagger['components']['schemas'][$schemaName] ?? null;
-
-            if (! $schema) {
-                $this->warn("    Schema {$schemaName} not found");
-
-                continue;
-            }
-
-            /* Parse properties */
-            $properties = $this->parseSwaggerProperties($schema['properties'] ?? []);
-
-            /* Use the last part of the schema name as the entity name for description */
-            $entityName = $this->extractEntityName($schemaName);
-
-            $models[$className] = [
-                'resource' => $className,
-                'properties' => $properties,
-                'description' => $resource !== $className ? "From {$resource} ({$entityName})" : null,
-            ];
-
-            $this->comment("    → {$className} from {$entityName}");
-        }
-
-        return $models;
-    }
-
-    protected function extractSchemaName(array $swagger): ?string
-    {
-        /* Look for the main GET endpoint response */
-        $paths = $swagger['paths'] ?? [];
-
-        foreach ($paths as $path => $methods) {
-            if (isset($methods['get']['responses']['200']['content']['application/json']['schema'])) {
-                $schema = $methods['get']['responses']['200']['content']['application/json']['schema'];
-
-                /* Look for $ref in the value array items */
-                if (isset($schema['properties']['value']['items']['$ref'])) {
-                    $ref = $schema['properties']['value']['items']['$ref'];
-
-                    /* Extract schema name from #/components/schemas/ch.abacus.orde.ProductData */
-                    return str_replace('#/components/schemas/', '', $ref);
-                }
-            }
-        }
-
-        return null;
-    }
-
-    protected function extractEntityName(string $schemaName): string
-    {
-        /* Extract the last part after the last dot (e.g., ch.abacus.orde.ProductData → ProductData) */
-        $parts = explode('.', $schemaName);
-
-        return end($parts);
-    }
-
-    protected function parseSwaggerProperties(array $properties): array
-    {
-        $parsed = [];
-
-        foreach ($properties as $name => $property) {
-            /* Handle $ref properties (complex types) */
-            if (isset($property['$ref'])) {
-                $parsed[$name] = [
-                    'type' => 'array', /* Complex types represented as array */
-                    'nullable' => true,
-                    'description' => 'Complex type: '.$this->extractEntityName($property['$ref']),
-                ];
-
-                continue;
-            }
-
-            $type = $this->mapSwaggerType($property);
-            $description = $property['description'] ?? null;
-            $nullable = true; /* OpenAPI doesn't have explicit nullable in this format */
-
-            $parsed[$name] = [
-                'type' => $type,
-                'nullable' => $nullable,
-                'description' => $description,
-            ];
-        }
-
-        return $parsed;
-    }
-
-    protected function mapSwaggerType(array $property): string
-    {
-        $type = $property['type'] ?? 'string';
-        $format = $property['format'] ?? null;
-
-        if ($type === 'integer' || $format === 'int32' || $format === 'int64') {
-            return 'int';
-        }
-
-        if ($type === 'number' || $format === 'float' || $format === 'double') {
-            return 'float';
-        }
-
-        if ($type === 'boolean') {
-            return 'bool';
-        }
-
-        if ($type === 'array') {
-            return 'array';
-        }
-
-        return 'string';
-    }
-
-    protected function parseXmlEntityTypes(array $entityTypeElements): array
-    {
-        $models = [];
-
-        foreach ($entityTypeElements as $entityType) {
-            $entityType->registerXPathNamespace('edm', 'http://docs.oasis-open.org/odata/ns/edm');
-
-            $entityName = (string) $entityType['Name'];
-
-            if (! $this->isEntity($entityName)) {
-                continue;
-            }
-
-            /* Extract properties */
-            $properties = [];
-            $propertyElements = $entityType->xpath('.//edm:Property');
-
-            foreach ($propertyElements as $property) {
-                $propertyName = (string) $property['Name'];
-                $propertyType = (string) $property['Type'];
-                $nullable = ! isset($property['Nullable']) || (string) $property['Nullable'] === 'true';
-
-                $properties[$propertyName] = [
-                    'type' => $this->mapODataType($propertyType),
-                    'nullable' => $nullable,
-                    'description' => null,
-                ];
-            }
-
-            $models[$entityName] = [
-                'resource' => $entityName,
-                'properties' => $properties,
-                'description' => null,
-            ];
-        }
-
-        return $models;
-    }
-
-    protected function extractEntityTypesFromJson(array $metadata): array
-    {
-        $entityTypes = [];
-        $namespaceCount = 0;
-
-        foreach ($metadata as $namespace => $namespaceContent) {
-            /* Skip metadata keys that start with $ */
-            if (str_starts_with($namespace, '$')) {
-                continue;
-            }
-
-            /* This is a namespace (e.g., ch.abacus.lohn) */
-            if (is_array($namespaceContent)) {
-                $namespaceEntityCount = 0;
-
-                foreach ($namespaceContent as $typeName => $typeDefinition) {
-                    /* Check if this is an EntityType */
-                    if (is_array($typeDefinition) && isset($typeDefinition['$Kind']) && $typeDefinition['$Kind'] === 'EntityType') {
-                        $entityTypes[$typeName] = $typeDefinition;
-                        $namespaceEntityCount++;
-                    }
-                }
-
-                if ($namespaceEntityCount > 0) {
-                    $namespaceCount++;
-                }
-            }
-        }
-
-        return $entityTypes;
-    }
-
-    protected function parseEntityTypes(array $entityTypes): array
-    {
-        $models = [];
-
-        foreach ($entityTypes as $entityName => $entityType) {
-            if (! $this->isEntity($entityName)) {
-                continue;
-            }
-
-            /* Extract properties */
-            $properties = [];
-
-            foreach ($entityType as $propertyName => $propertyValue) {
-                /* Skip special OData keys that start with $ */
-                if (str_starts_with($propertyName, '$')) {
-                    continue;
-                }
-
-                /* This is a property definition */
-                if (is_array($propertyValue)) {
-                    $propertyType = $propertyValue['$Type'] ?? 'Edm.String';
-                    $nullable = $propertyValue['$Nullable'] ?? true;
-
-                    $properties[$propertyName] = [
-                        'type' => $this->mapODataType($propertyType),
-                        'nullable' => $nullable,
-                        'description' => null,
-                    ];
-                }
-            }
-
-            $models[$entityName] = [
-                'resource' => $entityName,
-                'properties' => $properties,
-                'description' => null,
-            ];
-        }
-
-        return $models;
-    }
-
-    protected function isEntity(string $entityName): bool
-    {
-        $excludePatterns = ['DTO', 'Collection', 'Request', 'Response', 'Error', 'Metadata'];
-
-        foreach ($excludePatterns as $pattern) {
-            if (str_contains($entityName, $pattern)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     protected function mapODataType(string $odataType): string
     {
         return $this->typeMapping[$odataType] ?? 'mixed';
-    }
-
-    protected function listEntities(array $models): void
-    {
-        $this->info('');
-        $this->info('Available Entity Types in Metadata:');
-        $this->info('=====================================');
-        $this->info('');
-
-        $entityNames = array_keys($models);
-        sort($entityNames);
-
-        $columns = 3;
-        $rows = (int) ceil(count($entityNames) / $columns);
-
-        for ($i = 0; $i < $rows; $i++) {
-            $line = '';
-            for ($col = 0; $col < $columns; $col++) {
-                $index = $i + ($col * $rows);
-                if (isset($entityNames[$index])) {
-                    $line .= str_pad($entityNames[$index], 35);
-                }
-            }
-            $this->line($line);
-        }
-
-        $this->info('');
-        $this->info('Total: '.count($entityNames).' entity types');
-        $this->info('');
-        $this->comment('Use these entity names in your model\'s $resource property.');
-    }
-
-    protected function scanUserModels(array $entityModels): array
-    {
-        $namespace = config('abacus-api.models_namespace');
-        $modelsPath = $this->namespaceToPath($namespace);
-
-        if (! is_dir($modelsPath)) {
-            $this->comment("No models directory found at: {$modelsPath}");
-            $this->comment('Generating IDE helper for all entity types from metadata...');
-
-            return $entityModels;
-        }
-
-        $userModels = [];
-        $files = File::glob($modelsPath.'/*.php');
-
-        foreach ($files as $file) {
-            $modelInfo = $this->extractModelInfo($file, $namespace);
-
-            if (! $modelInfo) {
-                continue;
-            }
-
-            $className = $modelInfo['class'];
-            $resource = $modelInfo['resource'];
-
-            /* Find the entity in metadata */
-            if (isset($entityModels[$resource])) {
-                $userModels[$className] = [
-                    'resource' => $className,
-                    'properties' => $entityModels[$resource]['properties'],
-                    'description' => $resource !== $className ? "Mapped from {$resource}" : null,
-                ];
-
-                if ($resource !== $className) {
-                    $this->comment("  {$className} → {$resource}");
-                }
-            } else {
-                $this->warn("Warning: Entity '{$resource}' not found in metadata for model '{$className}'");
-            }
-        }
-
-        if (empty($userModels)) {
-            $this->comment('No user models found, generating IDE helper for all entity types...');
-
-            return $entityModels;
-        }
-
-        $this->info('Found '.count($userModels).' user models');
-
-        return $userModels;
-    }
-
-    protected function namespaceToPath(string $namespace): string
-    {
-        /* Convert namespace to path (e.g., App\Models\Abacus → app/Models/Abacus) */
-        $relativePath = str_replace('\\', '/', $namespace);
-        $relativePath = str_replace('App/', 'app/', $relativePath);
-
-        return base_path($relativePath);
-    }
-
-    protected function extractModelInfo(string $filePath, string $namespace): ?array
-    {
-        $content = File::get($filePath);
-        $fileName = basename($filePath, '.php');
-
-        /* Extract the $resource property */
-        if (preg_match('/protected\s+static\s+string\s+\$resource\s*=\s*[\'"]([^\'"]+)[\'"]/', $content, $matches)) {
-            return [
-                'class' => $fileName,
-                'resource' => $matches[1],
-            ];
-        }
-
-        /* If no $resource is defined, assume it matches the class name */
-        return [
-            'class' => $fileName,
-            'resource' => $fileName,
-        ];
     }
 
     protected function generateIdeHelper(array $models): string
@@ -631,7 +211,7 @@ class GenerateIdeHelperCommand extends Command
     {
         $lines = ['    /**'];
 
-        if ($model['description']) {
+        if (! empty($model['description'])) {
             $lines[] = '     * '.$model['description'];
             $lines[] = '     *';
         }
@@ -644,7 +224,7 @@ class GenerateIdeHelperCommand extends Command
 
             $line = "     * @property {$type} \${$propertyName}";
 
-            if ($property['description']) {
+            if (! empty($property['description'])) {
                 $line .= ' '.$property['description'];
             }
 

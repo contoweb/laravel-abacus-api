@@ -17,7 +17,7 @@ class BatchRequestTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = new AbacusODataClient;
+        $this->client = new AbacusODataClient($this->makeCredentialsProvider());
     }
 
     #[Test]

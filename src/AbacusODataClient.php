@@ -3,10 +3,12 @@
 namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Batch\MultipartEncoder;
+use Contoweb\AbacusApi\Events\AbacusRequestSent;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Symfony\Component\HttpFoundation\Request;
 
 class AbacusODataClient extends AbacusClient
 {
@@ -90,12 +92,10 @@ class AbacusODataClient extends AbacusClient
      */
     public function sendBatch(string $path, string $body): Response
     {
-        $this->logger->info('BATCH request', [
-            'path' => $path,
-            'body' => $body,
-        ]);
-
         return $this->callWithTokenRefresh(function () use ($body, $path) {
+
+            event(new AbacusRequestSent(Request::METHOD_POST, $path, [$body]));
+
             return $this->client()
                 ->withBody($body, MultipartEncoder::getContentType())
                 ->post($path);

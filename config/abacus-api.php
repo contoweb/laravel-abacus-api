@@ -1,5 +1,7 @@
 <?php
 
+use Contoweb\AbacusApi\Credentials\ConfigCredentialsProvider;
+
 return [
 
     /*
@@ -12,8 +14,8 @@ return [
     */
 
     'rest_api' => [
-        'url' => env('ABACUS_REST_API_URL', 'entity-api1-1.demo.abacus.ch'),
-        'mandate' => env('ABACUS_REST_API_MANDATE', '7777'),
+        'url' => env('ABACUS_REST_API_URL'),
+        'mandate' => env('ABACUS_REST_API_MANDATE'),
         'client_id' => env('ABACUS_REST_API_CLIENT_ID'),
         'client_secret' => env('ABACUS_REST_API_CLIENT_SECRET'),
         'version' => env('ABACUS_REST_API_VERSION', 'v1'),
@@ -74,14 +76,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Request Logging Configuration
+    | Credentials Provider
     |--------------------------------------------------------------------------
     |
-    | Control HTTP request logging for API calls
+    | The class responsible for providing API credentials (client ID, client secret, etc.) to the Abacus API client
+    |
+    | Available: ConfigCredentialsProvider, UserCredentialsProvider
+    | Custom providers must implement the AbacusCredentialsProvider interface
     |
     */
 
-    'request_logging' => [
-        'enabled' => env('ABACUS_REQUEST_LOGGING', true),
-    ],
+    'credentials_provider' => ConfigCredentialsProvider::class,
 ];
