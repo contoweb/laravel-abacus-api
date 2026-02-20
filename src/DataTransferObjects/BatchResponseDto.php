@@ -39,7 +39,7 @@ class BatchResponseDto
     }
 
     /**
-     * Get OData value array
+     * Get OData value array.
      */
     public function value(): array
     {
@@ -47,7 +47,7 @@ class BatchResponseDto
     }
 
     /**
-     * Check if response is successful
+     * Check if response is successful.
      */
     public function isSuccess(): bool
     {
@@ -55,7 +55,7 @@ class BatchResponseDto
     }
 
     /**
-     * Get HTTP error status text
+     * Get HTTP error status text.
      */
     public function error(): ?string
     {
@@ -63,7 +63,7 @@ class BatchResponseDto
     }
 
     /**
-     * Get detailed API error message from response body
+     * Get detailed API error message from response body.
      */
     public function errorMessage(): ?string
     {
@@ -71,7 +71,7 @@ class BatchResponseDto
     }
 
     /**
-     * Get HTTP error status code
+     * Get HTTP error status code.
      */
     public function errorCode(): ?int
     {

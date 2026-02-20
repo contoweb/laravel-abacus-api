@@ -27,7 +27,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Create query builder
+     * Create query builder.
      */
     public static function query(): AbacusODataQueryBuilder
     {
@@ -37,7 +37,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Set the maximum number of pages to retrieve when cursor pagination is enabled
+     * Set the maximum number of pages to retrieve when cursor pagination is enabled.
      */
     public static function pages(int $limit): AbacusODataQueryBuilder
     {
@@ -45,7 +45,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Enable automatic pagination through OData nextLink
+     * Enable automatic pagination through OData nextLink.
      */
     public static function cursor(): AbacusODataQueryBuilder
     {
@@ -53,7 +53,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Enable automatic pagination with a callback for each page
+     * Enable automatic pagination with a callback for each page.
      *
      * @param  callable  $callback  Callback function receiving (Collection $items, int $pageNumber)
      */
@@ -63,7 +63,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Execute query and return all paginated results as Collection
+     * Execute query and return all paginated results as Collection.
      *
      * @return Collection<int, static>|BatchRequestItem
      *
@@ -76,7 +76,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Execute query and return all paginated results as Collection
+     * Execute query and return all paginated results as Collection.
      *
      * @return Collection<static>|BatchRequestItem
      *
@@ -89,7 +89,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Find entity via primary key
+     * Find entity via primary key.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      *
@@ -102,7 +102,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Start where query
+     * Start where query.
      * Example: Project::where('Id', 'eq', 9100)->get()
      */
     public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusODataQueryBuilder
@@ -111,7 +111,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Start select query
+     * Start select query.
      */
     public static function select(array|string $fields): AbacusODataQueryBuilder
     {
@@ -119,7 +119,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Top N Entities
+     * Top N Entities.
      */
     public static function top(int $limit): AbacusODataQueryBuilder
     {
@@ -127,7 +127,7 @@ abstract class AbacusModel
     }
 
     /**
-     * OrderBy-Query starten
+     * OrderBy-Query starten.
      */
     public static function orderBy(string $field, string $direction = 'asc'): AbacusODataQueryBuilder
     {
@@ -135,7 +135,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Expand Navigation Properties
+     * Expand Navigation Properties.
      */
     public static function expand(array|string $relations): AbacusODataQueryBuilder
     {
@@ -143,7 +143,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Create entity
+     * Create entity.
      *
      * @param  array<string, int|string>  $data
      *
@@ -156,7 +156,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Delete entity by ID
+     * Delete entity by ID.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      *
@@ -172,7 +172,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Update entity by ID
+     * Update entity by ID.
      *
      * @param  int|string|array<string, int|array>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @param  array<string, int|string>  $data  Data to update
@@ -189,7 +189,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Get attribute
+     * Get attribute.
      */
     public function getAttribute(string $key): mixed
     {
@@ -197,7 +197,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Set attribute
+     * Set attribute.
      */
     public function setAttribute(string $key, mixed $value): void
     {
@@ -205,7 +205,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Get all attributes
+     * Get all attributes.
      */
     public function getAttributes(): array
     {
@@ -213,7 +213,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Return model as array
+     * Return model as array.
      */
     public function toArray(): array
     {
@@ -221,7 +221,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Magic getter
+     * Magic getter.
      */
     public function __get(string $name): mixed
     {
@@ -229,7 +229,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Magic setter
+     * Magic setter.
      */
     public function __set(string $name, mixed $value): void
     {
@@ -237,7 +237,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Magic isset
+     * Magic isset.
      */
     public function __isset(string $name): bool
     {
@@ -245,7 +245,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Get resource name
+     * Get resource name.
      */
     public static function getResource(): string
     {
@@ -253,7 +253,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Get the primary key(s) for the model
+     * Get the primary key(s) for the model.
      *
      * @return string|array Single key name or array of key names for composite keys
      */
@@ -263,7 +263,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Determine if the model has a single primary key
+     * Determine if the model has a single primary key.
      */
     public static function hasSinglePrimaryKey(): bool
     {
@@ -271,7 +271,7 @@ abstract class AbacusModel
     }
 
     /**
-     * Determine if the model has a composite primary key
+     * Determine if the model has a composite primary key.
      */
     public static function hasCompositePrimaryKey(): bool
     {

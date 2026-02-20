@@ -8,39 +8,6 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use RuntimeException;
 
-/**
- * Fluent builder for accumulating and executing batch requests.
- *
- * This class provides an elegant API for building batch requests with
- * automatic query capture through closures, enabling Laravel-like syntax
- * for batch operations.
- *
- * @example Basic capture pattern (recommended)
- * ```php
- * [$customer, $products] = Abacus::batch(function() {
- *     return [
- *         Customer::find(123),
- *         Product::where('Price', 'gt', 100)->get(),
- *     ];
- * })->send();
- * ```
- * @example Progressive building
- * ```php
- * $batch = Abacus::newBatch();
- * $batch->capture(fn() => Customer::find(123));
- * $batch->capture(fn() => Product::find(456));
- * $results = $batch->send();
- * ```
- * @example Access by index
- * ```php
- * $results = Abacus::batch(function() {
- *     return [Customer::find(123), Product::find(456)];
- * })->send();
- *
- * $customer = $results[0]->getModels()->first();
- * $product = $results[1]->getModels()->first();
- * ```
- */
 class PendingBatchRequest
 {
     /**

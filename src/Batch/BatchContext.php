@@ -2,23 +2,6 @@
 
 namespace Contoweb\AbacusApi\Batch;
 
-/**
- * Manages the active batch context for automatic query capture.
- *
- * This singleton-style class tracks the currently active batch request
- * to enable automatic batching of queries executed within capture closures.
- *
- * @example
- * ```php
- * $batch = Abacus::newBatch();
- * BatchContext::set($batch);
- *
- * // Now queries will be captured instead of executed
- * Customer::find(123); // Adds to batch instead of executing
- *
- * BatchContext::clear();
- * ```
- */
 class BatchContext
 {
     /**

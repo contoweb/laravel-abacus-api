@@ -7,7 +7,7 @@ use InvalidArgumentException;
 class MultipartDecoder
 {
     /**
-     * Decode multipart/mixed response into array of results
+     * Decode multipart/mixed response into array of results.
      */
     public static function decode(string $responseBody, string $boundary): array
     {
@@ -42,7 +42,7 @@ class MultipartDecoder
     }
 
     /**
-     * Parse a single response part
+     * Parse a single response part.
      *
      * @return array{success: bool, status: int, headers: array, body: mixed, error: string|null}|null
      */

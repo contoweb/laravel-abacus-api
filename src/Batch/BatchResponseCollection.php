@@ -6,28 +6,6 @@ use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Support\Collection;
 
-/**
- * Extended Laravel Collection with batch-specific helper methods.
- *
- * This collection wraps BatchResponseDto objects and provides
- * convenient methods for filtering, error checking, and extracting models.
- *
- * @template TKey of array-key
- * @template TValue of BatchResponseDto
- *
- * @extends Collection<TKey, TValue>
- *
- * @example
- * ```php
- * $results = Abacus::batch(fn() => [Customer::find(123)])->send();
- *
- * if ($results->allSuccessful()) {
- *     $models = $results->models();
- * } else {
- *     $errors = $results->failed()->errors();
- * }
- * ```
- */
 class BatchResponseCollection extends Collection
 {
     /**

@@ -24,7 +24,7 @@ class BatchRequest
     }
 
     /**
-     * Send the batch request and return parsed results
+     * Send the batch request and return parsed results.
      *
      * @return Collection<int, BatchResponseDto>
      *
