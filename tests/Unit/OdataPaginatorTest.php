@@ -101,7 +101,7 @@ class OdataPaginatorTest extends TestCase
         $paginator = new OdataPaginator($items, $this->client, TestSubject::class, $nextLink);
 
         $this->assertCount(1, $paginator->items());
-        $paginator->getNextPage();
+        $paginator->nextPage();
         $this->assertCount(3, $paginator->items());
 
         $this->assertEquals(1, $paginator->items()[0]->Id);
@@ -131,7 +131,7 @@ class OdataPaginatorTest extends TestCase
         $paginator = new OdataPaginator($items, $this->client, TestSubject::class, $nextLink);
 
         $this->assertTrue($paginator->hasMorePages());
-        $paginator->getNextPage();
+        $paginator->nextPage();
         $this->assertTrue($paginator->hasMorePages());
     }
 
@@ -156,7 +156,7 @@ class OdataPaginatorTest extends TestCase
         $paginator = new OdataPaginator($items, $this->client, TestSubject::class, $nextLink);
 
         $this->assertTrue($paginator->hasMorePages());
-        $paginator->getNextPage();
+        $paginator->nextPage();
         $this->assertFalse($paginator->hasMorePages());
     }
 
@@ -192,12 +192,12 @@ class OdataPaginatorTest extends TestCase
         $this->assertTrue($paginator->hasMorePages());
 
         // First getNextPage() call
-        $paginator->getNextPage();
+        $paginator->nextPage();
         $this->assertCount(2, $paginator->items());
         $this->assertTrue($paginator->hasMorePages());
 
         // Second getNextPage() call
-        $paginator->getNextPage();
+        $paginator->nextPage();
         $this->assertCount(3, $paginator->items());
         $this->assertFalse($paginator->hasMorePages());
 

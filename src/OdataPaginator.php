@@ -36,6 +36,11 @@ class OdataPaginator
         return $this->items;
     }
 
+    private function addItems(array $items): void
+    {
+        $this->items = $this->items->merge(collect($items)->map(fn ($item) => new $this->modelClass($item)));
+    }
+
     /**
      * Checks if more pages are available
      */
@@ -44,18 +49,13 @@ class OdataPaginator
         return $this->nextLink !== null;
     }
 
-    private function addItems(array $items): void
-    {
-        $this->items = $this->items->merge(collect($items)->map(fn ($item) => new $this->modelClass($item)));
-    }
-
     /**
-     * Loads the next result page and appends it to the items collection
+     * Loads the next link page and appends it to the items collection
      *
      * @throws RequestException
      * @throws ConnectionException
      */
-    public function getNextPage(): void
+    public function nextPage(): void
     {
         if ($this->hasMorePages()) {
             $response = $this->client

@@ -47,21 +47,21 @@ class AbacusODataQueryBuilder
     /**
      * Executes the query and returns a paginated result
      *
-     * Applies OData $top when $limit is specified to restrict the page size
+     * The $perPage parameter controls the OData query option $top to set the number of items per page
      * Returns a BatchRequestItem in batch context, otherwise an OdataPaginator
      *
      * @throws ConnectionException
      * @throws RequestException
      * @throws InvalidArgumentException
      */
-    public function paginate(?int $limit = null): OdataPaginator|BatchRequestItem
+    public function paginate(?int $perPage = null): OdataPaginator|BatchRequestItem
     {
-        if ($limit <= 0 && $limit !== null) {
+        if ($perPage <= 0 && $perPage !== null) {
             throw new InvalidArgumentException('Limit should be greater than 0');
         }
 
-        if ($limit !== null) {
-            $this->top($limit);
+        if ($perPage !== null) {
+            $this->top($perPage);
         }
 
         /* Check if we're in a batch context */
@@ -104,7 +104,7 @@ class AbacusODataQueryBuilder
      */
     public function find(int|string|array $idOrCriteria): AbacusModel|BatchRequestItem
     {
-        // Check if we're in a batch context
+        /* Check if we're in a batch context */
         if ($batch = BatchContext::get()) {
             $this->id($idOrCriteria);
             $item = $this->toBatchItem(Request::METHOD_GET);
