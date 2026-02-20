@@ -43,14 +43,16 @@ class BatchResponseCollection extends Collection
     }
 
     /**
-     * Get all models from successful responses.
+     * The response contents mapped to a collection.
      *
-     * @return Collection<int, AbacusModel|Collection<int, AbacusModel>>
+     * A successful batch response will be mapped to their model instance(s),
+     * failed responses will be null.
+     *
+     * @return Collection<int, AbacusModel|Collection<int, AbacusModel>|null>
      */
-    public function models(): Collection
+    public function mapped(): Collection
     {
-        return $this->successful()
-            ->map(fn (BatchResponseDto $response) => $response->getModels());
+        return $this->map(fn (BatchResponseDto $response) => $response->isSuccess() ? $response->mapped() : null);
     }
 
     /**
@@ -63,8 +65,8 @@ class BatchResponseCollection extends Collection
         return $this->failed()
             ->map(fn (BatchResponseDto $response) => [
                 'status' => $response->status,
-                'error' => $response->getError(),
-                'message' => $response->getErrorMessage(),
+                'error' => $response->error(),
+                'message' => $response->errorMessage(),
             ]);
     }
 }

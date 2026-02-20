@@ -79,11 +79,12 @@ class BatchResponseDto
     }
 
     /**
-     * Get OData value array as model instances
+     * Returns a collection of model instances if the response contains multiple items,
+     * otherwise returns a single model instance.
      *
      * @return Collection<int, AbacusModel>|AbacusModel
      */
-    public function models(): Collection|AbacusModel
+    public function mapped(): Collection|AbacusModel
     {
         if (isset($this->body['value'])) {
             return collect($this->body['value'])

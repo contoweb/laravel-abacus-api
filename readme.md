@@ -299,7 +299,7 @@ use Contoweb\AbacusApi\Facades\Abacus;
         Product::where('Price', 'gt', 100)->get(),
         Order::create(['CustomerId' => 456, 'Total' => 99.99]),
     ];
-})->send()->models();
+})->send()->mapped();
 
 // Results are ready to use immediately
 echo $customer->FirstName;
@@ -320,9 +320,9 @@ $results = Abacus::batch(function() {
 })->send();
 
 // Access results by index
-$customer = $results[0]->getModels()->first();
-$products = $results[1]->getModels();
-$order = $results[2]->getModels()->first();
+$customer = $results[0]->mapped()->first();
+$products = $results[1]->mapped();
+$order = $results[2]->mapped()->first();
 ```
 
 #### Progressive Building
@@ -372,8 +372,8 @@ $results = Abacus::batch(function() {
     return [Customer::find(123), Product::find(456)];
 })->send();
 
-$customer = $results[0]->getModels()->first();
-$product = $results[1]->getModels()->first();
+$customer = $results[0]->mapped()->first();
+$product = $results[1]->mapped()->first();
 ```
 
 #### Mixed CRUD Operations
@@ -437,7 +437,7 @@ $successful = $results->successful(); // Only successful responses
 $failed = $results->failed();         // Only failed responses
 
 // Extract all models from successful operations
-$allModels = $results->successful()->models();
+$allModels = $results->successful()->mapped();
 
 // Get error details from failed operations
 foreach ($results->failed() as $result) {
@@ -474,7 +474,7 @@ foreach ($errors as $error) {
 $successfulData = $results->successful();
 foreach ($successfulData as $result) {
     // Process successful results
-    $models = $result->getModels();
+    $models = $result->mapped();
 }
 ```
 
