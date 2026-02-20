@@ -17,7 +17,7 @@ class OdataPaginatorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = new AbacusODataClient;
+        $this->client = new AbacusODataClient($this->makeCredentialsProvider());
 
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
