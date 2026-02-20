@@ -3,10 +3,31 @@
 namespace Contoweb\AbacusApi\Batch;
 
 use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
-use Contoweb\AbacusApi\Exceptions\BatchRequestFailedException;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Support\Collection;
 
+/**
+ * Extended Laravel Collection with batch-specific helper methods.
+ *
+ * This collection wraps BatchResponseDto objects and provides
+ * convenient methods for filtering, error checking, and extracting models.
+ *
+ * @template TKey of array-key
+ * @template TValue of BatchResponseDto
+ *
+ * @extends Collection<TKey, TValue>
+ *
+ * @example
+ * ```php
+ * $results = Abacus::batch(fn() => [Customer::find(123)])->send();
+ *
+ * if ($results->allSuccessful()) {
+ *     $models = $results->models();
+ * } else {
+ *     $errors = $results->failed()->errors();
+ * }
+ * ```
+ */
 class BatchResponseCollection extends Collection
 {
     /**
@@ -44,31 +65,14 @@ class BatchResponseCollection extends Collection
     }
 
     /**
-     * Get all models from responses, returns null for failed responses.
+     * Get all models from successful responses.
      *
-     * @return Collection<int, AbacusModel|Collection<int, AbacusModel>|null>
+     * @return Collection<int, AbacusModel|Collection<int, AbacusModel>>
      */
     public function models(): Collection
     {
-        return $this->map(fn (BatchResponseDto $response) => $response->isSuccess() ? $response->models() : null);
-    }
-
-    /**
-     * Get all models or throw an exception if any request failed.
-     *
-     * @return Collection<int, AbacusModel|Collection<int, AbacusModel>>
-     *
-     * @throws BatchRequestFailedException
-     */
-    public function modelsOrFail(): Collection
-    {
-        $this->each(function (BatchResponseDto $response) {
-            if (! $response->isSuccess()) {
-                throw new BatchRequestFailedException($response->errorMessage() ?? '', $response->errorCode() ?? 0);
-            }
-        });
-
-        return $this->map(fn (BatchResponseDto $response) => $response->models());
+        return $this->successful()
+            ->map(fn (BatchResponseDto $response) => $response->getModels());
     }
 
     /**
@@ -81,8 +85,8 @@ class BatchResponseCollection extends Collection
         return $this->failed()
             ->map(fn (BatchResponseDto $response) => [
                 'status' => $response->status,
-                'error' => $response->error(),
-                'message' => $response->errorMessage(),
+                'error' => $response->getError(),
+                'message' => $response->getErrorMessage(),
             ]);
     }
 }

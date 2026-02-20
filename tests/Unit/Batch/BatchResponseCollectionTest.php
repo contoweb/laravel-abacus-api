@@ -176,11 +176,11 @@ class BatchResponseCollectionTest extends TestCase
 
         $response1 = Mockery::mock(BatchResponseDto::class);
         $response1->shouldReceive('isSuccess')->andReturn(true);
-        $response1->shouldReceive('models')->andReturn($model1);
+        $response1->shouldReceive('getModels')->andReturn($model1);
 
         $response2 = Mockery::mock(BatchResponseDto::class);
         $response2->shouldReceive('isSuccess')->andReturn(true);
-        $response2->shouldReceive('models')->andReturn($model2);
+        $response2->shouldReceive('getModels')->andReturn($model2);
 
         $response3 = Mockery::mock(BatchResponseDto::class);
         $response3->shouldReceive('isSuccess')->andReturn(false);
@@ -190,10 +190,9 @@ class BatchResponseCollectionTest extends TestCase
         $models = $responses->models();
 
         $this->assertInstanceOf(Collection::class, $models);
-        $this->assertCount(3, $models);
+        $this->assertCount(2, $models);
         $this->assertSame($model1, $models->first());
-        $this->assertSame($model2, $models[1]);
-        $this->assertNull($models->last());
+        $this->assertSame($model2, $models->last());
     }
 
     #[Test]
@@ -205,11 +204,11 @@ class BatchResponseCollectionTest extends TestCase
 
         $response1 = Mockery::mock(BatchResponseDto::class);
         $response1->shouldReceive('isSuccess')->andReturn(true);
-        $response1->shouldReceive('models')->andReturn(collect([$model1, $model2]));
+        $response1->shouldReceive('getModels')->andReturn(collect([$model1, $model2]));
 
         $response2 = Mockery::mock(BatchResponseDto::class);
         $response2->shouldReceive('isSuccess')->andReturn(true);
-        $response2->shouldReceive('models')->andReturn(collect([$model3]));
+        $response2->shouldReceive('getModels')->andReturn(collect([$model3]));
 
         $response3 = Mockery::mock(BatchResponseDto::class);
         $response3->shouldReceive('isSuccess')->andReturn(false);
@@ -219,17 +218,16 @@ class BatchResponseCollectionTest extends TestCase
         $models = $responses->models();
 
         $this->assertInstanceOf(Collection::class, $models);
-        $this->assertCount(3, $models);
+        $this->assertCount(2, $models);
 
         $this->assertInstanceOf(Collection::class, $models->first());
         $this->assertCount(2, $models->first());
         $this->assertSame($model1, $models->first()[0]);
         $this->assertSame($model2, $models->first()[1]);
 
-        $this->assertInstanceOf(Collection::class, $models[1]);
-        $this->assertSame($model3, $models[1][0]);
-
-        $this->assertNull($models->last());
+        $this->assertInstanceOf(Collection::class, $models->last());
+        $this->assertCount(1, $models->last());
+        $this->assertSame($model3, $models->last()[0]);
     }
 
     #[Test]
