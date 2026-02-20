@@ -222,22 +222,13 @@ Subject::where('City', 'eq', 'Zürich')
     ->expand('Addresses')
     ->paginate();
 
-/* Pagination - automatically handles paging when returning collections */
-$paginator = Subject::where('Active', 'eq', true)->paginate(20); // Limits the amount of items on one page $top=20
-
-if ($paginator->hasMorePages()) {
-    $paginator->getNextPage(); // Load next page and append to items collection
-}
-
-$items = $paginator->items();
-
 /* Filter with OData Enum values */
 use Contoweb\AbacusApi\ODataQueryString;
 
 Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
     ->paginate()
     ->items();
-// Results in: $filter=Type eq ch.abacus.orde.ProductType'Article'
+/* Results in: $filter=Type eq ch.abacus.orde.ProductType'Article' */
 ```
 
 ### CRUD Operations
@@ -258,6 +249,41 @@ $subject->update(['Email' => 'new@example.com']);
 
 /* Delete */
 $subject->delete();
+```
+
+### Pagination
+
+The Abacus OData API doesn't support fetching all records in a single request. Instead, responses are returned in pages with a `nextLink` pointer to the next page. The `paginate()` method returns an OdataPaginator object that gives you explicit control over loading additional pages using this `nextLink`.
+
+#### Usage
+
+```php
+/* Get first page with default limit */
+$paginator = Subject::paginate();
+
+/* Specify items per page using the $perPage parameter */
+$paginator = Subject::where('Active', 'eq', true)->paginate(20);
+
+/* Get the loaded items */
+$items = $paginator->items();
+
+/* Check if more pages exist */
+if ($paginator->hasMorePages()) {
+$paginator->nextPage(); /* Load next page and append to items */
+}
+
+/* Get the updated items collection */
+$items = $paginator->items();
+```
+
+The `$perPage` parameter sets the OData $top option, controlling how many items are returned per page. If not specified, the API default limit applies.
+
+```php
+/* Load 10 items per page */
+$paginator = Subject::paginate(10);
+
+/* Load 50 items per page */
+$paginator = Subject::paginate(50);
 ```
 
 ### Batch Requests
@@ -281,7 +307,7 @@ Batch requests allow you to combine multiple API calls into a single HTTP reques
 ```php
 use Contoweb\AbacusApi\Facades\Abacus;
 
-// Cleanest syntax - queries execute in batch context
+/* Cleanest syntax - queries execute in batch context */
 [$customer, $products, $order] = Abacus::batch(function() {
     return [
         Customer::find(123),
@@ -290,7 +316,7 @@ use Contoweb\AbacusApi\Facades\Abacus;
     ];
 })->send()->mapped();
 
-// Results are ready to use immediately
+/* Results are ready to use immediately */
 echo $customer->FirstName;
 foreach ($products as $product) {
     echo $product->Name;
@@ -321,7 +347,7 @@ Build batches dynamically based on conditions:
 ```php
 $batch = Abacus::newBatch();
 
-// Add queries conditionally
+/* Add queries conditionally */
 $batch->capture(function() {
     Customer::find(123);
 });
@@ -338,7 +364,7 @@ if ($includeOrders) {
     });
 }
 
-// Execute only the queries you added
+/* Execute only the queries you added */
 $results = $batch->send();
 ```
 
@@ -347,7 +373,7 @@ $results = $batch->send();
 Use array destructuring for clean result access:
 
 ```php
-// Destructure directly (recommended)
+/* Destructure directly (recommended) */
 [$customer, $products, $orders] = Abacus::batch(function() {
     return [
         Customer::find(123),
@@ -356,7 +382,7 @@ Use array destructuring for clean result access:
     ];
 })->send();
 
-// Or access by index
+/* Or access by index */
 $results = Abacus::batch(function() {
     return [Customer::find(123), Product::find(456)];
 })->send();
@@ -408,27 +434,27 @@ You can check the status of each operation individually:
 $results = Abacus::batch(function() {
     return [
         Customer::find(123),
-        Product::find(999), // Non-existent, will fail
+        Product::find(999), /* Non-existent, will fail */
         Order::create(['CustomerId' => 456, 'Total' => 99.99]),
     ];
 })->send();
 
 if ($results->allSuccessful()) {
-    // All operations succeeded
+    /* All operations succeeded */
 } 
 
 if ($results->hasFailures()) {
-    // Some operations failed
+    /* Some operations failed */
 }
 
-// Filter by success/failure
-$successful = $results->successful(); // Only successful responses
-$failed = $results->failed();         // Only failed responses
+/* Filter by success/failure */
+$successful = $results->successful(); /* Only successful responses */
+$failed = $results->failed();         /* Only failed responses */
 
-// Extract all models from successful operations
+/* Extract all models from successful operations */
 $allModels = $results->successful()->mapped();
 
-// Get error details from failed operations
+/* Get error details from failed operations */
 foreach ($results->failed() as $result) {
     echo "Status: {$result->status}\n";
     echo "Error: {$result->getError()}\n";
@@ -444,12 +470,12 @@ Handle partial failures gracefully:
 $results = Abacus::batch(function() {
     return [
         Customer::find(1),
-        Product::find(999),  // Will fail - non-existent
+        Product::find(999),  /* Will fail - non-existent */
         Order::find(1),
     ];
 })->send();
 
-// Get errors collection
+/* Get errors collection */
 $errors = $results->errors();
 foreach ($errors as $error) {
     Log::error('Batch operation failed', [
@@ -459,7 +485,7 @@ foreach ($errors as $error) {
     ]);
 }
 
-// Continue with successful results
+/* Continue with successful results */
 $successfulData = $results->successful();
 foreach ($successfulData as $result) {
     // Process successful results
@@ -474,18 +500,18 @@ Inspect batch contents before sending:
 ```php
 $batch = Abacus::newBatch('customer-data-fetch');
 
-// Add queries via capture
+/* Add queries via capture */
 $batch->capture(function() {
     Customer::find(123);
     Order::where('CustomerId', 'eq', 123)->paginate();
 });
 
-// Inspect before sending
+/* Inspect before sending */
 echo "Batch name: " . $batch->getName() . "\n";
 echo "Item count: " . $batch->count() . "\n";
 echo "Is empty: " . ($batch->isEmpty() ? 'yes' : 'no') . "\n";
 
-// Clear and rebuild if needed
+/* Clear and rebuild if needed */
 $batch->clear();
 $batch->capture(function() {
     Customer::find(456);
@@ -503,7 +529,7 @@ $results = $batch->send();
 
 **Performance Tips:**
 ```php
-// Good: Targeted queries with filters
+/* Good: Targeted queries with filters */
 $results = Abacus::batch(function() {
     return [
         Customer::where('Status', 'eq', 'Active')->select(['Id', 'Name'])->paginate(),
@@ -511,8 +537,8 @@ $results = Abacus::batch(function() {
     ];
 })->send();
 
-// Avoid: Too many operations in a single batch
-// Split into multiple batches if needed
+/* Avoid: Too many operations in a single batch */
+/* Split into multiple batches if needed */
 $batch1 = Abacus::batch(/* first 50 operations */)->send();
 $batch2 = Abacus::batch(/* next 50 operations */)->send();
 ```
