@@ -253,7 +253,9 @@ $subject->delete();
 
 ### Pagination
 
-The Abacus OData API doesn't support fetching all records in a single request. Instead, responses are returned in pages with a `nextLink` pointer to the next page. The `paginate()` method returns an OdataPaginator object that gives you explicit control over loading additional pages using this `nextLink`.
+The Abacus OData API doesn't support fetching all records in a single request.
+Instead, responses are returned in pages with a `nextLink` pointer to the next page. 
+The `paginate()` method returns an OdataPaginator object that gives you explicit control over loading additional pages using this `nextLink`.
 
 #### Usage
 
