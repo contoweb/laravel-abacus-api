@@ -57,14 +57,11 @@ ABACUS_REST_API_CLIENT_SECRET=your-client-secret
 The package already includes the following models which are ready to use:
 
 - `Product` → `Products` endpoint
-- `Stock` → `Stocks` endpoint 
+- `Stock` → `Stocks` endpoint
 
 ```php
 use Contoweb\AbacusApi\Models\v1\Product;
 use Contoweb\AbacusApi\Models\v1\Stock;
-
-/* Get all products */
-$products = Product::all();
 
 /* Find a specific product */
 $product = Product::find(12345);
@@ -72,12 +69,14 @@ $product = Product::find(12345);
 /* Query with filters */
 $products = Product::where('ProductNumber', 'eq', 'ART-001')
     ->select(['ProductNumber', 'Description'])
-    ->get();
+    ->paginate()
+    ->items();
 
 /* Get stock information */
 $stocks = Stock::where('Quantity', 'gt', 0)
     ->expand('Product')
-    ->get();
+    ->paginate()
+    ->items();
 ```
 
 ### Create your own Model
@@ -109,15 +108,56 @@ class Subject extends AbacusModel
 php artisan abacus:generate-ide-helper
 ```
 
-This automatically generates PHPDoc annotations for all available Abacus entities, providing full IDE autocomplete support.
+This automatically generates PHPDoc for all properties based on endpoint definition files.
+
+#### How It Works
+
+The command:
+1. Scans your models directory for model classes
+2. For each model, looks for a definition file at `storage/app/abacus/endpoint-definitions/{resource}.json`
+3. Extracts entity schema and generates IDE hints
+
+#### Setting Up Definition Files
+
+1. Download the OpenAPI/Swagger JSON for your endpoints from Abacus. Example: Click button "DOWNLOAD JSON-FILE" on page https://apihub.abacus.ch/apis/2025/entity/products.api
+2. Save them to `storage/app/abacus/endpoint-definitions/`
+3. Name them after your resource (lowercase): `{resource}.json`
+
+**Example:**
+
+```php
+<?php
+
+namespace App\Models\Abacus;
+
+use Contoweb\AbacusApi\Models\AbacusModel;
+
+class Product extends AbacusModel
+{
+    protected static string $resource = 'Products';
+}
+```
+
+Save the Products endpoint definition as: `storage/app/abacus/endpoint-definitions/products.json`
+
+The IDE helper will extract the entity schema (e.g., `ProductData`) from the definition file and generate autocomplete hints for your `Product` model.
+
+#### Fallback to API Metadata
+
+If no local definition files are found, the IDE helper will automatically fetch metadata from the API endpoint. This will generate hints for all available entities.
+
+#### Listing Available Entities
+
+To see all available entity types:
+
+```bash
+php artisan abacus:generate-ide-helper --list
+```
 
 #### 3. Use the Models
 
 ```php
 use App\Models\Abacus\Subject;
-
-/* All Subjects */
-$subjects = Subject::all();
 
 /* Find a Subject */
 $subject = Subject::find(1);
@@ -132,8 +172,8 @@ $subject = Subject::select(['ProductNumber'])
 $subjects = Subject::where('LastName', 'eq', 'Müller')
     ->where('City', 'eq', 'Zürich')
     ->orderBy('FirstName', 'asc')
-    ->top(10)
-    ->get();
+    ->paginate()
+    ->items();
 
 /* Create */
 $subject = Subject::create([
@@ -151,100 +191,44 @@ $subject->delete(1);
 
 ## Usage
 
-### Cursor Pagination
-
-Handle large datasets efficiently using OData's `@odata.nextLink` pagination:
-
-```php
-/* Basic cursor pagination - loads all pages into memory */
-$subjects = Subject::cursor()
-    ->pages(100)  // Max 100 pages
-    ->get();
-
-/* Process items page-by-page without loading everything into memory */
-Subject::pages(100)
-    ->cursorWithCallback(function($items, $pageNumber) {
-        // Process each page as it's loaded
-        foreach ($items as $item) {
-            DB::table('processed')->insert([
-                'item_id' => $item->Id,
-                'processed_at' => now(),
-            ]);
-        }
-        
-        Log::info("Processed page {$pageNumber}: {$items->count()} items");
-    })
-    ->get();
-```
-
-**When to use `cursorWithCallback()`:**
-- Processing large datasets (10,000+ records)
-- Memory-intensive operations
-- Long-running batch jobs
-- Real-time progress logging
-
-**Note:** `cursorWithCallback()` automatically enables cursor pagination, so calling `cursor()` is optional.
-
-**Configuration:**
-```php
-// config/abacus-api.php
-'query_builder' => [
-    'max_next_link_page_resolving' => 5  // Default page limit
-]
-```
-
 ### Query Builder
 
 ```php
 /* Filter with supported operators: eq, lt, gt, le, ge */
 Subject::where('LastName', 'eq', 'Müller')
     ->where('Active', 'eq', true)
-    ->get();
+    ->paginate()
+    ->items();
 
 /* Select specific properties */
 Subject::select(['FirstName', 'LastName', 'Email'])
-    ->get();
+    ->paginate()
+    ->items();
 
 /* OrderBy (only one orderBy per query) */
 Subject::orderBy('LastName', 'desc')
-    ->get();
-
-/* Top N elements */
-Subject::top(10)->get();
+    ->paginate()
+    ->items();
 
 /* Expand Navigation Properties */
-Subject::expand('Addresses')->get();
+Subject::expand('Addresses')
+    ->paginate()
+    ->items();
 
 /* Combined */
 Subject::where('City', 'eq', 'Zürich')
     ->select(['FirstName', 'LastName', 'Email'])
     ->orderBy('LastName', 'asc')
     ->expand('Addresses')
-    ->top(5)
-    ->get();
-
-/* Cursor Pagination - Process large datasets page by page */
-Subject::pages(100)
-    ->cursorWithCallback(function($items, $pageNumber) {
-        foreach ($items as $subject) {
-            // Process each item immediately
-            $this->processSubject($subject);
-        }
-        Log::info("Processed page {$pageNumber} with {$items->count()} subjects");
-    })
-    ->get();
-
-/* Cursor Pagination - Load all pages into memory */
-Subject::cursor()
-    ->pages(50)
-    ->get(); // Returns Collection of all items
+    ->paginate();
 
 /* Filter with OData Enum values */
 use Contoweb\AbacusApi\ODataQueryString;
 
 Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
-    ->get();
-// Results in: $filter=Type eq ch.abacus.orde.ProductType'Article'
+    ->paginate()
+    ->items();
+/* Results in: $filter=Type eq ch.abacus.orde.ProductType'Article' */
 ```
 
 ### CRUD Operations
@@ -258,17 +242,50 @@ $subject = Subject::create([
 
 /* Read */
 $subject = Subject::find(1);
-$subjects = Subject::all();
+$subjects = Subject::paginate()->items();
 
 /* Update */
-$subject->Email = 'new@example.com';
-$subject->save();
-
-/* or */
 $subject->update(['Email' => 'new@example.com']);
 
 /* Delete */
 $subject->delete();
+```
+
+### Pagination
+
+The Abacus OData API doesn't support fetching all records in a single request.
+Instead, responses are returned in pages with a `nextLink` pointer to the next page. 
+The `paginate()` method returns an OdataPaginator object that gives you explicit control over loading additional pages using this `nextLink`.
+
+#### Usage
+
+```php
+/* Get first page with default limit */
+$paginator = Subject::paginate();
+
+/* Specify items per page using the $perPage parameter */
+$paginator = Subject::where('Active', 'eq', true)->paginate(20);
+
+/* Get the loaded items */
+$items = $paginator->items();
+
+/* Check if more pages exist */
+if ($paginator->hasMorePages()) {
+$paginator->nextPage(); /* Load next page and append to items */
+}
+
+/* Get the updated items collection */
+$items = $paginator->items();
+```
+
+The `$perPage` parameter sets the OData $top option, controlling how many items are returned per page. If not specified, the API default limit applies.
+
+```php
+/* Load 10 items per page */
+$paginator = Subject::paginate(10);
+
+/* Load 50 items per page */
+$paginator = Subject::paginate(50);
 ```
 
 ### Batch Requests
@@ -292,16 +309,16 @@ Batch requests allow you to combine multiple API calls into a single HTTP reques
 ```php
 use Contoweb\AbacusApi\Facades\Abacus;
 
-// Cleanest syntax - queries execute in batch context
+/* Cleanest syntax - queries execute in batch context */
 [$customer, $products, $order] = Abacus::batch(function() {
     return [
         Customer::find(123),
-        Product::where('Price', 'gt', 100)->get(),
+        Product::where('Price', 'gt', 100)->paginate(),
         Order::create(['CustomerId' => 456, 'Total' => 99.99]),
     ];
 })->send()->mapped();
 
-// Results are ready to use immediately
+/* Results are ready to use immediately */
 echo $customer->FirstName;
 foreach ($products as $product) {
     echo $product->Name;
@@ -314,7 +331,7 @@ foreach ($products as $product) {
 $results = Abacus::batch(function() {
     return [
         Customer::find(123),
-        Product::where('Price', 'gt', 100)->get(),
+        Product::where('Price', 'gt', 100)->paginate(),
         Order::create(['CustomerId' => 456, 'Total' => 99.99]),
     ];
 })->send();
@@ -332,24 +349,24 @@ Build batches dynamically based on conditions:
 ```php
 $batch = Abacus::newBatch();
 
-// Add queries conditionally
+/* Add queries conditionally */
 $batch->capture(function() {
     Customer::find(123);
 });
 
 if ($includeProducts) {
     $batch->capture(function() {
-        Product::where('Active', 'eq', true)->get();
+        Product::where('Active', 'eq', true)->paginate();
     });
 }
 
 if ($includeOrders) {
     $batch->capture(function() {
-        Order::where('CustomerId', 'eq', 123)->get();
+        Order::where('CustomerId', 'eq', 123)->paginate();
     });
 }
 
-// Execute only the queries you added
+/* Execute only the queries you added */
 $results = $batch->send();
 ```
 
@@ -358,16 +375,16 @@ $results = $batch->send();
 Use array destructuring for clean result access:
 
 ```php
-// Destructure directly (recommended)
+/* Destructure directly (recommended) */
 [$customer, $products, $orders] = Abacus::batch(function() {
     return [
         Customer::find(123),
-        Product::where('Price', 'gt', 100)->get(),
-        Order::where('CustomerId', 'eq', 123)->get(),
+        Product::where('Price', 'gt', 100)->paginate(),
+        Order::where('CustomerId', 'eq', 123)->paginate(),
     ];
 })->send();
 
-// Or access by index
+/* Or access by index */
 $results = Abacus::batch(function() {
     return [Customer::find(123), Product::find(456)];
 })->send();
@@ -419,27 +436,27 @@ You can check the status of each operation individually:
 $results = Abacus::batch(function() {
     return [
         Customer::find(123),
-        Product::find(999), // Non-existent, will fail
+        Product::find(999), /* Non-existent, will fail */
         Order::create(['CustomerId' => 456, 'Total' => 99.99]),
     ];
 })->send();
 
 if ($results->allSuccessful()) {
-    // All operations succeeded
+    /* All operations succeeded */
 } 
 
 if ($results->hasFailures()) {
-    // Some operations failed
+    /* Some operations failed */
 }
 
-// Filter by success/failure
-$successful = $results->successful(); // Only successful responses
-$failed = $results->failed();         // Only failed responses
+/* Filter by success/failure */
+$successful = $results->successful(); /* Only successful responses */
+$failed = $results->failed();         /* Only failed responses */
 
-// Extract all models from successful operations
+/* Extract all models from successful operations */
 $allModels = $results->successful()->mapped();
 
-// Get error details from failed operations
+/* Get error details from failed operations */
 foreach ($results->failed() as $result) {
     echo "Status: {$result->status}\n";
     echo "Error: {$result->getError()}\n";
@@ -455,12 +472,12 @@ Handle partial failures gracefully:
 $results = Abacus::batch(function() {
     return [
         Customer::find(1),
-        Product::find(999),  // Will fail - non-existent
+        Product::find(999),  /* Will fail - non-existent */
         Order::find(1),
     ];
 })->send();
 
-// Get errors collection
+/* Get errors collection */
 $errors = $results->errors();
 foreach ($errors as $error) {
     Log::error('Batch operation failed', [
@@ -470,7 +487,7 @@ foreach ($errors as $error) {
     ]);
 }
 
-// Continue with successful results
+/* Continue with successful results */
 $successfulData = $results->successful();
 foreach ($successfulData as $result) {
     // Process successful results
@@ -485,18 +502,18 @@ Inspect batch contents before sending:
 ```php
 $batch = Abacus::newBatch('customer-data-fetch');
 
-// Add queries via capture
+/* Add queries via capture */
 $batch->capture(function() {
     Customer::find(123);
-    Order::where('CustomerId', 'eq', 123)->get();
+    Order::where('CustomerId', 'eq', 123)->paginate();
 });
 
-// Inspect before sending
+/* Inspect before sending */
 echo "Batch name: " . $batch->getName() . "\n";
 echo "Item count: " . $batch->count() . "\n";
 echo "Is empty: " . ($batch->isEmpty() ? 'yes' : 'no') . "\n";
 
-// Clear and rebuild if needed
+/* Clear and rebuild if needed */
 $batch->clear();
 $batch->capture(function() {
     Customer::find(456);
@@ -514,16 +531,16 @@ $results = $batch->send();
 
 **Performance Tips:**
 ```php
-// Good: Targeted queries with filters
+/* Good: Targeted queries with filters */
 $results = Abacus::batch(function() {
     return [
-        Customer::where('Status', 'eq', 'Active')->select(['Id', 'Name'])->get(),
-        Order::where('Date', 'gt', '2024-01-01')->get(),
+        Customer::where('Status', 'eq', 'Active')->select(['Id', 'Name'])->paginate(),
+        Order::where('Date', 'gt', '2024-01-01')->paginate(),
     ];
 })->send();
 
-// Avoid: Too many operations in a single batch
-// Split into multiple batches if needed
+/* Avoid: Too many operations in a single batch */
+/* Split into multiple batches if needed */
 $batch1 = Abacus::batch(/* first 50 operations */)->send();
 $batch2 = Abacus::batch(/* next 50 operations */)->send();
 ```
@@ -617,7 +634,7 @@ Http::fake([
     ], 200)
 ]);
 
-$subjects = Subject::all();
+$subjects = Subject::paginate()->items();
 $this->assertCount(1, $subjects);
 ```
 

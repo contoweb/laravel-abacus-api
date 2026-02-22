@@ -6,9 +6,9 @@ use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\OdataPaginator;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Collection;
 
 abstract class AbacusModel
 {
@@ -37,55 +37,15 @@ abstract class AbacusModel
     }
 
     /**
-     * Set the maximum number of pages to retrieve when cursor pagination is enabled.
-     */
-    public static function pages(int $limit): AbacusODataQueryBuilder
-    {
-        return static::query()->pages($limit);
-    }
-
-    /**
-     * Enable automatic pagination through OData nextLink.
-     */
-    public static function cursor(): AbacusODataQueryBuilder
-    {
-        return static::query()->cursor();
-    }
-
-    /**
-     * Enable automatic pagination with a callback for each page.
-     *
-     * @param  callable  $callback  Callback function receiving (Collection $items, int $pageNumber)
-     */
-    public static function cursorWithCallback(callable $callback): AbacusODataQueryBuilder
-    {
-        return static::query()->cursorWithCallback($callback);
-    }
-
-    /**
      * Execute query and return all paginated results as Collection.
      *
-     * @return Collection<int, static>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function all(): Collection|BatchRequestItem
+    public static function paginate(?int $limit = null): OdataPaginator|BatchRequestItem
     {
-        return static::query()->get();
-    }
-
-    /**
-     * Execute query and return all paginated results as Collection.
-     *
-     * @return Collection<static>|BatchRequestItem
-     *
-     * @throws RequestException
-     * @throws ConnectionException
-     */
-    public static function get(): Collection|BatchRequestItem
-    {
-        return static::query()->get();
+        return static::query()->paginate($limit);
     }
 
     /**
@@ -115,14 +75,6 @@ abstract class AbacusModel
     public static function select(array|string $fields): AbacusODataQueryBuilder
     {
         return static::query()->select($fields);
-    }
-
-    /**
-     * Top N Entities.
-     */
-    public static function top(int $limit): AbacusODataQueryBuilder
-    {
-        return static::query()->top($limit);
     }
 
     /**
@@ -179,6 +131,17 @@ abstract class AbacusModel
     public static function update(int|string|array $idOrCriteria, array $data): static|BatchRequestItem
     {
         return static::query()->update($idOrCriteria, $data);
+    }
+
+    /**
+     * Execute query and return first result
+     *
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public static function first(): AbacusModel|BatchRequestItem|null
+    {
+        return static::query()->first();
     }
 
     /**

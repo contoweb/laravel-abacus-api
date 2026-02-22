@@ -1,6 +1,6 @@
 <?php
 
-namespace Contoweb\AbacusApi\Tests\Feature;
+namespace Contoweb\AbacusApi\Tests\Integration;
 
 use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
@@ -83,91 +83,12 @@ class AbacusServiceIntegrationTest extends TestCase
         $results = TestSubject::where('Age', 'gt', 25)
             ->select(['Id', 'FirstName', 'LastName', 'Age'])
             ->orderBy('FirstName', 'asc')
-            ->top(10)
-            ->get();
+            ->paginate(10);
 
-        $this->assertCount(2, $results);
-        $this->assertEquals('Alice', $results[0]->FirstName);
-        $this->assertEquals(30, $results[0]->Age);
-        $this->assertEquals('Bob', $results[1]->FirstName);
-    }
-
-    #[Test]
-    public function it_handles_cursor_pagination_workflow(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
-                'value' => [
-                    ['Id' => 1, 'FirstName' => 'Page1-Item1'],
-                    ['Id' => 2, 'FirstName' => 'Page1-Item2'],
-                ],
-                '@odata.nextLink' => 'https://api.example.com/page2',
-            ], 200),
-            'https://api.example.com/page2' => Http::response([
-                'value' => [
-                    ['Id' => 3, 'FirstName' => 'Page2-Item1'],
-                ],
-                '@odata.nextLink' => 'https://api.example.com/page3',
-            ], 200),
-            'https://api.example.com/page3' => Http::response([
-                'value' => [
-                    ['Id' => 4, 'FirstName' => 'Page3-Item1'],
-                ],
-            ], 200),
-        ]);
-
-        /* Fetch all pages with cursor pagination */
-        $allResults = TestSubject::cursor()
-            ->pages(10)
-            ->get();
-
-        $this->assertCount(4, $allResults);
-        $this->assertEquals('Page1-Item1', $allResults[0]->FirstName);
-        $this->assertEquals('Page3-Item1', $allResults[3]->FirstName);
-    }
-
-    #[Test]
-    public function it_handles_cursor_pagination_with_callback(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
-                'value' => [
-                    ['Id' => 1, 'FirstName' => 'Item1'],
-                    ['Id' => 2, 'FirstName' => 'Item2'],
-                ],
-                '@odata.nextLink' => 'https://api.example.com/page2',
-            ], 200),
-            'https://api.example.com/page2' => Http::response([
-                'value' => [
-                    ['Id' => 3, 'FirstName' => 'Item3'],
-                ],
-            ], 200),
-        ]);
-
-        $processedPages = [];
-
-        TestSubject::pages(10)
-            ->cursorWithCallback(function ($items, $pageNumber) use (&$processedPages) {
-                $processedPages[] = [
-                    'page' => $pageNumber,
-                    'count' => $items->count(),
-                ];
-            })
-            ->get();
-
-        $this->assertCount(2, $processedPages);
-        $this->assertEquals(1, $processedPages[0]['page']);
-        $this->assertEquals(2, $processedPages[0]['count']);
-        $this->assertEquals(2, $processedPages[1]['page']);
-        $this->assertEquals(1, $processedPages[1]['count']);
+        $this->assertCount(2, $results->items());
+        $this->assertEquals('Alice', $results->items()[0]->FirstName);
+        $this->assertEquals(30, $results->items()[0]->Age);
+        $this->assertEquals('Bob', $results->items()[1]->FirstName);
     }
 
     #[Test]
@@ -193,7 +114,7 @@ class AbacusServiceIntegrationTest extends TestCase
         $batch->capture(function () {
             TestSubject::create(['FirstName' => 'Alice', 'LastName' => 'Smith']);
             TestSubject::create(['FirstName' => 'Bob', 'LastName' => 'Jones']);
-            TestSubject::get();
+            TestSubject::paginate();
         });
 
         $results = $batch->send();
@@ -274,12 +195,12 @@ class AbacusServiceIntegrationTest extends TestCase
         ]);
 
         /* First query */
-        $result1 = TestSubject::all();
-        $this->assertCount(1, $result1);
+        $result1 = TestSubject::paginate();
+        $this->assertCount(1, $result1->items());
 
         /* Second query - will get 401 and refresh token */
-        $result2 = TestSubject::all();
-        $this->assertCount(1, $result2);
+        $result2 = TestSubject::paginate();
+        $this->assertCount(1, $result2->items());
 
         /* Should have called token endpoint twice */
         Http::assertSent(function ($request) {
@@ -310,11 +231,11 @@ class AbacusServiceIntegrationTest extends TestCase
 
         $results = TestSubject::expand('Addresses')
             ->select(['Id', 'FirstName'])
-            ->get();
+            ->paginate();
 
-        $this->assertCount(1, $results);
-        $this->assertEquals('John', $results[0]->FirstName);
-        $this->assertIsArray($results[0]->Addresses);
+        $this->assertCount(1, $results->items());
+        $this->assertEquals('John', $results->items()[0]->FirstName);
+        $this->assertIsArray($results->items()[0]->Addresses);
     }
 
     #[Test]

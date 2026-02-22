@@ -43,7 +43,7 @@ class BatchResponseCollection extends Collection
     }
 
     /**
-     * The response contents mapped to a collection.
+     * Get all models from successful responses.
      *
      * A successful batch response will be mapped to their model instance(s),
      * failed responses will be null.
