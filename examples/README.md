@@ -16,7 +16,7 @@ $products = Abacus::get('Products')->filter('Price gt 100')->all();
 
 ## Components
 
-Components wrap nested OData complex types for object-style access:
+Components wrap nested OData complex types for object-style access and support type casting:
 
 ```php
 // With components:
@@ -24,6 +24,27 @@ $length = $product->Measurements->Length;
 
 // Without components:
 $length = $product->Measurements['Length'];
+```
+
+### Component Casting
+
+Components support the same casting capabilities as models:
+
+```php
+class Measurements extends AbacusComponent
+{
+    protected array $casts = [
+        'Length' => 'float',
+        'Width' => 'float',
+        'Height' => 'float',
+        'UnitId' => 'int',
+        'IsActive' => 'bool',
+        'UpdatedAt' => 'datetime',
+        'ExpiryDate' => 'datetime:Y-m-d',
+        'Status' => StatusEnum::class,
+        'Metadata' => 'json',
+    ];
+}
 ```
 
 ## Generate Your Own

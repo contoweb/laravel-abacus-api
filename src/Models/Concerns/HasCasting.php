@@ -165,6 +165,10 @@ trait HasCasting
             elseif ($value instanceof AbacusComponent) {
                 $attributes[$key] = $value->toArray();
             }
+            // For all other casts (primitives like int, float, bool), use the cast value
+            else {
+                $attributes[$key] = $value;
+            }
         }
 
         return $attributes;

@@ -3,35 +3,19 @@
 namespace Contoweb\AbacusApi\Models;
 
 use ArrayAccess;
+use Contoweb\AbacusApi\Models\Concerns\HasAttributes;
+use Contoweb\AbacusApi\Models\Concerns\HasCasting;
 use JsonSerializable;
 
 abstract class AbacusComponent implements ArrayAccess, JsonSerializable
 {
-    protected array $attributes = [];
+    use HasAttributes,
+        HasCasting;
 
     public function __construct(array $attributes = [])
     {
+        $this->syncOriginal();
         $this->attributes = $attributes;
-    }
-
-    /**
-     * Get an attribute from the component.
-     */
-    public function getAttribute(string $key): mixed
-    {
-        return $this->attributes[$key] ?? null;
-    }
-
-    /**
-     * Set an attribute on the component.
-     *
-     * @return $this
-     */
-    public function setAttribute(string $key, mixed $value): static
-    {
-        $this->attributes[$key] = $value;
-
-        return $this;
     }
 
     /**
@@ -100,19 +84,4 @@ abstract class AbacusComponent implements ArrayAccess, JsonSerializable
         unset($this->attributes[$offset]);
     }
 
-    /**
-     * Convert the component to an array.
-     */
-    public function toArray(): array
-    {
-        return $this->attributes;
-    }
-
-    /**
-     * Convert the object into something JSON serializable.
-     */
-    public function jsonSerialize(): array
-    {
-        return $this->toArray();
-    }
 }
