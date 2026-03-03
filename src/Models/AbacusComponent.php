@@ -83,5 +83,4 @@ abstract class AbacusComponent implements ArrayAccess, JsonSerializable
     {
         unset($this->attributes[$offset]);
     }
-
 }
