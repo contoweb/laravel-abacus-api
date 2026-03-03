@@ -44,7 +44,7 @@ return [
     |
     */
     'models_namespace' => env('ABACUS_MODELS_NAMESPACE', 'App\\Models\\Abacus'),
-    'components_namespace' => env('ABACUS_MODELS_NAMESPACE', 'App\\Models\\Abacus\\Components'),
+    'components_namespace' => env('ABACUS_COMPONENTS_NAMESPACE', 'App\\Models\\Abacus\\Components'),
 
     /*
     |--------------------------------------------------------------------------
