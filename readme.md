@@ -156,6 +156,15 @@ $subject = Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.P
 /* Results in: $filter=Type eq ch.abacus.orde.ProductType'Article' */
 ```
 
+### Example Models & Components
+
+The `examples/` directory contains reference implementations to help you get started:
+
+- **`examples/Models/`** - Example model classes (Product, Stock, ...)
+- **`examples/Components/`** - Example component classes for nested OData schemas (Measurements, Weights, ...)
+
+See [`examples/README.md`](examples/README.md)
+
 ### Supported Filter Operators
 
 - `eq` - Equal
