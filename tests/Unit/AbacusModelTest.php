@@ -24,6 +24,61 @@ class TestStockBatch extends AbacusModel
     protected static string|array $primaryKey = ['BatchNumber', 'BatchSequenceNumber', 'ProductId', 'VariantId'];
 }
 
+/* Test backed enum - matches Abacus ProductType */
+enum TestProductType: string
+{
+    case ARTICLE = 'Article';
+    case SERVICE = 'Service';
+    case SURCHARGE = 'Surcharge';
+    case MISCELLANEOUS = 'Miscellaneous';
+}
+
+/* Test status enum - matches Abacus ActiveStatus */
+enum TestActiveStatus: string
+{
+    case ACTIVE = 'Active';
+    case INACTIVE = 'Inactive';
+}
+
+/* Test component - matches Abacus Measurements schema */
+class TestMeasurements extends \Contoweb\AbacusApi\Models\AbacusComponent
+{
+    // Properties from ch.abacus.orde.Measurements:
+    // Length, Width, Height, VolumeOrArea, Diameter, UnitId
+}
+
+/* Test component - matches Abacus Weights schema */
+class TestWeights extends \Contoweb\AbacusApi\Models\AbacusComponent
+{
+    // Properties from ch.abacus.orde.Weights:
+    // Net, Tare, SpecificWeight, UnitId
+}
+
+/* Test model with casts - reflects actual Abacus Product API structure */
+class TestProduct extends AbacusModel
+{
+    protected static string $resource = 'Products';
+
+    protected array $casts = [
+        // Real Abacus Product fields
+        'Id' => 'int',
+        'Type' => TestProductType::class,
+        'DivisionId' => 'int',
+        'FieldSetNumber' => 'int',
+        'VariantStatus' => TestActiveStatus::class,
+        'Measurements' => TestMeasurements::class,
+        'Weights' => TestWeights::class,
+
+        // Additional test fields for comprehensive casting tests
+        'price' => 'float',
+        'is_active' => 'bool',
+        'config' => 'json',
+        'metadata' => 'array',
+        'created_at' => 'datetime',
+        'launch_date' => 'datetime:Y-m-d',
+    ];
+}
+
 class AbacusModelTest extends TestCase
 {
     protected function setUp(): void
@@ -274,6 +329,93 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
+    public function it_casts_primitive_types(): void
+    {
+        $product = new TestProduct([
+            'Id' => '123',
+            'DivisionId' => '5',
+            'price' => '99.99',
+            'is_active' => '1',
+            'ProductNumber' => 'PROD-001',
+        ]);
+
+        $this->assertSame(123, $product->Id);
+        $this->assertSame(5, $product->DivisionId);
+        $this->assertSame(99.99, $product->price);
+        $this->assertTrue($product->is_active);
+        $this->assertSame('PROD-001', $product->ProductNumber);
+    }
+
+    #[Test]
+    public function it_casts_array_and_json(): void
+    {
+        $product = new TestProduct([
+            'metadata' => '{"key":"value","count":5}',
+            'config' => '["option1","option2"]',
+        ]);
+
+        $this->assertIsArray($product->metadata);
+        $this->assertEquals(['key' => 'value', 'count' => 5], $product->metadata);
+        $this->assertIsArray($product->config);
+        $this->assertEquals(['option1', 'option2'], $product->config);
+
+        // Test setting arrays
+        $product->metadata = ['new' => 'data'];
+        $this->assertEquals(['new' => 'data'], $product->metadata);
+    }
+
+    #[Test]
+    public function it_casts_datetime_to_carbon(): void
+    {
+        $product = new TestProduct([
+            'created_at' => '2024-01-15 10:30:00',
+        ]);
+
+        $this->assertInstanceOf(\Carbon\Carbon::class, $product->created_at);
+        $this->assertEquals('2024-01-15', $product->created_at->format('Y-m-d'));
+        $this->assertEquals('10:30:00', $product->created_at->format('H:i:s'));
+    }
+
+    #[Test]
+    public function it_casts_datetime_with_custom_format_in_array(): void
+    {
+        $product = new TestProduct([
+            'launch_date' => '2024-03-20 14:25:30',
+        ]);
+
+        // Should return Carbon instance when accessed
+        $this->assertInstanceOf(\Carbon\Carbon::class, $product->launch_date);
+
+        // Should serialize with custom format in toArray()
+        $array = $product->toArray();
+        $this->assertEquals('2024-03-20', $array['launch_date']);
+    }
+
+    #[Test]
+    public function it_casts_backed_enums(): void
+    {
+        // Test enum from string value - using real Abacus fields
+        $product = new TestProduct([
+            'Type' => 'Article',
+            'VariantStatus' => 'Active',
+        ]);
+
+        $this->assertInstanceOf(TestProductType::class, $product->Type);
+        $this->assertSame(TestProductType::ARTICLE, $product->Type);
+        $this->assertInstanceOf(TestActiveStatus::class, $product->VariantStatus);
+        $this->assertSame(TestActiveStatus::ACTIVE, $product->VariantStatus);
+
+        // Test setting enum instance
+        $product->Type = TestProductType::SERVICE;
+        $this->assertSame(TestProductType::SERVICE, $product->Type);
+
+        // Test serialization in toArray()
+        $array = $product->toArray();
+        $this->assertEquals('Service', $array['Type']);
+        $this->assertEquals('Active', $array['VariantStatus']);
+    }
+
+    #[Test]
     public function it_returns_model_instance_when_using_where_first(): void
     {
         Http::fake([
@@ -488,5 +630,196 @@ class AbacusModelTest extends TestCase
         Http::assertSent(function ($request) {
             return str_contains($request->url(), '%24top=50');
         });
+    }
+
+    #[Test]
+    public function it_casts_nested_component_to_object(): void
+    {
+        // Test with real Abacus Measurements component structure
+        $product = new TestProduct([
+            'Id' => 1,
+            'ProductNumber' => 'PROD-001',
+            'Measurements' => [
+                'Length' => 10.5,
+                'Width' => 5.2,
+                'Height' => 3.1,
+                'VolumeOrArea' => 168.84,
+                'Diameter' => 2.5,
+                'UnitId' => 1,
+            ],
+            'Weights' => [
+                'Net' => 2.5,
+                'Tare' => 0.3,
+                'SpecificWeight' => 0.85,
+                'UnitId' => 2,
+            ],
+        ]);
+
+        // Test Measurements component
+        $this->assertInstanceOf(TestMeasurements::class, $product->Measurements);
+        $this->assertEquals(10.5, $product->Measurements->Length);
+        $this->assertEquals(5.2, $product->Measurements->Width);
+        $this->assertEquals(3.1, $product->Measurements->Height);
+        $this->assertEquals(168.84, $product->Measurements->VolumeOrArea);
+        $this->assertEquals(2.5, $product->Measurements->Diameter);
+        $this->assertEquals(1, $product->Measurements->UnitId);
+
+        // Test Weights component
+        $this->assertInstanceOf(TestWeights::class, $product->Weights);
+        $this->assertEquals(2.5, $product->Weights->Net);
+        $this->assertEquals(0.3, $product->Weights->Tare);
+        $this->assertEquals(0.85, $product->Weights->SpecificWeight);
+        $this->assertEquals(2, $product->Weights->UnitId);
+    }
+
+    #[Test]
+    public function it_supports_array_access_on_components(): void
+    {
+        $product = new TestProduct([
+            'Measurements' => [
+                'Length' => 10.5,
+                'Width' => 5.2,
+                'Diameter' => 2.5,
+            ],
+        ]);
+
+        // Should support array access for backward compatibility
+        $this->assertEquals(10.5, $product->Measurements['Length']);
+        $this->assertEquals(5.2, $product->Measurements['Width']);
+        $this->assertEquals(2.5, $product->Measurements['Diameter']);
+    }
+
+    #[Test]
+    public function it_allows_setting_component_properties(): void
+    {
+        $product = new TestProduct([
+            'Measurements' => [
+                'Length' => 10.5,
+            ],
+        ]);
+
+        // Modify component properties - real Abacus fields
+        $product->Measurements->Width = 5.2;
+        $product->Measurements->Height = 3.1;
+        $product->Measurements->Diameter = 2.5;
+
+        $this->assertEquals(5.2, $product->Measurements->Width);
+        $this->assertEquals(3.1, $product->Measurements->Height);
+        $this->assertEquals(2.5, $product->Measurements->Diameter);
+    }
+
+    #[Test]
+    public function it_serializes_component_to_array(): void
+    {
+        $product = new TestProduct([
+            'Id' => 1,
+            'ProductNumber' => 'PROD-001',
+            'Measurements' => [
+                'Length' => 10.5,
+                'Width' => 5.2,
+                'Height' => 3.1,
+                'VolumeOrArea' => 168.84,
+            ],
+            'Weights' => [
+                'Net' => 2.5,
+                'Tare' => 0.3,
+            ],
+        ]);
+
+        $array = $product->toArray();
+
+        // Test Measurements serialization
+        $this->assertIsArray($array['Measurements']);
+        $this->assertEquals(10.5, $array['Measurements']['Length']);
+        $this->assertEquals(5.2, $array['Measurements']['Width']);
+        $this->assertEquals(3.1, $array['Measurements']['Height']);
+        $this->assertEquals(168.84, $array['Measurements']['VolumeOrArea']);
+
+        // Test Weights serialization
+        $this->assertIsArray($array['Weights']);
+        $this->assertEquals(2.5, $array['Weights']['Net']);
+        $this->assertEquals(0.3, $array['Weights']['Tare']);
+    }
+
+    #[Test]
+    public function it_allows_setting_entire_component(): void
+    {
+        $product = new TestProduct([
+            'Id' => 1,
+            'ProductNumber' => 'PROD-001',
+        ]);
+
+        // Create and set new components with real Abacus structure
+        $measurements = new TestMeasurements([
+            'Length' => 15.0,
+            'Width' => 8.0,
+            'Height' => 5.0,
+            'VolumeOrArea' => 600.0,
+        ]);
+
+        $weights = new TestWeights([
+            'Net' => 5.5,
+            'Tare' => 0.5,
+            'SpecificWeight' => 1.2,
+        ]);
+
+        $product->Measurements = $measurements;
+        $product->Weights = $weights;
+
+        $this->assertInstanceOf(TestMeasurements::class, $product->Measurements);
+        $this->assertEquals(15.0, $product->Measurements->Length);
+        $this->assertEquals(8.0, $product->Measurements->Width);
+        $this->assertEquals(5.0, $product->Measurements->Height);
+
+        $this->assertInstanceOf(TestWeights::class, $product->Weights);
+        $this->assertEquals(5.5, $product->Weights->Net);
+        $this->assertEquals(0.5, $product->Weights->Tare);
+    }
+
+    #[Test]
+    public function it_converts_component_to_array_when_set(): void
+    {
+        $product = new TestProduct([
+            'Id' => 1,
+            'ProductNumber' => 'PROD-001',
+        ]);
+
+        $measurements = new TestMeasurements([
+            'Length' => 20.0,
+            'Width' => 10.0,
+            'Diameter' => 3.5,
+        ]);
+
+        $product->Measurements = $measurements;
+
+        // Verify it serializes properly
+        $array = $product->toArray();
+        $this->assertIsArray($array['Measurements']);
+        $this->assertEquals(20.0, $array['Measurements']['Length']);
+        $this->assertEquals(10.0, $array['Measurements']['Width']);
+        $this->assertEquals(3.5, $array['Measurements']['Diameter']);
+    }
+
+    #[Test]
+    public function it_handles_null_component_values(): void
+    {
+        $product = new TestProduct([
+            'Id' => 1,
+            'Measurements' => null,
+        ]);
+
+        $this->assertNull($product->Measurements);
+    }
+
+    #[Test]
+    public function it_handles_empty_component_arrays(): void
+    {
+        $product = new TestProduct([
+            'Id' => 1,
+            'Measurements' => [],
+        ]);
+
+        $this->assertInstanceOf(TestMeasurements::class, $product->Measurements);
+        $this->assertNull($product->Measurements->Length);
     }
 }
