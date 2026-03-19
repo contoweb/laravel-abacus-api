@@ -7,6 +7,7 @@ use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -222,7 +223,7 @@ class AbacusServiceTest extends TestCase
             ], 500),
         ]);
 
-        $this->expectException(\Illuminate\Http\Client\RequestException::class);
+        $this->expectException(RequestException::class);
 
         $this->service->listEntityIds();
     }
@@ -240,7 +241,7 @@ class AbacusServiceTest extends TestCase
             ], 404),
         ]);
 
-        $this->expectException(\Illuminate\Http\Client\RequestException::class);
+        $this->expectException(RequestException::class);
 
         $this->service->metadata();
     }

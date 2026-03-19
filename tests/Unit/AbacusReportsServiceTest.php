@@ -5,6 +5,7 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 use Contoweb\AbacusApi\Reports\AbacusReportsClient;
 use Contoweb\AbacusApi\Reports\AbacusReportsService;
 use Contoweb\AbacusApi\Reports\Contracts\Report;
+use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
 /* Test report model */
-class SimpleReportModel implements \Contoweb\AbacusApi\Reports\Contracts\ReportModel
+class SimpleReportModel implements ReportModel
 {
     public function __construct(
         public ?int $id = null,
@@ -30,7 +31,7 @@ class SimpleReport implements Report
         return 'test-report.avx';
     }
 
-    public function mapping(array $record): \Contoweb\AbacusApi\Reports\Contracts\ReportModel
+    public function mapping(array $record): ReportModel
     {
         return new SimpleReportModel(
             id: $record['Id'] ?? null,
@@ -46,7 +47,7 @@ class ValidatedReport implements Report, RequiresValidationRules
         return 'validated-report.avx';
     }
 
-    public function mapping(array $record): \Contoweb\AbacusApi\Reports\Contracts\ReportModel
+    public function mapping(array $record): ReportModel
     {
         return new SimpleReportModel(
             id: $record['Id'] ?? null,
