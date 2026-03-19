@@ -11,6 +11,7 @@ use DateTime;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use InvalidArgumentException;
+use Ramsey\Uuid\Guid\Guid;
 use Symfony\Component\HttpFoundation\Request;
 
 class AbacusODataQueryBuilder
@@ -446,6 +447,10 @@ class AbacusODataQueryBuilder
     {
         if ($value instanceof ODataEnum) {
             return $value->toODataString();
+        }
+
+        if (is_string($value) && Guid::isValid($value)) {
+            return $value;
         }
 
         if (is_string($value)) {
