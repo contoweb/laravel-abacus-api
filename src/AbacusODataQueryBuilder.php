@@ -10,8 +10,8 @@ use Contoweb\AbacusApi\Models\AbacusModel;
 use DateTime;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
-use Ramsey\Uuid\Guid\Guid;
 use Symfony\Component\HttpFoundation\Request;
 
 class AbacusODataQueryBuilder
@@ -449,7 +449,7 @@ class AbacusODataQueryBuilder
             return $value->toODataString();
         }
 
-        if (is_string($value) && Guid::isValid($value)) {
+        if (is_string($value) && Str::isUuid($value)) {
             return $value;
         }
 
