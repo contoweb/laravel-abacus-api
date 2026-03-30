@@ -98,6 +98,10 @@ trait HasCasting
 
     /**
      * Cast the given value to a backed enum.
+     *
+     * @template T of BackedEnum
+     *
+     * @param  class-string<T>  $enumClass
      */
     protected function asEnum(mixed $value, string $enumClass): ?BackedEnum
     {
@@ -105,7 +109,7 @@ trait HasCasting
             return $value;
         }
 
-        return $enumClass::from($value);
+        return $enumClass::tryFrom($value);
     }
 
     /**
