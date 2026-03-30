@@ -4,14 +4,11 @@ This directory contains example implementations to help you get started with the
 
 ## Models
 
-Models represent OData entitie/endpoints and provide a fluent interface for querying and manipulating data:
+Models represent OData entities/endpoints and provide a fluent interface for querying and manipulating data:
 
 ```php
 // Query with models:
-$products = Product::query()->where('Price', '>', 100)->get();
-
-// Without models:
-$products = Abacus::get('Products')->filter('Price gt 100')->all();
+$products = Product::find(1);
 ```
 
 ## Components
@@ -43,6 +40,12 @@ class Measurements extends AbacusComponent
         'ExpiryDate' => 'datetime:Y-m-d',
         'Status' => StatusEnum::class,
         'Metadata' => 'json',
+    ];
+}
+
+class Product extends AbacusModel {
+    protected array $casts = [
+        'Measurements' => Measurements::class,
     ];
 }
 ```
