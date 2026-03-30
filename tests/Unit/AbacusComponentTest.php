@@ -106,25 +106,6 @@ class AbacusComponentTest extends TestCase
     }
 
     #[Test]
-    public function it_casts_json_and_array(): void
-    {
-        $component = new TestMeasurementsWithCasts([
-            'Metadata' => '{"key":"value","count":5}',
-            'Tags' => '["tag1","tag2","tag3"]',
-        ]);
-
-        $this->assertIsArray($component->Metadata);
-        $this->assertEquals(['key' => 'value', 'count' => 5], $component->Metadata);
-
-        $this->assertIsArray($component->Tags);
-        $this->assertEquals(['tag1', 'tag2', 'tag3'], $component->Tags);
-
-        // Test setting arrays
-        $component->Tags = ['new', 'tags'];
-        $this->assertEquals(['new', 'tags'], $component->Tags);
-    }
-
-    #[Test]
     public function it_casts_datetime_to_carbon(): void
     {
         $component = new TestMeasurementsWithCasts([
@@ -241,9 +222,6 @@ class AbacusComponentTest extends TestCase
         // Enums should be serialized as values
         $this->assertEquals('Metric', $array['UnitType']);
         $this->assertEquals('Active', $array['Status']);
-
-        // JSON should be array
-        $this->assertEquals(['key' => 'value'], $array['Metadata']);
 
         // DateTime should be ISO string
         $this->assertStringContainsString('2024-01-15', $array['CreatedAt']);

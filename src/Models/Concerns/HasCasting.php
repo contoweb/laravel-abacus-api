@@ -60,10 +60,7 @@ trait HasCasting
             case 'boolean':
                 return (bool) $value;
             case 'object':
-                return json_decode($value, false);
-            case 'array':
-            case 'json':
-                return json_decode($value, true);
+                return (object) $value;
             case 'date':
             case 'datetime':
             case 'timestamp':

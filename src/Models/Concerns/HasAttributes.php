@@ -80,15 +80,10 @@ trait HasAttributes
     {
         // Handle enum casting on set
         if ($this->hasCast($key)) {
-            $castType = $this->getCastType($key);
 
             // If value is already the enum instance, convert to stored value
             if ($value instanceof BackedEnum) {
                 $value = $value->value;
-            }
-            // For array/json casts, encode if needed
-            elseif (in_array($castType, ['array', 'json', 'object']) && is_array($value)) {
-                $value = json_encode($value);
             }
         }
 

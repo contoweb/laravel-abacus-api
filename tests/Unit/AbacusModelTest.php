@@ -347,24 +347,6 @@ class AbacusModelTest extends TestCase
     }
 
     #[Test]
-    public function it_casts_array_and_json(): void
-    {
-        $product = new TestProduct([
-            'metadata' => '{"key":"value","count":5}',
-            'config' => '["option1","option2"]',
-        ]);
-
-        $this->assertIsArray($product->metadata);
-        $this->assertEquals(['key' => 'value', 'count' => 5], $product->metadata);
-        $this->assertIsArray($product->config);
-        $this->assertEquals(['option1', 'option2'], $product->config);
-
-        // Test setting arrays
-        $product->metadata = ['new' => 'data'];
-        $this->assertEquals(['new' => 'data'], $product->metadata);
-    }
-
-    #[Test]
     public function it_casts_datetime_to_carbon(): void
     {
         $product = new TestProduct([
