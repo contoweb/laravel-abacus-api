@@ -2,6 +2,7 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
+use Carbon\Carbon;
 use Contoweb\AbacusApi\Models\AbacusComponent;
 use Contoweb\AbacusApi\Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -112,7 +113,7 @@ class AbacusComponentTest extends TestCase
             'CreatedAt' => '2024-01-15 10:30:00',
         ]);
 
-        $this->assertInstanceOf(\Carbon\Carbon::class, $component->CreatedAt);
+        $this->assertInstanceOf(Carbon::class, $component->CreatedAt);
         $this->assertEquals('2024-01-15', $component->CreatedAt->format('Y-m-d'));
         $this->assertEquals('10:30:00', $component->CreatedAt->format('H:i:s'));
     }
@@ -125,7 +126,7 @@ class AbacusComponentTest extends TestCase
         ]);
 
         // Should return Carbon instance when accessed
-        $this->assertInstanceOf(\Carbon\Carbon::class, $component->UpdatedAt);
+        $this->assertInstanceOf(Carbon::class, $component->UpdatedAt);
         $this->assertEquals('2024-03-20', $component->UpdatedAt->format('Y-m-d'));
         $this->assertEquals('14:25', $component->UpdatedAt->format('H:i'));
 

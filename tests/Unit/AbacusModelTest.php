@@ -2,8 +2,10 @@
 
 namespace Contoweb\AbacusApi\Tests\Unit;
 
+use Carbon\Carbon;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Models\AbacusComponent;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Contoweb\AbacusApi\OdataPaginator;
 use Contoweb\AbacusApi\Tests\TestCase;
@@ -41,14 +43,14 @@ enum TestActiveStatus: string
 }
 
 /* Test component - matches Abacus Measurements schema */
-class TestMeasurements extends \Contoweb\AbacusApi\Models\AbacusComponent
+class TestMeasurements extends AbacusComponent
 {
     // Properties from ch.abacus.orde.Measurements:
     // Length, Width, Height, VolumeOrArea, Diameter, UnitId
 }
 
 /* Test component - matches Abacus Weights schema */
-class TestWeights extends \Contoweb\AbacusApi\Models\AbacusComponent
+class TestWeights extends AbacusComponent
 {
     // Properties from ch.abacus.orde.Weights:
     // Net, Tare, SpecificWeight, UnitId
@@ -353,7 +355,7 @@ class AbacusModelTest extends TestCase
             'created_at' => '2024-01-15 10:30:00',
         ]);
 
-        $this->assertInstanceOf(\Carbon\Carbon::class, $product->created_at);
+        $this->assertInstanceOf(Carbon::class, $product->created_at);
         $this->assertEquals('2024-01-15', $product->created_at->format('Y-m-d'));
         $this->assertEquals('10:30:00', $product->created_at->format('H:i:s'));
     }
@@ -366,7 +368,7 @@ class AbacusModelTest extends TestCase
         ]);
 
         // Should return Carbon instance when accessed
-        $this->assertInstanceOf(\Carbon\Carbon::class, $product->launch_date);
+        $this->assertInstanceOf(Carbon::class, $product->launch_date);
 
         // Should serialize with custom format in toArray()
         $array = $product->toArray();
