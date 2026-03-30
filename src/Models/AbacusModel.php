@@ -25,8 +25,8 @@ abstract class AbacusModel implements ArrayAccess, JsonSerializable
 
     public function __construct(array $attributes = [])
     {
-        $this->syncOriginal();
         $this->attributes = $attributes;
+        $this->syncOriginal();
     }
 
     /**
