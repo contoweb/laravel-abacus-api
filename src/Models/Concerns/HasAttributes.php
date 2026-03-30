@@ -104,15 +104,4 @@ trait HasAttributes
     {
         return $this->attributes;
     }
-
-    /**
-     * Determine if a get mutator exists for an attribute.
-     */
-    protected function hasGetMutator(string $key): bool
-    {
-        return method_exists(
-            $this,
-            'get'.str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $key))).'Attribute'
-        );
-    }
 }
