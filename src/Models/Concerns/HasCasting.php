@@ -67,7 +67,7 @@ trait HasCasting
                 return $this->asDateTime($value);
             default:
                 // Check if it's a backed enum
-                if (enum_exists($castType)) {
+                if (is_a($castType, BackedEnum::class, true)) {
                     return $this->asEnum($value, $castType);
                 }
 
