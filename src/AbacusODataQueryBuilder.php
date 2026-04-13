@@ -449,11 +449,12 @@ class AbacusODataQueryBuilder
             return $value->toODataString();
         }
 
-        if (is_string($value) && Str::isUuid($value)) {
-            return $value;
-        }
-
         if (is_string($value)) {
+
+            if (Str::isUuid($value)) {
+                return $value;
+            }
+
             /* Escape single quotes */
             return "'".str_replace("'", "''", $value)."'";
         }
