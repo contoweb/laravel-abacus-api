@@ -571,4 +571,28 @@ class AbacusODataQueryBuilderTest extends TestCase
 
         $this->assertFalse($result->hasMorePages());
     }
+
+    #[Test]
+    public function it_formats_uuid_values_without_quotes(): void
+    {
+        $uuid = '550e8400-e29b-41d4-a716-446655440000';
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+        $builder->where('DocumentId', 'eq', $uuid);
+
+        $query = $builder->toODataQuery();
+
+        $this->assertEquals("DocumentId eq {$uuid}", $query['$filter']);
+    }
+
+    #[Test]
+    public function it_formats_non_uuid_strings_with_quotes(): void
+    {
+        $value = '550e8400-e29b-41d4-a716';
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+        $builder->where('DocumentId', 'eq', $value);
+
+        $query = $builder->toODataQuery();
+
+        $this->assertStringContainsString("'{$value}'", $query['$filter']);
+    }
 }
