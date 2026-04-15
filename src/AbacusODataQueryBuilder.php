@@ -38,7 +38,7 @@ class AbacusODataQueryBuilder
 
     protected array $compositeKey = [];
 
-    protected bool $unescapeUUID = true;
+    protected bool $unescapeUuid = true;
 
     public function __construct(AbacusODataClient $client, string $resource, string $modelClass)
     {
@@ -453,7 +453,7 @@ class AbacusODataQueryBuilder
 
         if (is_string($value)) {
 
-            if (Str::isUuid($value) && $this->unescapeUUID) {
+            if (Str::isUuid($value) && $this->unescapeUuid) {
 
                 return $value;
             }
@@ -488,11 +488,11 @@ class AbacusODataQueryBuilder
     /**
      * Disable UUID escaping so UUID values are formatted without string quotes in OData queries.
      *
-     * When disabled (default), UUID values are output as raw GUIDs: `$filter=Id eq 57bc1fe4-bac4-6549-53fa-8ce85e63f4cb`
+     * When disabled (default), UUID values are output as raw UUID: `$filter=Id eq 57bc1fe4-bac4-6549-53fa-8ce85e63f4cb`
      */
-    public function withoutUUIDEscaping(): static
+    public function withoutUuidEscaping(): static
     {
-        $this->unescapeUUID = true;
+        $this->unescapeUuid = true;
 
         return $this;
     }
@@ -502,9 +502,9 @@ class AbacusODataQueryBuilder
      *
      * When enabled, UUID values are wrapped in single quotes: `$filter=Id eq '57bc1fe4-bac4-6549-53fa-8ce85e63f4cb'`
      */
-    public function withUUIDEscaping(): static
+    public function withUuidEscaping(): static
     {
-        $this->unescapeUUID = false;
+        $this->unescapeUuid = false;
 
         return $this;
     }
