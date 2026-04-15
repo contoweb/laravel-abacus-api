@@ -145,6 +145,26 @@ abstract class AbacusModel
     }
 
     /**
+     * Disable UUID escaping so UUID values are formatted without string quotes in OData queries.
+     *
+     * When disabled (default), UUID values are output as raw GUIDs: `$filter=Id eq 57bc1fe4-bac4-6549-53fa-8ce85e63f4cb`
+     */
+    public static function withoutUUIDEscaping(): AbacusODataQueryBuilder
+    {
+        return static::query()->withoutUUIDEscaping();
+    }
+
+    /**
+     * Enable UUID escaping so UUID values are treated as regular strings in OData queries.
+     *
+     * When enabled, UUID values are wrapped in single quotes: `$filter=Id eq '57bc1fe4-bac4-6549-53fa-8ce85e63f4cb'`
+     */
+    public static function withUUIDEscaping(): AbacusODataQueryBuilder
+    {
+        return static::query()->withUUIDEscaping();
+    }
+
+    /**
      * Get attribute.
      */
     public function getAttribute(string $key): mixed
