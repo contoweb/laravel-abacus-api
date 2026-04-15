@@ -5,13 +5,10 @@ namespace Contoweb\AbacusApi\DataTransferObjects;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Support\Collection;
 
-/**
- * @template TModel of AbacusModel
- */
 class BatchResponseDto
 {
     /**
-     * @param  class-string<TModel>  $modelClass
+     * @param  class-string<AbacusModel>  $modelClass
      */
     public function __construct(
         public readonly bool $success,
@@ -23,8 +20,7 @@ class BatchResponseDto
     ) {}
 
     /**
-     * @param  class-string<TModel>  $modelClass
-     * @return self<TModel>
+     * @param  class-string<AbacusModel>  $modelClass
      */
     public static function fromArray(array $data, string $modelClass): self
     {
@@ -82,7 +78,7 @@ class BatchResponseDto
      * Returns a collection of model instances if the response contains multiple items,
      * otherwise returns a single model instance.
      *
-     * @return Collection<int, AbacusModel>|AbacusModel
+     * @return Collection<int|string, AbacusModel>|AbacusModel
      */
     public function mapped(): Collection|AbacusModel
     {

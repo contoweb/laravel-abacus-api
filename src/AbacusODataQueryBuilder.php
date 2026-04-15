@@ -130,7 +130,7 @@ class AbacusODataQueryBuilder
      * Execute a POST request (create entity)
      * Valid query methods: select(), expand()
      *
-     * @param  array<string, int|string>  $data  Request body data
+     * @param  array<string, mixed>  $data  Request body data
      * @return AbacusModel|BatchRequestItem The created entity
      *
      * @throws ConnectionException
@@ -187,7 +187,7 @@ class AbacusODataQueryBuilder
      * Update an entity
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
-     * @param  array<string, int|array>  $data  Request body data
+     * @param  array<string, mixed>  $data  Request body data
      * @return AbacusModel|BatchRequestItem The updated entity
      *
      * @throws ConnectionException

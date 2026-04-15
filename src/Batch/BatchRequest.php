@@ -26,7 +26,7 @@ class BatchRequest
     /**
      * Send the batch request and return parsed results.
      *
-     * @return Collection<int, BatchResponseDto>
+     * @return Collection<int|string, BatchResponseDto>
      *
      * @throws ConnectionException
      * @throws RequestException

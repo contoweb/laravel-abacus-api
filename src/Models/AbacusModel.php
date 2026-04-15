@@ -96,7 +96,7 @@ abstract class AbacusModel
     /**
      * Create entity.
      *
-     * @param  array<string, int|string>  $data
+     * @param  array<string, mixed>  $data
      *
      * @throws ConnectionException
      * @throws RequestException
@@ -122,8 +122,8 @@ abstract class AbacusModel
     /**
      * Update entity by ID.
      *
-     * @param  int|string|array<string, int|array>  $idOrCriteria  Single value for simple keys, array for composite keys
-     * @param  array<string, int|string>  $data  Data to update
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  array<string, mixed>  $data  Data to update
      *
      * @throws ConnectionException
      * @throws RequestException
