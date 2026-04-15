@@ -595,4 +595,27 @@ class AbacusODataQueryBuilderTest extends TestCase
 
         $this->assertStringContainsString("'{$value}'", $query['$filter']);
     }
+
+    #[Test]
+    public function it_quotes_uuid_values_when_uuid_escaping_is_enabled(): void
+    {
+        $uuid = '550e8400-e29b-41d4-a716-446655440000';
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+        $builder->withUUIDEscaping()->where('DocumentId', 'eq', $uuid);
+
+        $query = $builder->toODataQuery();
+
+        $this->assertStringContainsString("'{$uuid}'", $query['$filter']);
+    }
+
+    #[Test]
+    public function it_still_escapes_regular_strings_when_uuid_escaping_is_enabled(): void
+    {
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+        $builder->withUUIDEscaping()->where('Name', 'eq', "O'Brien");
+
+        $query = $builder->toODataQuery();
+
+        $this->assertStringContainsString("'O''Brien'", $query['$filter']);
+    }
 }
