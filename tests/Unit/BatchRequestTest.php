@@ -5,8 +5,10 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\Batch\BatchRequest;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
+use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -226,9 +228,9 @@ class BatchRequestTest extends TestCase
         $batch = new BatchRequest($this->client, $item1, $item2);
         $results = $batch->send();
 
-        $this->assertInstanceOf(\Illuminate\Support\Collection::class, $results);
+        $this->assertInstanceOf(Collection::class, $results);
         $this->assertCount(2, $results);
-        $this->assertContainsOnlyInstancesOf(\Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto::class, $results);
+        $this->assertContainsOnlyInstancesOf(BatchResponseDto::class, $results);
     }
 
     #[Test]

@@ -10,6 +10,7 @@ use Contoweb\AbacusApi\Models\AbacusModel;
 use DateTime;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -36,6 +37,8 @@ class AbacusODataQueryBuilder
     protected mixed $entityId = null;
 
     protected array $compositeKey = [];
+
+    protected bool $unescapeUuid = true;
 
     public function __construct(AbacusODataClient $client, string $resource, string $modelClass)
     {
@@ -127,7 +130,7 @@ class AbacusODataQueryBuilder
      * Execute a POST request (create entity)
      * Valid query methods: select(), expand()
      *
-     * @param  array<string, int|string>  $data  Request body data
+     * @param  array<string, mixed>  $data  Request body data
      * @return AbacusModel|BatchRequestItem The created entity
      *
      * @throws ConnectionException
@@ -184,7 +187,7 @@ class AbacusODataQueryBuilder
      * Update an entity
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
-     * @param  array<string, int|array>  $data  Request body data
+     * @param  array<string, mixed>  $data  Request body data
      * @return AbacusModel|BatchRequestItem The updated entity
      *
      * @throws ConnectionException
@@ -449,6 +452,12 @@ class AbacusODataQueryBuilder
         }
 
         if (is_string($value)) {
+
+            if (Str::isUuid($value) && $this->unescapeUuid) {
+
+                return $value;
+            }
+
             /* Escape single quotes */
             return "'".str_replace("'", "''", $value)."'";
         }
@@ -474,5 +483,29 @@ class AbacusODataQueryBuilder
     public function toODataQuery(): array
     {
         return $this->buildODataQuery();
+    }
+
+    /**
+     * Disable UUID escaping so UUID values are formatted without string quotes in OData queries.
+     *
+     * When disabled (default), UUID values are output as raw UUID: `$filter=Id eq 57bc1fe4-bac4-6549-53fa-8ce85e63f4cb`
+     */
+    public function withoutUuidEscaping(): static
+    {
+        $this->unescapeUuid = true;
+
+        return $this;
+    }
+
+    /**
+     * Enable UUID escaping so UUID values are treated as regular strings in OData queries.
+     *
+     * When enabled, UUID values are wrapped in single quotes: `$filter=Id eq '57bc1fe4-bac4-6549-53fa-8ce85e63f4cb'`
+     */
+    public function withUuidEscaping(): static
+    {
+        $this->unescapeUuid = false;
+
+        return $this;
     }
 }

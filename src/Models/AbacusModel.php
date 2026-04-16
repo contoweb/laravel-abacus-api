@@ -96,7 +96,7 @@ abstract class AbacusModel
     /**
      * Create entity.
      *
-     * @param  array<string, int|string>  $data
+     * @param  array<string, mixed>  $data
      *
      * @throws ConnectionException
      * @throws RequestException
@@ -122,8 +122,8 @@ abstract class AbacusModel
     /**
      * Update entity by ID.
      *
-     * @param  int|string|array<string, int|array>  $idOrCriteria  Single value for simple keys, array for composite keys
-     * @param  array<string, int|string>  $data  Data to update
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  array<string, mixed>  $data  Data to update
      *
      * @throws ConnectionException
      * @throws RequestException
@@ -142,6 +142,26 @@ abstract class AbacusModel
     public static function first(): AbacusModel|BatchRequestItem|null
     {
         return static::query()->first();
+    }
+
+    /**
+     * Disable UUID escaping so UUID values are formatted without string quotes in OData queries.
+     *
+     * When disabled (default), UUID values are output as raw UUID: `$filter=Id eq 57bc1fe4-bac4-6549-53fa-8ce85e63f4cb`
+     */
+    public static function withoutUuidEscaping(): AbacusODataQueryBuilder
+    {
+        return static::query()->withoutUuidEscaping();
+    }
+
+    /**
+     * Enable UUID escaping so UUID values are treated as regular strings in OData queries.
+     *
+     * When enabled, UUID values are wrapped in single quotes: `$filter=Id eq '57bc1fe4-bac4-6549-53fa-8ce85e63f4cb'`
+     */
+    public static function withUuidEscaping(): AbacusODataQueryBuilder
+    {
+        return static::query()->withUuidEscaping();
     }
 
     /**

@@ -5,13 +5,14 @@ namespace Contoweb\AbacusApi\Tests\Feature;
 use Contoweb\AbacusApi\Reports\AbacusReportsClient;
 use Contoweb\AbacusApi\Reports\AbacusReportsService;
 use Contoweb\AbacusApi\Reports\Contracts\Report;
+use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
 /* Test report model for integration testing */
-class SalesReportModel implements \Contoweb\AbacusApi\Reports\Contracts\ReportModel
+class SalesReportModel implements ReportModel
 {
     public function __construct(
         public ?string $invoice_id = null,
@@ -29,7 +30,7 @@ class SalesReport implements Report
         return 'mandate%2Fsales-report.avx';
     }
 
-    public function mapping(array $record): \Contoweb\AbacusApi\Reports\Contracts\ReportModel
+    public function mapping(array $record): ReportModel
     {
         return new SalesReportModel(
             invoice_id: $record['InvoiceId'] ?? null,

@@ -4,6 +4,7 @@ namespace Contoweb\AbacusApi\Tests\Unit\Batch;
 
 use Contoweb\AbacusApi\Batch\BatchResponseCollection;
 use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
+use Contoweb\AbacusApi\Models\AbacusModel;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Collection;
 use Mockery;
@@ -171,8 +172,8 @@ class BatchResponseCollectionTest extends TestCase
     #[Test]
     public function it_can_extract_single_abacus_models_from_successful_responses(): void
     {
-        $model1 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
-        $model2 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
+        $model1 = Mockery::mock(AbacusModel::class);
+        $model2 = Mockery::mock(AbacusModel::class);
 
         $response1 = Mockery::mock(BatchResponseDto::class);
         $response1->shouldReceive('isSuccess')->andReturn(true);
@@ -199,9 +200,9 @@ class BatchResponseCollectionTest extends TestCase
     #[Test]
     public function it_can_extract_collections_with_abacus_models_from_successful_responses(): void
     {
-        $model1 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
-        $model2 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
-        $model3 = Mockery::mock(\Contoweb\AbacusApi\Models\AbacusModel::class);
+        $model1 = Mockery::mock(AbacusModel::class);
+        $model2 = Mockery::mock(AbacusModel::class);
+        $model3 = Mockery::mock(AbacusModel::class);
 
         $response1 = Mockery::mock(BatchResponseDto::class);
         $response1->shouldReceive('isSuccess')->andReturn(true);
