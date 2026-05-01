@@ -133,7 +133,7 @@ class AbacusReportsClient extends AbacusClient
      */
     public function reportPath(string $reportName): string
     {
-        return $this->getReportBasePath().'/report/'.$reportName;
+        return "{$this->getReportBasePath()}/report/$this->mandate/$reportName";
     }
 
     /**
