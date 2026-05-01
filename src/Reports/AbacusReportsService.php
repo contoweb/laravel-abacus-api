@@ -3,6 +3,7 @@
 namespace Contoweb\AbacusApi\Reports;
 
 use Contoweb\AbacusApi\Reports\Contracts\Report;
+use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
@@ -58,7 +59,7 @@ class AbacusReportsService
      * Execute report and return collection of models
      *
      * @param  Report  $report  Report instance
-     * @return Collection Collection of report models
+     * @return Collection<int, ReportModel> Collection of report models
      *
      * @throws ConnectionException
      * @throws ReportExecutionException
