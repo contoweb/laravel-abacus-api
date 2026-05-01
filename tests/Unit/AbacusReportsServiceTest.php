@@ -65,7 +65,7 @@ class ValidatedReport extends Report implements RequiresValidationRules
 
 class CompactOutputReport extends Report
 {
-    protected string $outputType = 'json_compact';
+    protected string $outputType = 'json_userdef_compact';
 
     public function name(): string
     {
@@ -97,7 +97,7 @@ class AbacusReportsServiceTest extends TestCase
     {
         $report = new SimpleReport;
 
-        $this->assertEquals('json', $report->outputType());
+        $this->assertEquals('json_compact', $report->outputType());
     }
 
     #[Test]
@@ -129,7 +129,7 @@ class AbacusReportsServiceTest extends TestCase
                 return false;
             }
 
-            return ($request->data()['outputType'] ?? null) === 'json_compact';
+            return ($request->data()['outputType'] ?? null) === 'json_userdef_compact';
         });
     }
 

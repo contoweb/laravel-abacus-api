@@ -7,7 +7,7 @@ abstract class Report
     /**
      * The output type for the report result.
      */
-    protected string $outputType = 'json';
+    protected string $outputType = 'json_compact';
 
     /**
      * Parameters for the report request.
