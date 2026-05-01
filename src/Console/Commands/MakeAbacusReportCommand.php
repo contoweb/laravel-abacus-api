@@ -103,7 +103,7 @@ use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 {{modelImport}}
 
-class {{class}} implements Report, RequiresValidationRules
+class {{class}} extends Report implements RequiresValidationRules
 {
     /**
      * Get validation rules for report parameters
@@ -121,7 +121,7 @@ class {{class}} implements Report, RequiresValidationRules
      */
     public function name(): string
     {
-        return config('abacus-api.rest_api.mandate') . '%2F' . 'your_report.avx';
+        return '%2F' . 'your_report.avx';
     }
 
     /**

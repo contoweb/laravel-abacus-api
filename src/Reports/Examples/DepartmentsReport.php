@@ -7,8 +7,10 @@ use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Examples\Models\Department;
 
-class DepartmentsReport implements Report, RequiresValidationRules
+class DepartmentsReport extends Report implements RequiresValidationRules
 {
+    protected string $outputType = 'json_compact';
+
     /**
      * Get validation rules for report parameters
      */
@@ -25,7 +27,7 @@ class DepartmentsReport implements Report, RequiresValidationRules
      */
     public function name(): string
     {
-        return config('abacus-api.rest_api.mandate').'%2F'.'contacts_organisations.avx';
+        return '%2Fcontacts_organisations.avx';
     }
 
     /**
