@@ -7,7 +7,6 @@ use Contoweb\AbacusApi\Reports\AbacusReportsService;
 use Contoweb\AbacusApi\Reports\Contracts\Report;
 use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Tests\TestCase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -23,11 +22,11 @@ class SalesReportModel implements ReportModel
 }
 
 /* Test report for integration testing */
-class SalesReport implements Report
+class SalesReport extends Report
 {
     public function name(): string
     {
-        return 'mandate%2Fsales-report.avx';
+        return '%2Fsales-report.avx';
     }
 
     public function mapping(array $record): ReportModel
@@ -49,7 +48,6 @@ class ReportsWorkflowTest extends TestCase
     {
         parent::setUp();
 
-        Cache::flush();
         $client = new AbacusReportsClient($this->makeCredentialsProvider());
         $this->service = new AbacusReportsService($client);
     }
@@ -63,7 +61,7 @@ class ReportsWorkflowTest extends TestCase
                 'expires_in' => 3600,
             ], 200),
             /* Submit report */
-            '*/api/abareport/v1/report/mandate%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-workflow-123',
                 'state' => 'Running',
                 'mandate' => 'test-mandate',
@@ -82,7 +80,7 @@ class ReportsWorkflowTest extends TestCase
                     'id' => 'job-workflow-123',
                     'state' => 'FinishedSuccess',
                 ], 200)
-                /* Delete job */
+                /* Delete job (deferred) */
                 ->push(null, 204),
             /* Get output */
             '*/api/abareport/v1/jobs/job-workflow-123/output' => Http::response([
@@ -101,13 +99,11 @@ class ReportsWorkflowTest extends TestCase
             ], 200),
         ]);
 
-        $report = new SalesReport;
-        $results = $this->service
-            ->parameter([
-                'startDate' => '2024-01-01',
-                'endDate' => '2024-01-31',
-            ])
-            ->collection($report);
+        $report = new SalesReport([
+            'startDate' => '2024-01-01',
+            'endDate' => '2024-01-31',
+        ]);
+        $results = $this->service->collection($report);
 
         $this->assertCount(2, $results);
         $this->assertEquals('INV-001', $results[0]->invoice_id);
@@ -115,59 +111,14 @@ class ReportsWorkflowTest extends TestCase
         $this->assertEquals(1500.00, $results[0]->total_amount);
         $this->assertEquals('INV-002', $results[1]->invoice_id);
 
+        /* Flush deferred callbacks so DELETE runs before assertion */
+        defer()->invoke();
+
         /* Verify that deleteJob was called */
         Http::assertSent(function ($request) {
             return $request->method() === 'DELETE' &&
                    str_contains($request->url(), '/jobs/job-workflow-123');
         });
-    }
-
-    #[Test]
-    public function it_caches_report_results_between_executions(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/report/mandate%2Fsales-report.avx' => Http::response([
-                'id' => 'job-cache-456',
-                'state' => 'Running',
-            ], 202),
-            '*/api/abareport/v1/jobs/job-cache-456' => Http::sequence()
-                ->push([
-                    'id' => 'job-cache-456',
-                    'state' => 'FinishedSuccess',
-                ], 200)
-                ->push(null, 204), /* Delete job */
-            '*/api/abareport/v1/jobs/job-cache-456/output' => Http::response([
-                [
-                    'InvoiceId' => 'CACHED-001',
-                    'CustomerName' => 'Cached Customer',
-                    'TotalAmount' => 999.99,
-                    'Date' => '2024-01-01',
-                ],
-            ], 200),
-        ]);
-
-        $report = new SalesReport;
-
-        /* First execution - fetches from API */
-        $results1 = $this->service
-            ->parameter(['month' => 'January'])
-            ->cache(3600)
-            ->collection($report);
-
-        /* Second execution with same parameters - uses cache */
-        $results2 = $this->service
-            ->parameter(['month' => 'January'])
-            ->cache(3600)
-            ->collection($report);
-
-        $this->assertEquals($results1, $results2);
-
-        /* Should only submit report once (token + submit + status + output + delete) */
-        Http::assertSentCount(5);
     }
 
     #[Test]
@@ -178,7 +129,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/mandate%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-sales',
                 'state' => 'Running',
             ], 202),
@@ -191,12 +142,10 @@ class ReportsWorkflowTest extends TestCase
             ], 200),
         ]);
 
-        $salesReport = new SalesReport;
+        $salesReport = new SalesReport(['type' => 'sales']);
 
-        /* Execute first report */
-        $salesResults = $this->service
-            ->parameter(['type' => 'sales'])
-            ->collection($salesReport);
+        /* Execute report */
+        $salesResults = $this->service->collection($salesReport);
 
         $this->assertCount(1, $salesResults);
         $this->assertEquals('S-001', $salesResults[0]->invoice_id);
@@ -210,7 +159,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/mandate%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-no-params',
                 'state' => 'Running',
             ], 202),
@@ -247,7 +196,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/mandate%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-large',
                 'state' => 'Running',
             ], 202),
@@ -274,7 +223,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/mandate%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-empty',
                 'state' => 'Running',
             ], 202),
@@ -292,36 +241,6 @@ class ReportsWorkflowTest extends TestCase
     }
 
     #[Test]
-    public function it_uses_custom_cache_keys(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/report/mandate%2Fsales-report.avx' => Http::response([
-                'id' => 'job-custom-key',
-                'state' => 'Running',
-            ], 202),
-            '*/api/abareport/v1/jobs/job-custom-key' => Http::response([
-                'id' => 'job-custom-key',
-                'state' => 'FinishedSuccess',
-            ], 200),
-            '*/api/abareport/v1/jobs/job-custom-key/output' => Http::response([
-                ['InvoiceId' => 'CK-001', 'CustomerName' => 'Custom', 'TotalAmount' => 100, 'Date' => '2024-01-01'],
-            ], 200),
-        ]);
-
-        $report = new SalesReport;
-        $this->service
-            ->parameter(['region' => 'EU'])
-            ->cache(3600, 'eu-sales-report')
-            ->collection($report);
-
-        $this->assertTrue(Cache::has('abacus_report:eu-sales-report'));
-    }
-
-    #[Test]
     public function it_handles_concurrent_report_executions(): void
     {
         Http::fake([
@@ -329,44 +248,35 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/mandate%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-concurrent',
                 'state' => 'Running',
             ], 202),
             '*/api/abareport/v1/jobs/job-concurrent' => Http::sequence()
-                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)
-                ->push(null, 204) /* Delete job 1 */
-                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)
-                ->push(null, 204) /* Delete job 2 */
-                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)
-                ->push(null, 204), /* Delete job 3 */
+                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)  /* poll 1 */
+                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)  /* poll 2 */
+                ->push(['id' => 'job-concurrent', 'state' => 'FinishedSuccess'], 200)  /* poll 3 */
+                ->push(null, 204)  /* deferred delete 1 */
+                ->push(null, 204)  /* deferred delete 2 */
+                ->push(null, 204), /* deferred delete 3 */
             '*/api/abareport/v1/jobs/job-concurrent/output' => Http::response([
                 ['InvoiceId' => 'C-001', 'CustomerName' => 'Concurrent', 'TotalAmount' => 100, 'Date' => '2024-01-01'],
             ], 200),
         ]);
 
-        $report = new SalesReport;
-
         /* Execute multiple times with different parameters */
-        $results1 = $this->service
-            ->parameter(['region' => 'US'])
-            ->collection($report);
-
-        $results2 = $this->service
-            ->parameter(['region' => 'EU'])
-            ->collection($report);
-
-        $results3 = $this->service
-            ->parameter(['region' => 'ASIA'])
-            ->collection($report);
+        $results1 = $this->service->collection(new SalesReport(['region' => 'US']));
+        $results2 = $this->service->collection(new SalesReport(['region' => 'EU']));
+        $results3 = $this->service->collection(new SalesReport(['region' => 'ASIA']));
 
         $this->assertCount(1, $results1);
         $this->assertCount(1, $results2);
         $this->assertCount(1, $results3);
 
-        /* First: token + submit + status + output + delete = 5 */
-        /* Second + Third: submit + status + output + delete = 4 each (token cached) */
-        /* Total: 5 + 4 + 4 = 13 */
+        /* Flush deferred callbacks so DELETE requests run before assertion */
+        defer()->invoke();
+
+        /* token + 3×(submit + poll + output) + 3×deferred deletes = 1 + 9 + 3 = 13 */
         Http::assertSentCount(13);
     }
 }

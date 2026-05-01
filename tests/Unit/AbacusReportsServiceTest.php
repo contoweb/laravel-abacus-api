@@ -10,7 +10,6 @@ use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
 use Contoweb\AbacusApi\Tests\TestCase;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -24,7 +23,7 @@ class SimpleReportModel implements ReportModel
 }
 
 /* Test report classes */
-class SimpleReport implements Report
+class SimpleReport extends Report
 {
     public function name(): string
     {
@@ -40,7 +39,7 @@ class SimpleReport implements Report
     }
 }
 
-class ValidatedReport implements Report, RequiresValidationRules
+class ValidatedReport extends Report implements RequiresValidationRules
 {
     public function name(): string
     {
@@ -64,6 +63,21 @@ class ValidatedReport implements Report, RequiresValidationRules
     }
 }
 
+class CompactOutputReport extends Report
+{
+    protected string $outputType = 'json_compact';
+
+    public function name(): string
+    {
+        return 'compact-report.avx';
+    }
+
+    public function mapping(array $record): ReportModel
+    {
+        return new SimpleReportModel(id: $record['Id'] ?? null);
+    }
+}
+
 class AbacusReportsServiceTest extends TestCase
 {
     protected AbacusReportsService $service;
@@ -74,25 +88,58 @@ class AbacusReportsServiceTest extends TestCase
     {
         parent::setUp();
 
-        Cache::flush();
         $this->client = new AbacusReportsClient($this->makeCredentialsProvider());
         $this->service = new AbacusReportsService($this->client);
     }
 
     #[Test]
-    public function it_sets_parameters(): void
+    public function it_returns_default_output_type(): void
     {
-        $result = $this->service->parameter(['param1' => 'value1']);
+        $report = new SimpleReport;
 
-        $this->assertInstanceOf(AbacusReportsService::class, $result);
+        $this->assertEquals('json', $report->outputType());
     }
 
     #[Test]
-    public function it_enables_cache(): void
+    public function it_uses_custom_output_type(): void
     {
-        $result = $this->service->cache(7200, 'custom-key');
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/test-mandate/compact-report.avx' => Http::response([
+                'id' => 'job-compact',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-compact' => Http::response([
+                'id' => 'job-compact',
+                'state' => 'FinishedSuccess',
+            ], 200),
+            '*/api/abareport/v1/jobs/job-compact/output' => Http::response([
+                ['Id' => 1],
+            ], 200),
+        ]);
 
-        $this->assertInstanceOf(AbacusReportsService::class, $result);
+        $report = new CompactOutputReport;
+        $this->service->collection($report);
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/report/test-mandate/compact-report.avx')) {
+                return false;
+            }
+
+            return ($request->data()['outputType'] ?? null) === 'json_compact';
+        });
+    }
+
+    #[Test]
+    public function it_includes_mandate_in_report_url(): void
+    {
+        $path = $this->client->reportPath('my-report.avx');
+
+        $this->assertStringContainsString('/test-mandate/', $path);
+        $this->assertStringEndsWith('my-report.avx', $path);
     }
 
     #[Test]
@@ -103,7 +150,7 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::response([
                 'id' => 'job-123',
                 'state' => 'Running',
             ], 202),
@@ -133,7 +180,7 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::response([
                 'id' => 'job-456',
                 'state' => 'Running',
             ], 202),
@@ -146,15 +193,13 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new SimpleReport;
-        $results = $this->service
-            ->parameter(['filter' => 'active'])
-            ->collection($report);
+        $report = new SimpleReport(['filter' => 'active']);
+        $results = $this->service->collection($report);
 
         $this->assertCount(1, $results);
 
         Http::assertSent(function ($request) {
-            if (! str_contains($request->url(), '/report/test-report.avx')) {
+            if (! str_contains($request->url(), '/report/test-mandate/test-report.avx')) {
                 return false;
             }
             $data = $request->data();
@@ -165,73 +210,39 @@ class AbacusReportsServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_caches_report_results(): void
+    public function it_executes_independently_for_different_report_instances(): void
     {
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
-                'id' => 'job-cache',
-                'state' => 'Running',
-            ], 202),
-            '*/api/abareport/v1/jobs/job-cache' => Http::sequence()
-                ->push([
-                    'id' => 'job-cache',
-                    'state' => 'FinishedSuccess',
-                ], 200)
-                ->push(null, 204), /* Delete job */
-            '*/api/abareport/v1/jobs/job-cache/output' => Http::response([
-                ['Id' => 1, 'Name' => 'Cached'],
-            ], 200),
-        ]);
-
-        $report = new SimpleReport;
-
-        /* First call - fetches from API */
-        $results1 = $this->service
-            ->cache(3600)
-            ->collection($report);
-
-        /* Second call - should use cache */
-        $results2 = $this->service
-            ->cache(3600)
-            ->collection($report);
-
-        $this->assertEquals($results1, $results2);
-
-        /* Should only submit report once (token + submit + status + output + delete) */
-        Http::assertSentCount(5);
-    }
-
-    #[Test]
-    public function it_uses_custom_cache_key(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
-                'id' => 'job-custom',
-                'state' => 'Running',
-            ], 202),
-            '*/api/abareport/v1/jobs/job-custom' => Http::response([
-                'id' => 'job-custom',
+            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::sequence()
+                ->push(['id' => 'job-ind-1', 'state' => 'Running'], 202)
+                ->push(['id' => 'job-ind-2', 'state' => 'Running'], 202),
+            '*/api/abareport/v1/jobs/job-ind-1' => Http::response([
+                'id' => 'job-ind-1',
                 'state' => 'FinishedSuccess',
             ], 200),
-            '*/api/abareport/v1/jobs/job-custom/output' => Http::response([
-                ['Id' => 1, 'Name' => 'Custom'],
+            '*/api/abareport/v1/jobs/job-ind-1/output' => Http::response([
+                ['Id' => 1, 'Name' => 'Result A'],
+            ], 200),
+            '*/api/abareport/v1/jobs/job-ind-2' => Http::response([
+                'id' => 'job-ind-2',
+                'state' => 'FinishedSuccess',
+            ], 200),
+            '*/api/abareport/v1/jobs/job-ind-2/output' => Http::response([
+                ['Id' => 2, 'Name' => 'Result B'],
             ], 200),
         ]);
 
-        $report = new SimpleReport;
-        $this->service
-            ->cache(3600, 'my-custom-key')
-            ->collection($report);
+        $results1 = $this->service->collection(new SimpleReport(['param' => 'value1']));
+        $results2 = $this->service->collection(new SimpleReport(['param' => 'value2']));
 
-        $this->assertTrue(Cache::has('abacus_report:my-custom-key'));
+        $this->assertCount(1, $results1);
+        $this->assertCount(1, $results2);
+        $this->assertEquals(1, $results1[0]->id);
+        $this->assertEquals(2, $results2[0]->id);
     }
 
     #[Test]
@@ -246,10 +257,8 @@ class AbacusReportsServiceTest extends TestCase
 
         $this->expectException(ReportValidationException::class);
 
-        $report = new ValidatedReport;
-        $this->service
-            ->parameter(['startDate' => '2024-01-01'])  /* Missing endDate */
-            ->collection($report);
+        $report = new ValidatedReport(['startDate' => '2024-01-01']);  /* Missing endDate */
+        $this->service->collection($report);
     }
 
     #[Test]
@@ -260,7 +269,7 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/validated-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/validated-report.avx' => Http::response([
                 'id' => 'job-valid',
                 'state' => 'Running',
             ], 202),
@@ -273,13 +282,11 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $report = new ValidatedReport;
-        $results = $this->service
-            ->parameter([
-                'startDate' => '2024-01-01',
-                'endDate' => '2024-12-31',
-            ])
-            ->collection($report);
+        $report = new ValidatedReport([
+            'startDate' => '2024-01-01',
+            'endDate' => '2024-12-31',
+        ]);
+        $results = $this->service->collection($report);
 
         $this->assertCount(1, $results);
     }
@@ -292,7 +299,7 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::response([
                 'status' => 403,
                 'title' => 'Access denied',
             ], 200),
@@ -313,7 +320,7 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::response([
                 'state' => 'Running',
                 /* Missing 'id' field */
             ], 202),
@@ -334,7 +341,7 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::response([
                 'id' => 'job-fail',
                 'state' => 'Running',
             ], 202),
@@ -360,7 +367,7 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::response([
                 'id' => 'job-invalid',
                 'state' => 'Running',
             ], 202),
@@ -382,89 +389,6 @@ class AbacusReportsServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_resets_state_after_execution(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/report/*' => Http::response([
-                'id' => 'job-reset',
-                'state' => 'Running',
-            ], 202),
-            '*/api/abareport/v1/jobs/job-reset' => Http::sequence()
-                ->push(['id' => 'job-reset', 'state' => 'FinishedSuccess'], 200)
-                ->push(null, 204) /* Delete job 1 */
-                ->push(['id' => 'job-reset', 'state' => 'FinishedSuccess'], 200)
-                ->push(null, 204), /* Delete job 2 */
-            '*/api/abareport/v1/jobs/job-reset/output' => Http::response([
-                ['Id' => 1],
-            ], 200),
-        ]);
-
-        $report = new SimpleReport;
-
-        /* Execute with parameters and cache */
-        $this->service
-            ->parameter(['test' => 'value'])
-            ->cache(3600)
-            ->collection($report);
-
-        /* Execute again without explicit parameters - should start fresh */
-        $results = $this->service->collection($report);
-
-        $this->assertCount(1, $results);
-
-        /* Should make new API calls (not use cache from first execution) */
-        /* First execution: token + submit + status + output + delete = 5 */
-        /* Second execution: submit + status + output + delete = 4 (token is cached) */
-        Http::assertSentCount(9);
-    }
-
-    #[Test]
-    public function it_generates_unique_cache_keys_for_different_parameters(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
-                'id' => 'job-key',
-                'state' => 'Running',
-            ], 202),
-            '*/api/abareport/v1/jobs/job-key' => Http::sequence()
-                ->push(['id' => 'job-key', 'state' => 'FinishedSuccess'], 200)
-                ->push(null, 204) /* Delete job 1 */
-                ->push(['id' => 'job-key', 'state' => 'FinishedSuccess'], 200)
-                ->push(null, 204), /* Delete job 2 */
-            '*/api/abareport/v1/jobs/job-key/output' => Http::response([
-                ['Id' => 1],
-            ], 200),
-        ]);
-
-        $report = new SimpleReport;
-
-        /* Execute with first set of parameters */
-        $this->service
-            ->parameter(['param' => 'value1'])
-            ->cache(3600)
-            ->collection($report);
-
-        /* Execute with different parameters */
-        $this->service
-            ->parameter(['param' => 'value2'])
-            ->cache(3600)
-            ->collection($report);
-
-        /* Should make separate API calls for different parameters */
-        /* First execution: token + submit + status + output + delete = 5 */
-        /* Second execution: submit + status + output + delete = 4 (token cached) */
-        Http::assertSentCount(9);
-    }
-
-    #[Test]
     public function it_handles_empty_output_array(): void
     {
         Http::fake([
@@ -472,7 +396,7 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-report.avx' => Http::response([
+            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::response([
                 'id' => 'job-empty',
                 'state' => 'Running',
             ], 202),

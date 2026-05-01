@@ -104,7 +104,7 @@ class MakeAbacusReportCommandTest extends TestCase
         $content = File::get($path);
 
         $this->assertStringContainsString('namespace App\Reports;', $content);
-        $this->assertStringContainsString('class TestReport implements Report', $content);
+        $this->assertStringContainsString('class TestReport extends Report', $content);
     }
 
     #[Test]
