@@ -146,7 +146,7 @@ class QueryBuilderIntegrationTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(123)*' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects(123)*' => Http::response([
                 'Id' => 123,
                 'FirstName' => 'Found',
                 'LastName' => 'ByID',

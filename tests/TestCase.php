@@ -32,7 +32,7 @@ abstract class TestCase extends Orchestra
     {
         /* Configure test environment */
         $app['config']->set('abacus-api.rest_api.url', 'https://api.example.com');
-        $app['config']->set('abacus-api.rest_api.mandate', 'test-mandate');
+        $app['config']->set('abacus-api.rest_api.mandate', '1212');
         $app['config']->set('abacus-api.rest_api.client_id', 'test-client-id');
         $app['config']->set('abacus-api.rest_api.client_secret', 'test-client-secret');
         $app['config']->set('abacus-api.rest_api.version', 'v1');
@@ -46,18 +46,12 @@ abstract class TestCase extends Orchestra
 
     protected function makeCredentialsProvider(): AbacusCredentialsProvider
     {
-        return $this->makeCustomCredentialsProvider(
-            'https://api.example.com',
-            'test-mandate',
-            'test-client-id',
-            'test-client-secret',
-            'v1',
-        );
+        return $this->makeCustomCredentialsProvider();
     }
 
     protected function makeCustomCredentialsProvider(
         string $baseUrl = 'https://api.example.com',
-        string $mandate = 'test-mandate',
+        string $mandate = '1212',
         string $clientId = 'test-client-id',
         string $clientSecret = 'test-client-secret',
         string $apiVersion = 'v1',

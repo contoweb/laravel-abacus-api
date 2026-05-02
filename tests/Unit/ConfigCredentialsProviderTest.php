@@ -18,7 +18,7 @@ class ConfigCredentialsProviderTest extends TestCase
 
         $this->assertInstanceOf(AbacusApiCredentialsDto::class, $credentials);
         $this->assertEquals('https://api.example.com', $credentials->baseUrl);
-        $this->assertEquals('test-mandate', $credentials->mandate);
+        $this->assertEquals('1212', $credentials->mandate);
         $this->assertEquals('test-client-id', $credentials->clientId);
         $this->assertEquals('test-client-secret', $credentials->clientSecret);
         $this->assertEquals('v1', $credentials->apiVersion);

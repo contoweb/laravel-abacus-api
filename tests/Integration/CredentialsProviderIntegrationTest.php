@@ -128,7 +128,7 @@ class CredentialsProviderIntegrationTest extends TestCase
         $user = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
         $user->shouldReceive('abacusCredentials')->andReturn(new AbacusApiCredentialsDto(
             baseUrl: 'https://api.example.com',
-            mandate: 'test-mandate',
+            mandate: '1212',
             clientId: 'test-client',
             clientSecret: 'test-secret',
             apiVersion: 'v1',
@@ -144,7 +144,7 @@ class CredentialsProviderIntegrationTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            'https://api.example.com/api/entity/v1/mandants/test-mandate/Subjects*' => Http::response([
+            'https://api.example.com/api/entity/v1/mandants/1212/Subjects*' => Http::response([
                 'value' => [
                     ['Id' => 1, 'FirstName' => 'Test Subject'],
                 ],
@@ -155,7 +155,7 @@ class CredentialsProviderIntegrationTest extends TestCase
         Auth::login($user);
 
         $client = $this->app->make(AbacusODataClient::class);
-        $this->assertEquals('test-mandate', $client->getMandate());
+        $this->assertEquals('1212', $client->getMandate());
 
         // Make an actual HTTP request while logged in
         $response = $client->get($client->entityPath('Subjects'));

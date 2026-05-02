@@ -24,7 +24,7 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->entityPath('Subjects');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/Subjects', $path);
     }
 
     #[Test]
@@ -32,7 +32,7 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->entityPathWithId('Subjects', 123);
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects(123)', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/Subjects(123)', $path);
     }
 
     #[Test]
@@ -40,7 +40,7 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->entityPathWithId('Users', 'abc-def');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Users(abc-def)', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/Users(abc-def)', $path);
     }
 
     #[Test]
@@ -48,7 +48,7 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->entityPropertyPath('Subjects', 123, 'Name');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects(123)/Name', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/Subjects(123)/Name', $path);
     }
 
     #[Test]
@@ -56,7 +56,7 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->metadataPath();
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/$metadata', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/$metadata', $path);
     }
 
     #[Test]
@@ -64,7 +64,7 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->entitiesPath();
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/', $path);
     }
 
     #[Test]
@@ -75,7 +75,7 @@ class AbacusODataClientTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            'https://api.example.com/api/entity/v1/mandants/test-mandate/Subjects?$skip=100' => Http::response([
+            'https://api.example.com/api/entity/v1/mandants/1212/Subjects?$skip=100' => Http::response([
                 'value' => [
                     ['Id' => 101, 'Name' => 'Subject 101'],
                     ['Id' => 102, 'Name' => 'Subject 102'],
@@ -83,7 +83,7 @@ class AbacusODataClientTest extends TestCase
             ], 200),
         ]);
 
-        $nextLinkUrl = 'https://api.example.com/api/entity/v1/mandants/test-mandate/Subjects?$skip=100';
+        $nextLinkUrl = 'https://api.example.com/api/entity/v1/mandants/1212/Subjects?$skip=100';
         $response = $this->client->getNextLink($nextLinkUrl);
 
         $this->assertEquals(200, $response->status());
@@ -130,7 +130,7 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->entityPath('Special/Resource');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Special/Resource', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/Special/Resource', $path);
     }
 
     #[Test]
@@ -138,7 +138,7 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->entityPathWithId('Orders', 99999);
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Orders(99999)', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/Orders(99999)', $path);
     }
 
     #[Test]
@@ -147,7 +147,7 @@ class AbacusODataClientTest extends TestCase
         $guid = '550e8400-e29b-41d4-a716-446655440000';
         $path = $this->client->entityPathWithId('Documents', $guid);
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Documents(550e8400-e29b-41d4-a716-446655440000)', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/Documents(550e8400-e29b-41d4-a716-446655440000)', $path);
     }
 
     #[Test]
@@ -155,6 +155,6 @@ class AbacusODataClientTest extends TestCase
     {
         $path = $this->client->entityPropertyPath('Subjects', 42, 'Address/City');
 
-        $this->assertEquals('/api/entity/v1/mandants/test-mandate/Subjects(42)/Address/City', $path);
+        $this->assertEquals('/api/entity/v1/mandants/1212/Subjects(42)/Address/City', $path);
     }
 }

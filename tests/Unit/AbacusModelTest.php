@@ -63,7 +63,7 @@ class AbacusModelTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(42)' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects(42)' => Http::response([
                 'Id' => 42,
                 'Name' => 'Test Subject',
                 'Email' => 'test@example.com',
@@ -85,7 +85,7 @@ class AbacusModelTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(999)' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects(999)' => Http::response([
                 'error' => 'Not found',
             ], 404),
         ]);
@@ -143,7 +143,7 @@ class AbacusModelTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects' => Http::response([
                 'Id' => 100,
                 'Name' => 'New Subject',
                 'Email' => 'new@example.com',
@@ -168,7 +168,7 @@ class AbacusModelTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(75)' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects(75)' => Http::response([
                 'Id' => 75,
                 'Name' => 'Updated Name',
                 'Email' => 'updated@example.com',
@@ -190,7 +190,7 @@ class AbacusModelTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(42)' => Http::response(null, 204),
+            '*/api/entity/v1/mandants/1212/Subjects(42)' => Http::response(null, 204),
         ]);
 
         TestSubject::delete(42);
@@ -429,7 +429,7 @@ class AbacusModelTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(100)*' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects(100)*' => Http::response([
                 'Id' => 100,
                 'Name' => 'Chained Update',
             ], 200),

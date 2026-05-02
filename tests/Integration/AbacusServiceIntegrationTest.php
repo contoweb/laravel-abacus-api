@@ -28,14 +28,14 @@ class AbacusServiceIntegrationTest extends TestCase
                 'expires_in' => 3600,
             ], 200),
             /* Create */
-            '*/api/entity/v1/mandants/test-mandate/Subjects' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects' => Http::response([
                 'Id' => 100,
                 'FirstName' => 'John',
                 'LastName' => 'Doe',
                 'Email' => 'john@example.com',
             ], 201),
             /* Read, Update, Delete - use sequence for same URL */
-            '*/api/entity/v1/mandants/test-mandate/Subjects(100)*' => Http::sequence()
+            '*/api/entity/v1/mandants/1212/Subjects(100)*' => Http::sequence()
                 ->push(['Id' => 100, 'FirstName' => 'John', 'LastName' => 'Doe'], 200)     /* Read */
                 ->push(['Id' => 100, 'FirstName' => 'Jane', 'LastName' => 'Doe'], 200)     /* Update */
                 ->push(null, 204),                                                            /* Delete */
@@ -99,7 +99,7 @@ class AbacusServiceIntegrationTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/$batch' => Http::response(
+            '*/api/entity/v1/mandants/1212/$batch' => Http::response(
                 $this->createBatchResponse([
                     ['Id' => 1, 'FirstName' => 'Alice'],
                     ['Id' => 2, 'FirstName' => 'Bob'],
@@ -134,7 +134,7 @@ class AbacusServiceIntegrationTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/' => Http::response([
+            '*/api/entity/v1/mandants/1212/' => Http::response([
                 'value' => [
                     ['name' => 'Subjects', 'url' => 'Subjects'],
                     ['name' => 'Products', 'url' => 'Products'],
@@ -159,7 +159,7 @@ class AbacusServiceIntegrationTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/$metadata' => Http::response(
+            '*/api/entity/v1/mandants/1212/$metadata' => Http::response(
                 '<?xml version="1.0"?><edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0"></edmx:Edmx>',
                 200
             ),
@@ -188,7 +188,7 @@ class AbacusServiceIntegrationTest extends TestCase
             '*/oauth/oauth2/v1/token' => Http::sequence()
                 ->push(['access_token' => 'token-1', 'expires_in' => 3600], 200)  /* Initial token */
                 ->push(['access_token' => 'token-2', 'expires_in' => 3600], 200), /* Refreshed token */
-            '*/api/entity/v1/mandants/test-mandate/Subjects*' => Http::sequence()
+            '*/api/entity/v1/mandants/1212/Subjects*' => Http::sequence()
                 ->push(['value' => [['Id' => 1, 'FirstName' => 'Test']]], 200)    /* First query succeeds */
                 ->push(['error' => 'Unauthorized'], 401)                           /* Second query returns 401 */
                 ->push(['value' => [['Id' => 1, 'FirstName' => 'Test']]], 200),   /* Retry after token refresh */

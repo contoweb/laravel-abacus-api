@@ -24,7 +24,7 @@ class AbacusReportsClientTest extends TestCase
     {
         $path = $this->client->reportPath('mandate%2Freport.avx');
 
-        $this->assertEquals('/api/abareport/v1/report/test-mandate/mandate%2Freport.avx', $path);
+        $this->assertEquals('/api/abareport/v1/report/1212/mandate%2Freport.avx', $path);
     }
 
     #[Test]
@@ -51,10 +51,10 @@ class AbacusReportsClientTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-mandate/test-report.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
                 'id' => 'job-123',
                 'state' => 'Running',
-                'mandate' => 'test-mandate',
+                'mandate' => '1212',
             ], 202),
         ]);
 
@@ -68,7 +68,7 @@ class AbacusReportsClientTest extends TestCase
             $data = $request->data();
 
             return $request->method() === 'POST' &&
-                   str_contains($request->url(), '/report/test-mandate/test-report.avx') &&
+                   str_contains($request->url(), '/report/1212/test-report.avx') &&
                    $data['outputType'] === 'json' &&
                    isset($data['parameters']['param1']) &&
                    $data['parameters']['param1'] === 'value1';
@@ -83,7 +83,7 @@ class AbacusReportsClientTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-mandate/simple.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/simple.avx' => Http::response([
                 'id' => 'job-456',
                 'state' => 'Running',
             ], 202),
@@ -109,7 +109,7 @@ class AbacusReportsClientTest extends TestCase
             '*/api/abareport/v1/jobs/job-789' => Http::response([
                 'id' => 'job-789',
                 'state' => 'Finished',
-                'mandate' => 'test-mandate',
+                'mandate' => '1212',
             ], 200),
         ]);
 
@@ -317,7 +317,7 @@ class AbacusReportsClientTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-mandate/no-params.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/no-params.avx' => Http::response([
                 'id' => 'job-no-params',
                 'state' => 'Running',
             ], 202),

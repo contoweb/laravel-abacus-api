@@ -152,6 +152,6 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->assertStringStartsWith('<?php', $modelContent);
 
         /* Check for required imports */
-        $this->assertStringContainsString('use Contoweb\AbacusApi\Reports\Contracts\Report;', $reportContent);
+        $this->assertStringContainsString('use Contoweb\AbacusApi\Reports\Abstracts\Report;', $reportContent);
     }
 }

@@ -4,7 +4,7 @@ namespace Contoweb\AbacusApi\Tests\Feature;
 
 use Contoweb\AbacusApi\Reports\AbacusReportsClient;
 use Contoweb\AbacusApi\Reports\AbacusReportsService;
-use Contoweb\AbacusApi\Reports\Contracts\Report;
+use Contoweb\AbacusApi\Reports\Abstracts\Report;
 use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
@@ -55,16 +55,18 @@ class ReportsWorkflowTest extends TestCase
     #[Test]
     public function it_executes_complete_report_workflow(): void
     {
+        $this->withoutDefer();
+
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
             /* Submit report */
-            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-workflow-123',
                 'state' => 'Running',
-                'mandate' => 'test-mandate',
+                'mandate' => '1212',
             ], 202),
             /* Poll status - first returns Running */
             '*/api/abareport/v1/jobs/job-workflow-123' => Http::sequence()
@@ -111,9 +113,6 @@ class ReportsWorkflowTest extends TestCase
         $this->assertEquals(1500.00, $results[0]->total_amount);
         $this->assertEquals('INV-002', $results[1]->invoice_id);
 
-        /* Flush deferred callbacks so DELETE runs before assertion */
-        defer()->invoke();
-
         /* Verify that deleteJob was called */
         Http::assertSent(function ($request) {
             return $request->method() === 'DELETE' &&
@@ -129,7 +128,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-sales',
                 'state' => 'Running',
             ], 202),
@@ -159,7 +158,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-no-params',
                 'state' => 'Running',
             ], 202),
@@ -196,7 +195,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-large',
                 'state' => 'Running',
             ], 202),
@@ -223,7 +222,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-empty',
                 'state' => 'Running',
             ], 202),
@@ -248,7 +247,7 @@ class ReportsWorkflowTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/test-mandate/%2Fsales-report.avx' => Http::response([
+            '*/api/abareport/v1/report/1212/%2Fsales-report.avx' => Http::response([
                 'id' => 'job-concurrent',
                 'state' => 'Running',
             ], 202),
