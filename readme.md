@@ -552,7 +552,7 @@ class Department implements ReportModel
 
 namespace App\Services\Abacus\Reports;
 
-use Contoweb\AbacusApi\Reports\Contracts\Report;
+use Contoweb\AbacusApi\Reports\Abstracts\Report;
 use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use App\Services\Abacus\Reports\Models\Department;
