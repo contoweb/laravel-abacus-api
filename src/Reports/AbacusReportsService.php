@@ -34,9 +34,7 @@ class AbacusReportsService
     public function collection(Report $report): Collection
     {
         /* Execute report and get models */
-        $models = $this->executeReport($report);
-
-        return collect($models);
+        return collect($this->executeReport($report));
     }
 
     /**
