@@ -50,13 +50,13 @@ class AbacusReportsService
     {
         /* Validate parameters if required */
         if ($report instanceof RequiresValidationRules) {
-            $this->validateParameters($report->parameter(), $report::validationRules());
+            $this->validateParameters($report->parameters(), $report::validationRules());
         }
 
         /* Submit report */
         $jobResponse = $this->client->submitReport(
             $report->name(),
-            $report->parameter(),
+            $report->parameters(),
             $report->outputType()
         );
 

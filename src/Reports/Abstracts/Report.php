@@ -18,7 +18,7 @@ abstract class Report implements ReportContract
 
     public function __construct(array|string $parameters = [], ?string $outputType = null)
     {
-        $this->setParameter($parameters);
+        $this->setParameters($parameters);
 
         if (! is_null($outputType)) {
             $this->outputType = $outputType;
@@ -36,7 +36,7 @@ abstract class Report implements ReportContract
     /**
      * {@inheritDoc}
      */
-    public function parameter(): array|string
+    public function parameters(): array|string
     {
         return $this->parameters;
     }
@@ -44,7 +44,7 @@ abstract class Report implements ReportContract
     /**
      * {@inheritDoc}
      */
-    public function setParameter(array|string $parameters): static
+    public function setParameters(array|string $parameters): static
     {
         $this->parameters = $parameters;
 

@@ -12,12 +12,12 @@ interface Report
     /**
      * Set the report parameters.
      */
-    public function setParameter(array|string $parameters): static;
+    public function setParameters(array|string $parameters): static;
 
     /**
      * Get the report parameters.
      */
-    public function parameter(): array|string;
+    public function parameters(): array|string;
 
     /**
      * Get the report name (including path encoding)
