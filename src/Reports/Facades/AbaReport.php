@@ -3,13 +3,11 @@
 namespace Contoweb\AbacusApi\Reports\Facades;
 
 use Contoweb\AbacusApi\Reports\AbacusReportsService;
-use Contoweb\AbacusApi\Reports\Abstracts\Report;
+use Contoweb\AbacusApi\Reports\Contracts\Report;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static AbacusReportsService parameter(array|string $parameters)
- * @method static AbacusReportsService cache(int $ttl = 3600, ?string $cacheKey = null)
  * @method static Collection collection(Report $report)
  *
  * @see AbacusReportsService
