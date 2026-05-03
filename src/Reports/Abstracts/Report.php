@@ -9,12 +9,12 @@ abstract class Report implements ReportContract
     /**
      * The output type for the report result.
      */
-    public string $outputType = 'json_compact';
+    protected string $outputType = 'json_compact';
 
     /**
      * Parameters for the report request.
      */
-    public array|string $parameters;
+    protected array|string $parameters = [];
 
     public function __construct(array|string $parameters = [], ?string $outputType = null)
     {
