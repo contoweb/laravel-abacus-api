@@ -1,15 +1,13 @@
 <?php
 
-namespace Contoweb\AbacusApi\Reports\Examples;
-
 use Contoweb\AbacusApi\Reports\Abstracts\Report;
 use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
-use Contoweb\AbacusApi\Reports\Examples\Models\Department;
+use Models\Department;
 
 class DepartmentsReport extends Report implements RequiresValidationRules
 {
-    public string $outputType = 'json_compact';
+    protected string $outputType = 'json_compact';
 
     /**
      * Get validation rules for report parameters

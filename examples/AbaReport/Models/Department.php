@@ -1,6 +1,6 @@
 <?php
 
-namespace Contoweb\AbacusApi\Reports\Examples\Models;
+namespace Models;
 
 use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 
