@@ -173,7 +173,7 @@ class AbacusReportsServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_executes_report_with_parameters(): void
+    public function it_executes_report_with_parameters_set_via_constructor(): void
     {
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
@@ -205,7 +205,45 @@ class AbacusReportsServiceTest extends TestCase
             $data = $request->data();
 
             return isset($data['parameters']['filter']) &&
-                   $data['parameters']['filter'] === 'active';
+                $data['parameters']['filter'] === 'active';
+        });
+    }
+
+    #[Test]
+    public function it_executes_report_with_parameters_set_via_setter(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-456',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-456' => Http::response([
+                'id' => 'job-456',
+                'state' => 'FinishedSuccess',
+            ], 200),
+            '*/api/abareport/v1/jobs/job-456/output' => Http::response([
+                ['Id' => 100, 'Name' => 'Filtered'],
+            ], 200),
+        ]);
+
+        $report = new SimpleReport;
+        $report->setParameters(['filter' => 'active']);
+        $results = $this->service->collection($report);
+
+        $this->assertCount(1, $results);
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/report/1212/test-report.avx')) {
+                return false;
+            }
+            $data = $request->data();
+
+            return isset($data['parameters']['filter']) &&
+                $data['parameters']['filter'] === 'active';
         });
     }
 
