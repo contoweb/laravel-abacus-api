@@ -939,4 +939,178 @@ class AbacusModelTest extends TestCase
 
         $this->assertNull($order->BillingAddress);
     }
+
+    #[Test]
+    public function it_executes_action_returning_null_on_no_content(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/ch.abacus.test.NoResultAction' => Http::response(null, 204),
+        ]);
+
+        $result = TestSubject::action(42, 'ch.abacus.test.NoResultAction');
+
+        $this->assertNull($result);
+    }
+
+    #[Test]
+    public function it_executes_action_returning_raw_json_without_return_type(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/ch.abacus.test.SomeAction' => Http::response([
+                'Status' => 'ok',
+                'NextStep' => 'Shipped',
+            ], 200),
+        ]);
+
+        $result = TestSubject::action(42, 'ch.abacus.test.SomeAction');
+
+        $this->assertIsArray($result);
+        $this->assertEquals('ok', $result['Status']);
+        $this->assertEquals('Shipped', $result['NextStep']);
+    }
+
+    #[Test]
+    public function it_executes_action_with_return_type_returning_single_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/ch.abacus.test.GetSubject' => Http::response([
+                'Id' => 99,
+                'Name' => 'Result Subject',
+            ], 200),
+        ]);
+
+        $result = TestSubject::action(42, 'ch.abacus.test.GetSubject', [], new TestSubject);
+
+        $this->assertInstanceOf(TestSubject::class, $result);
+        $this->assertEquals(99, $result->Id);
+        $this->assertEquals('Result Subject', $result->Name);
+    }
+
+    #[Test]
+    public function it_executes_action_with_return_type_returning_collection(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/ch.abacus.test.GetSubjects' => Http::response([
+                'value' => [
+                    ['Id' => 1, 'Name' => 'Subject A'],
+                    ['Id' => 2, 'Name' => 'Subject B'],
+                ],
+            ], 200),
+        ]);
+
+        $result = TestSubject::action(42, 'ch.abacus.test.GetSubjects', [], new TestSubject);
+
+        $this->assertInstanceOf(Collection::class, $result);
+        $this->assertCount(2, $result);
+        $this->assertInstanceOf(TestSubject::class, $result->first());
+
+        $this->assertEquals(1, $result->first()->Id);
+        $this->assertEquals('Subject A', $result->first()->Name);
+
+        $this->assertEquals(2, $result->last()->Id);
+        $this->assertEquals('Subject B', $result->last()->Name);
+    }
+
+    #[Test]
+    public function it_executes_action_sending_post_data(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/ch.abacus.test.SetData' => Http::response(null, 204),
+        ]);
+
+        TestSubject::action(42, 'ch.abacus.test.SetData', ['Param1' => 'value', 'Param2' => 42]);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'Subjects(42)/ch.abacus.test.SetData')
+                && $request->data()['Param1'] === 'value'
+                && $request->data()['Param2'] === 42;
+        });
+    }
+
+    #[Test]
+    public function it_executes_action_with_id(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(1)/ch.abacus.test.Action' => Http::response(null, 204),
+        ]);
+
+        $result = TestSubject::action(1, 'ch.abacus.test.Action');
+
+        $this->assertNull($result);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), 'Subjects(1)/ch.abacus.test.Action');
+        });
+    }
+
+    #[Test]
+    public function it_executes_action_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/stock-batches(BatchNumber=1,BatchSequenceNumber=2,ProductId=3,VariantId=4)/ch.abacus.test.SomeAction' => Http::response(null, 204),
+        ]);
+
+        $result = TestStockBatch::action(
+            ['BatchNumber' => 1, 'BatchSequenceNumber' => 2, 'ProductId' => 3, 'VariantId' => 4],
+            'ch.abacus.test.SomeAction'
+        );
+
+        $this->assertNull($result);
+
+        Http::assertSent(function ($request) {
+            return str_contains(
+                $request->url(),
+                'stock-batches(BatchNumber=1,BatchSequenceNumber=2,ProductId=3,VariantId=4)/ch.abacus.test.SomeAction'
+            );
+        });
+    }
+
+    #[Test]
+    public function it_executes_action_with_component_return_type(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/ch.abacus.test.GetMeasurements' => Http::response([
+                'Length' => 10.5,
+                'Width' => 5.0,
+            ], 200),
+        ]);
+
+        $result = TestSubject::action(42, 'ch.abacus.test.GetMeasurements', [], new TestMeasurements([]));
+
+        $this->assertInstanceOf(TestMeasurements::class, $result);
+        $this->assertEquals(10.5, $result->Length);
+        $this->assertEquals(5.0, $result->Width);
+    }
 }
