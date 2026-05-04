@@ -3,6 +3,7 @@
 namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Console\Commands\GenerateIdeHelperCommand;
+use Contoweb\AbacusApi\Console\Commands\MakeAbacusComponentCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusModelCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusReportCommand;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
@@ -60,6 +61,7 @@ class AbacusServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 GenerateIdeHelperCommand::class,
+                MakeAbacusComponentCommand::class,
                 MakeAbacusModelCommand::class,
                 MakeAbacusReportCommand::class,
             ]);

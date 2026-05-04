@@ -2,28 +2,32 @@
 
 namespace Contoweb\AbacusApi\Models;
 
+use ArrayAccess;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Models\Concerns\HasAttributes;
+use Contoweb\AbacusApi\Models\Concerns\HasCasting;
 use Contoweb\AbacusApi\OdataPaginator;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use JsonSerializable;
 
-abstract class AbacusModel
+abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
 {
+    use HasAttributes,
+        HasCasting;
+
     protected static string $resource;
 
     protected static string|array $primaryKey = 'Id';
 
-    protected array $attributes = [];
-
-    protected array $original = [];
-
     public function __construct(array $attributes = [])
     {
         $this->attributes = $attributes;
-        $this->original = $attributes;
+        $this->syncOriginal();
     }
 
     /**
@@ -165,59 +169,69 @@ abstract class AbacusModel
     }
 
     /**
-     * Get attribute.
+     * Dynamically retrieve attributes on the model.
+     *
+     * @return mixed
      */
-    public function getAttribute(string $key): mixed
+    public function __get(string $key)
     {
-        return $this->attributes[$key] ?? null;
+        return $this->getAttribute($key);
     }
 
     /**
-     * Set attribute.
+     * Dynamically set attributes on the model.
+     *
+     * @return void
      */
-    public function setAttribute(string $key, mixed $value): void
+    public function __set(string $key, mixed $value)
     {
-        $this->attributes[$key] = $value;
+        $this->setAttribute($key, $value);
     }
 
     /**
-     * Get all attributes.
+     * Determine if an attribute or relation exists on the model.
+     *
+     * @return bool
      */
-    public function getAttributes(): array
+    public function __isset(string $key)
     {
-        return $this->attributes;
+        return $this->offsetExists($key);
     }
 
     /**
-     * Return model as array.
+     * Determine if the given attribute exists.
      */
-    public function toArray(): array
+    public function offsetExists(mixed $offset): bool
     {
-        return $this->attributes;
+        try {
+            return ! is_null($this->getAttribute($offset));
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
-     * Magic getter.
+     * Get the value for a given offset.
      */
-    public function __get(string $name): mixed
+    public function offsetGet(mixed $offset): mixed
     {
-        return $this->getAttribute($name);
+        return $this->getAttribute($offset);
     }
 
     /**
-     * Magic setter.
+     * Set the value for a given offset.
      */
-    public function __set(string $name, mixed $value): void
+    public function offsetSet(mixed $offset, mixed $value): void
     {
-        $this->setAttribute($name, $value);
+        $this->setAttribute($offset, $value);
     }
 
     /**
-     * Magic isset.
+     * Unset the value for a given offset.
      */
-    public function __isset(string $name): bool
+    public function offsetUnset(mixed $offset): void
     {
-        return isset($this->attributes[$name]);
+        unset($this->attributes[$offset]);
     }
 
     /**

@@ -37,14 +37,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Models Namespace
+    | Namespace
     |--------------------------------------------------------------------------
     |
-    | The namespace where your custom Abacus models are located
+    | The namespace where your custom Abacus models and components are located.
     |
     */
-
     'models_namespace' => env('ABACUS_MODELS_NAMESPACE', 'App\\Models\\Abacus'),
+    'components_namespace' => env('ABACUS_COMPONENTS_NAMESPACE', 'App\\Models\\Abacus\\Components'),
 
     /*
     |--------------------------------------------------------------------------
