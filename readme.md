@@ -165,7 +165,7 @@ The `examples/` directory contains reference implementations to help you get sta
 
 See [`examples/README.md`](examples/README.md)
 
-### Supported Filter Operators
+#### Supported Filter Operators
 
 - `eq` - Equal
 - `lt` - Less than
@@ -173,7 +173,7 @@ See [`examples/README.md`](examples/README.md)
 - `le` - Less than or equal
 - `ge` - Greater than or equal
 
-### Supported Query Options
+#### Supported Query Options
 
 - `$filter` - Filter conditions
 - `$select` - Property selection
@@ -608,7 +608,7 @@ class DepartmentsReport extends Report implements RequiresValidationRules
 use Contoweb\AbacusApi\Reports\Facades\AbaReport;
 use App\Services\Abacus\Reports\DepartmentsReport;
 
-$departments = AbaReport::collection(new DepartmentsReport('organization_number' => 123));
+$departments = AbaReport::collection(new DepartmentsReport(['organization_number' => 123]));
 
 /* $departments is now an Illuminate\Support\Collection of Department models */
 foreach ($departments as $department) {
@@ -657,7 +657,7 @@ Parameters can be passed directly via the constructor or set via `setParameter()
 ```php
 $report = new DepartmentsReport(['year' => 2024, 'month' => 1]);
 
-$report = (new DepartmentsReport)->setParameter(['year' => 2024, 'month' => 1]);
+$report = (new DepartmentsReport)->setParameters(['year' => 2024, 'month' => 1]);
 ```
 
 ### Parameter Validation
