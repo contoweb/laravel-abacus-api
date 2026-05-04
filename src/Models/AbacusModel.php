@@ -10,11 +10,12 @@ use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Models\Concerns\HasAttributes;
 use Contoweb\AbacusApi\Models\Concerns\HasCasting;
 use Contoweb\AbacusApi\OdataPaginator;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use JsonSerializable;
 
-abstract class AbacusModel implements ArrayAccess, JsonSerializable
+abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
 {
     use HasAttributes,
         HasCasting;

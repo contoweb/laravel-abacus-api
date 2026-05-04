@@ -5,6 +5,8 @@ namespace Contoweb\AbacusApi\Models\Concerns;
 use BackedEnum;
 use Carbon\Carbon;
 use Contoweb\AbacusApi\Models\AbacusComponent;
+use Contoweb\AbacusApi\Models\AbacusModel;
+use Illuminate\Support\Collection;
 
 trait HasCasting
 {
@@ -76,6 +78,10 @@ trait HasCasting
                     return $this->asComponent($key, $value, $castType);
                 }
 
+                if (class_exists($castType) && is_subclass_of($castType, AbacusModel::class)) {
+                    return $this->asAbacusModel($key, $value, $castType);
+                }
+
                 return $value;
         }
     }
@@ -134,6 +140,34 @@ trait HasCasting
     }
 
     /**
+     * Cast the given value to an AbacusModel or Collection with AbacusModels.
+     */
+    protected function asAbacusModel(string $key, mixed $value, string $modelClass): AbacusModel|Collection
+    {
+        if ($value instanceof AbacusModel) {
+            return $value;
+        }
+
+        if ($value instanceof Collection) {
+            return $value;
+        }
+
+        // Collection (array of arrays)
+        if (is_array($value) && array_is_list($value)) {
+            $models = collect($value)->map(fn ($item) => new $modelClass($item));
+            $this->attributes[$key] = $models;
+
+            return $models;
+        }
+
+        // Single model
+        $model = new $modelClass(is_array($value) ? $value : []);
+        $this->attributes[$key] = $model;
+
+        return $model;
+    }
+
+    /**
      * Convert the model's attributes to an array.
      */
     protected function attributesToArray(): array
@@ -162,8 +196,8 @@ trait HasCasting
             elseif ($value instanceof Carbon) {
                 $attributes[$key] = $value->toISOString();
             }
-            // Handle AbacusComponent serialization
-            elseif ($value instanceof AbacusComponent) {
+            // Handle AbacusComponent, AbacusModel or Collection serialization
+            elseif ($value instanceof AbacusComponent || $value instanceof AbacusModel || $value instanceof Collection) {
                 $attributes[$key] = $value->toArray();
             }
             // For all other casts (primitives like int, float, bool), use the cast value
