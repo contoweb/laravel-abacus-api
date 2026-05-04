@@ -9,6 +9,8 @@ use Contoweb\AbacusApi\Models\AbacusComponent;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Contoweb\AbacusApi\OdataPaginator;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -54,6 +56,24 @@ class TestWeights extends AbacusComponent
 {
     // Properties from ch.abacus.orde.Weights:
     // Net, Tare, SpecificWeight, UnitId
+}
+
+/* Test nested model for AbacusModel-cast tests */
+class TestOrderLine extends AbacusModel
+{
+    protected static string $resource = 'OrderLines';
+}
+
+/* Test parent model with AbacusModel casts */
+class TestOrder extends AbacusModel
+{
+    protected static string $resource = 'Orders';
+
+    protected array $casts = [
+        'Id' => 'int',
+        'BillingAddress' => TestSubject::class,
+        'Lines' => TestOrderLine::class,
+    ];
 }
 
 /* Test model with casts - reflects actual Abacus Product API structure */
@@ -805,5 +825,118 @@ class AbacusModelTest extends TestCase
 
         $this->assertInstanceOf(TestMeasurements::class, $product->Measurements);
         $this->assertNull($product->Measurements->Length);
+    }
+
+    #[Test]
+    public function it_implements_arrayable_interface(): void
+    {
+        $subject = new TestSubject(['Id' => 1, 'Name' => 'Test']);
+
+        $this->assertInstanceOf(Arrayable::class, $subject);
+        $this->assertEquals(['Id' => 1, 'Name' => 'Test'], $subject->toArray());
+    }
+
+    #[Test]
+    public function it_casts_nested_model_from_associative_array(): void
+    {
+        $order = new TestOrder([
+            'Id' => 10,
+            'BillingAddress' => ['Id' => 5, 'Name' => 'Max Muster'],
+        ]);
+
+        $this->assertInstanceOf(TestSubject::class, $order->BillingAddress);
+        $this->assertEquals(5, $order->BillingAddress->Id);
+        $this->assertEquals('Max Muster', $order->BillingAddress->Name);
+    }
+
+    #[Test]
+    public function it_casts_nested_model_collection_from_list_array(): void
+    {
+        $order = new TestOrder([
+            'Id' => 10,
+            'Lines' => [
+                ['Id' => 1, 'ProductNumber' => 'PROD-A'],
+                ['Id' => 2, 'ProductNumber' => 'PROD-B'],
+            ],
+        ]);
+
+        $this->assertInstanceOf(Collection::class, $order->Lines);
+        $this->assertCount(2, $order->Lines);
+        $this->assertInstanceOf(TestOrderLine::class, $order->Lines->first());
+        $this->assertEquals(1, $order->Lines->first()->Id);
+        $this->assertEquals('PROD-B', $order->Lines->last()->ProductNumber);
+    }
+
+    #[Test]
+    public function it_returns_existing_abacus_model_instance_as_is(): void
+    {
+        $address = new TestSubject(['Id' => 7, 'Name' => 'Existing']);
+        $order = new TestOrder(['BillingAddress' => $address]);
+
+        $this->assertSame($address, $order->BillingAddress);
+    }
+
+    #[Test]
+    public function it_returns_existing_collection_as_is(): void
+    {
+        $lines = collect([new TestOrderLine(['Id' => 1]), new TestOrderLine(['Id' => 2])]);
+        $order = new TestOrder(['Lines' => $lines]);
+
+        $this->assertSame($lines, $order->Lines);
+    }
+
+    #[Test]
+    public function it_serializes_nested_model_in_to_array(): void
+    {
+        $order = new TestOrder([
+            'Id' => 10,
+            'BillingAddress' => ['Id' => 5, 'Name' => 'Max Muster'],
+        ]);
+
+        $array = $order->toArray();
+
+        $this->assertIsArray($array['BillingAddress']);
+        $this->assertEquals(5, $array['BillingAddress']['Id']);
+        $this->assertEquals('Max Muster', $array['BillingAddress']['Name']);
+    }
+
+    #[Test]
+    public function it_serializes_nested_model_collection_in_to_array(): void
+    {
+        $order = new TestOrder([
+            'Id' => 10,
+            'Lines' => [
+                ['Id' => 1, 'ProductNumber' => 'PROD-A'],
+                ['Id' => 2, 'ProductNumber' => 'PROD-B'],
+            ],
+        ]);
+
+        $array = $order->toArray();
+
+        $this->assertIsArray($array['Lines']);
+        $this->assertCount(2, $array['Lines']);
+        $this->assertEquals(1, $array['Lines'][0]['Id']);
+        $this->assertEquals('PROD-B', $array['Lines'][1]['ProductNumber']);
+    }
+
+    #[Test]
+    public function it_persists_modifications_on_nested_model(): void
+    {
+        $order = new TestOrder([
+            'BillingAddress' => ['Id' => 5, 'Name' => 'Original'],
+        ]);
+
+        $order->BillingAddress->Name = 'Modified';
+
+        $this->assertEquals('Modified', $order->BillingAddress->Name);
+        $this->assertEquals('Modified', $order->toArray()['BillingAddress']['Name']);
+    }
+
+    #[Test]
+    public function it_handles_null_nested_model(): void
+    {
+        $order = new TestOrder(['BillingAddress' => null]);
+
+        $this->assertNull($order->BillingAddress);
     }
 }
