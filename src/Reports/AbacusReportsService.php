@@ -3,62 +3,28 @@
 namespace Contoweb\AbacusApi\Reports;
 
 use Contoweb\AbacusApi\Reports\Contracts\Report;
+use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
+
+use function Illuminate\Support\defer;
 
 class AbacusReportsService
 {
-    /**
-     * Parameters for the report request
-     */
-    protected array|string $parameters = [];
-
-    /**
-     * Cache configuration
-     */
-    protected bool $cacheEnabled = false;
-
-    protected int $cacheTtl = 3600;
-
-    protected ?string $customCacheKey = null;
-
     public function __construct(
         protected AbacusReportsClient $client
     ) {}
 
     /**
-     * Set report parameters
-     */
-    public function parameter(array|string $parameters): static
-    {
-        $this->parameters = $parameters;
-
-        return $this;
-    }
-
-    /**
-     * Enable caching for this report
-     */
-    public function cache(int $ttl = 3600, ?string $cacheKey = null): static
-    {
-        $this->cacheEnabled = true;
-        $this->cacheTtl = $ttl;
-        $this->customCacheKey = $cacheKey;
-
-        return $this;
-    }
-
-    /**
      * Execute report and return collection of models
      *
      * @param  Report  $report  Report instance
-     * @return Collection Collection of report models
+     * @return Collection<int, ReportModel> Collection of report models
      *
      * @throws ConnectionException
      * @throws ReportExecutionException
@@ -67,30 +33,8 @@ class AbacusReportsService
      */
     public function collection(Report $report): Collection
     {
-        /* Check cache if enabled */
-        if ($this->cacheEnabled) {
-            $cacheKey = $this->getCacheKey($report);
-            $cached = Cache::get($cacheKey);
-
-            if ($cached !== null) {
-                return $cached;
-            }
-        }
-
         /* Execute report and get models */
-        $models = $this->executeReport($report);
-        $collection = collect($models);
-
-        /* Store in cache if enabled */
-        if ($this->cacheEnabled) {
-            $cacheKey = $this->getCacheKey($report);
-            Cache::put($cacheKey, $collection, $this->cacheTtl);
-        }
-
-        /* Reset state for next call */
-        $this->resetState();
-
-        return $collection;
+        return collect($this->executeReport($report));
     }
 
     /**
@@ -106,13 +50,14 @@ class AbacusReportsService
     {
         /* Validate parameters if required */
         if ($report instanceof RequiresValidationRules) {
-            $this->validateParameters($this->parameters, $report::validationRules());
+            $this->validateParameters($report->parameters(), $report::validationRules());
         }
 
         /* Submit report */
         $jobResponse = $this->client->submitReport(
             $report->name(),
-            is_array($this->parameters) ? $this->parameters : []
+            $report->parameters(),
+            $report->outputType()
         );
 
         /* Check for immediate errors */
@@ -144,7 +89,7 @@ class AbacusReportsService
         $jsonData = $this->client->getJobOutput($jobId);
 
         /* Close the report session */
-        $this->client->deleteJob($jobId);
+        defer(fn () => $this->client->deleteJob($jobId));
 
         /* Parse and map to models */
 
@@ -188,32 +133,5 @@ class AbacusReportsService
         if ($validator->fails()) {
             throw new ReportValidationException($validator->errors()->first());
         }
-    }
-
-    /**
-     * Generate a cache key for a report
-     */
-    protected function getCacheKey(Report $report): string
-    {
-        if ($this->customCacheKey !== null) {
-            return 'abacus_report:'.$this->customCacheKey;
-        }
-
-        $paramKey = is_array($this->parameters)
-            ? md5(json_encode($this->parameters))
-            : md5($this->parameters);
-
-        return 'abacus_report:'.md5($report->name()).':'.$paramKey;
-    }
-
-    /**
-     * Reset state after execution
-     */
-    protected function resetState(): void
-    {
-        $this->parameters = [];
-        $this->cacheEnabled = false;
-        $this->cacheTtl = 3600;
-        $this->customCacheKey = null;
     }
 }

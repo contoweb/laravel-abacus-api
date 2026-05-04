@@ -6,7 +6,6 @@ use Contoweb\AbacusApi\AbacusClient;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
 
 class AbacusReportsClient extends AbacusClient
 {
@@ -61,11 +60,7 @@ class AbacusReportsClient extends AbacusClient
     {
         $path = $this->jobOutputPath($jobId);
 
-        $response = Http::withToken($this->getAccessToken())
-            ->get($this->getUrl().$path)
-            ->throw();
-
-        return $response->json() ?? [];
+        return $this->get($path)->json() ?? [];
     }
 
     /**
@@ -133,7 +128,7 @@ class AbacusReportsClient extends AbacusClient
      */
     public function reportPath(string $reportName): string
     {
-        return $this->getReportBasePath().'/report/'.$reportName;
+        return "{$this->getReportBasePath()}/report/$this->mandate/$reportName";
     }
 
     /**

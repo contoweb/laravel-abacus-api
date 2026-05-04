@@ -104,7 +104,7 @@ class MakeAbacusReportCommandTest extends TestCase
         $content = File::get($path);
 
         $this->assertStringContainsString('namespace App\Reports;', $content);
-        $this->assertStringContainsString('class TestReport implements Report', $content);
+        $this->assertStringContainsString('class TestReport extends Report', $content);
     }
 
     #[Test]
@@ -152,6 +152,6 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->assertStringStartsWith('<?php', $modelContent);
 
         /* Check for required imports */
-        $this->assertStringContainsString('use Contoweb\AbacusApi\Reports\Contracts\Report;', $reportContent);
+        $this->assertStringContainsString('use Contoweb\AbacusApi\Reports\Abstracts\Report;', $reportContent);
     }
 }

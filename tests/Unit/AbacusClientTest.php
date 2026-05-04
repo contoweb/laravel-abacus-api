@@ -28,7 +28,7 @@ class AbacusClientTest extends TestCase
         $client = new AbacusODataClient($this->makeCredentialsProvider());
 
         $this->assertEquals('https://api.example.com', $client->getUrl());
-        $this->assertEquals('test-mandate', $client->getMandate());
+        $this->assertEquals('1212', $client->getMandate());
     }
 
     #[Test]

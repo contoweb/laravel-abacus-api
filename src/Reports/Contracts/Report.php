@@ -5,6 +5,21 @@ namespace Contoweb\AbacusApi\Reports\Contracts;
 interface Report
 {
     /**
+     * Get the output type for the report result.
+     */
+    public function outputType(): string;
+
+    /**
+     * Set the report parameters.
+     */
+    public function setParameters(array|string $parameters): static;
+
+    /**
+     * Get the report parameters.
+     */
+    public function parameters(): array|string;
+
+    /**
      * Get the report name (including path encoding)
      * Example: "mandate%2Freport.avx"
      *

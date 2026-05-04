@@ -9,7 +9,29 @@
 [![Latest Stable Version](https://poser.pugx.org/contoweb/laravel-abacus-api/v/stable)](https://packagist.org/packages/contoweb/laravel-abacus-api)
 [![License](https://poser.pugx.org/contoweb/laravel-abacus-api/license)](https://packagist.org/packages/contoweb/laravel-abacus-api)
 
-Laravel package for the Abacus REST API with OData support and Eloquent-like models.
+Laravel package for the Abacus REST API with OData support, Eloquent-like models, and AbaReports integration.
+
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [OData Entity API](#odata)
+    - [Create Your Own Model](#create-your-own-model)
+    - [Use the Models](#use-the-models)
+    - [CRUD Operations](#crud-operations)
+    - [Pagination](#pagination)
+    - [Batch Requests](#batch-requests)
+    - [Working Directly with the Service](#working-directly-with-the-service)
+- [AbaReports](#abareports)
+    - [Creating Reports](#creating-reports)
+    - [Using Reports](#using-reports)
+    - [Parameter Validation](#parameter-validation)
+    - [Report Examples](#report-examples)
+- [IDE Support](#ide-support)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Links](#links)
 
 ## Requirements
 
@@ -20,6 +42,7 @@ Laravel package for the Abacus REST API with OData support and Eloquent-like mod
 
 - **Eloquent-like API** - Familiar Laravel syntax
 - **OData Support** - Filter, Select, OrderBy, Top, Expand
+- **AbaReports** - Fetch AbaReport data
 - **Type-Safe** - Full PHPDoc support
 - **IDE Autocomplete** - Automatic IDE Helper generation
 - **CRUD Operations** - Create, Read, Update, Delete
@@ -33,57 +56,37 @@ Laravel package for the Abacus REST API with OData support and Eloquent-like mod
 composer require contoweb/laravel-abacus-api
 ```
 
-### Publish Config
+Publish the config file:
 
 ```bash
 php artisan vendor:publish --tag=abacus-config
 ```
+
+## Configuration
 
 ### Environment Variables
 
 Add to your `.env` file:
 
 ```env
+# OData Entity API (required)
 ABACUS_REST_API_URL=entity-api1-1.demo.abacus.ch
 ABACUS_REST_API_MANDATE=7777
 ABACUS_REST_API_CLIENT_ID=your-client-id
 ABACUS_REST_API_CLIENT_SECRET=your-client-secret
+ 
+# AbaReports (optional)
+ABACUS_REPORTS_POLL_INTERVAL=200000
+ABACUS_REPORTS_MAX_POLL_ATTEMPTS=150
+ABACUS_REPORTS_NAMESPACE=App\Services\Abacus\Reports
 ```
 
-## Quick Start
-
-### Includes Models
-
-The package already includes the following models which are ready to use:
-
-- `Product` → `Products` endpoint
-- `Stock` → `Stocks` endpoint
-
-```php
-use Contoweb\AbacusApi\Models\v1\Product;
-use Contoweb\AbacusApi\Models\v1\Stock;
-
-/* Find a specific product */
-$product = Product::find(12345);
-
-/* Query with filters */
-$products = Product::where('ProductNumber', 'eq', 'ART-001')
-    ->select(['ProductNumber', 'Description'])
-    ->paginate()
-    ->items();
-
-/* Get stock information */
-$stocks = Stock::where('Quantity', 'gt', 0)
-    ->expand('Product')
-    ->paginate()
-    ->items();
-```
+## OData
 
 ### Create your own Model
 
-For entities not included in the package, you can easily create custom models for any Abacus endpoint.
+You can easily create custom models for any Abacus endpoint.
 
-#### 1. Generate a Model
 ```bash
 php artisan make:abacus-model Subject --resource=Subjects
 ```
@@ -103,58 +106,7 @@ class Subject extends AbacusModel
 }
 ```
 
-#### 2. Generate IDE Helper
-```bash
-php artisan abacus:generate-ide-helper
-```
-
-This automatically generates PHPDoc for all properties based on endpoint definition files.
-
-#### How It Works
-
-The command:
-1. Scans your models directory for model classes
-2. For each model, looks for a definition file at `storage/app/abacus/endpoint-definitions/{resource}.json`
-3. Extracts entity schema and generates IDE hints
-
-#### Setting Up Definition Files
-
-1. Download the OpenAPI/Swagger JSON for your endpoints from Abacus. Example: Click button "DOWNLOAD JSON-FILE" on page https://apihub.abacus.ch/apis/2025/entity/products.api
-2. Save them to `storage/app/abacus/endpoint-definitions/`
-3. Name them after your resource (lowercase): `{resource}.json`
-
-**Example:**
-
-```php
-<?php
-
-namespace App\Models\Abacus;
-
-use Contoweb\AbacusApi\Models\AbacusModel;
-
-class Product extends AbacusModel
-{
-    protected static string $resource = 'Products';
-}
-```
-
-Save the Products endpoint definition as: `storage/app/abacus/endpoint-definitions/products.json`
-
-The IDE helper will extract the entity schema (e.g., `ProductData`) from the definition file and generate autocomplete hints for your `Product` model.
-
-#### Fallback to API Metadata
-
-If no local definition files are found, the IDE helper will automatically fetch metadata from the API endpoint. This will generate hints for all available entities.
-
-#### Listing Available Entities
-
-To see all available entity types:
-
-```bash
-php artisan abacus:generate-ide-helper --list
-```
-
-#### 3. Use the Models
+### Use the Models
 
 ```php
 use App\Models\Abacus\Subject;
@@ -162,61 +114,34 @@ use App\Models\Abacus\Subject;
 /* Find a Subject */
 $subject = Subject::find(1);
 
-/* Find a Subject with Expand and Select. 
-The find method must be called last */
+/* Find a Subject with Expand and Select. The find method must be called last */
 $subject = Subject::select(['ProductNumber'])
     ->expand(['StockBatches'])
     ->find(1);
 
-/* With Filters */
-$subjects = Subject::where('LastName', 'eq', 'Müller')
-    ->where('City', 'eq', 'Zürich')
-    ->orderBy('FirstName', 'asc')
-    ->paginate()
-    ->items();
-
-/* Create */
-$subject = Subject::create([
-    'FirstName' => 'Max',
-    'LastName' => 'Mustermann',
-    'Email' => 'max@example.com',
-]);
-
-/* Update */
-Subject::update(1, ['Email' => 'new@example.com']);
-
-/* Delete */
-$subject->delete(1);
-```
-
-## Usage
-
-### Query Builder
-
-```php
 /* Filter with supported operators: eq, lt, gt, le, ge */
-Subject::where('LastName', 'eq', 'Müller')
+$subjects = Subject::where('LastName', 'eq', 'Müller')
     ->where('Active', 'eq', true)
     ->paginate()
     ->items();
 
 /* Select specific properties */
-Subject::select(['FirstName', 'LastName', 'Email'])
+$subject = Subject::select(['FirstName', 'LastName', 'Email'])
     ->paginate()
     ->items();
 
 /* OrderBy (only one orderBy per query) */
-Subject::orderBy('LastName', 'desc')
+$subject = Subject::orderBy('LastName', 'desc')
     ->paginate()
     ->items();
 
 /* Expand Navigation Properties */
-Subject::expand('Addresses')
+$subject = Subject::expand('Addresses')
     ->paginate()
     ->items();
 
 /* Combined */
-Subject::where('City', 'eq', 'Zürich')
+$subject = Subject::where('City', 'eq', 'Zürich')
     ->select(['FirstName', 'LastName', 'Email'])
     ->orderBy('LastName', 'asc')
     ->expand('Addresses')
@@ -225,11 +150,28 @@ Subject::where('City', 'eq', 'Zürich')
 /* Filter with OData Enum values */
 use Contoweb\AbacusApi\ODataQueryString;
 
-Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
+$subject = Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
     ->paginate()
     ->items();
 /* Results in: $filter=Type eq ch.abacus.orde.ProductType'Article' */
 ```
+
+### Supported Filter Operators
+
+- `eq` - Equal
+- `lt` - Less than
+- `gt` - Greater than
+- `le` - Less than or equal
+- `ge` - Greater than or equal
+
+### Supported Query Options
+
+- `$filter` - Filter conditions
+- `$select` - Property selection
+- `$orderby` - Sorting (only one per query)
+- `$top` - Limit
+- `$expand` - Load navigation properties
+- `$format` - Response format (json, atom, xml)
 
 ### CRUD Operations
 
@@ -565,58 +507,232 @@ $metadata = $service->metadata();
 $entities = $service->listEntityIds();
 ```
 
-## Commands
+## AbaReports
 
-### Create a Model
+This package supports Abacus AbaReports (non-OData endpoints) in addition to the OData Entity API.
 
-```bash
-php artisan make:abacus-model Subject --resource=Subjects
-```
+### Creating Reports
 
-### Generate IDE Helper
+#### Using the Artisan Command
 
 ```bash
-/* Generate IDE helper from API metadata */
-php artisan abacus:generate-ide-helper
-
-/* With custom output */
-php artisan abacus:generate-ide-helper --output=_ide_helper_custom.php
+php artisan make:abacus-report DepartmentsReport --model=Department
 ```
 
-## Configuration
+This creates two files:
+- `app/Services/Abacus/Reports/DepartmentsReport.php` - The report class
+- `app/Services/Abacus/Reports/Models/Department.php` - The model class
 
-The configuration file `config/abacus-api.php`:
+#### Manual Creation
+
+**1. Create a Report Model**
 
 ```php
-return [
-    'rest_api' => [
-        'url' => env('ABACUS_REST_API_URL'),
-        'mandate' => env('ABACUS_REST_API_MANDATE'),
-        'client_id' => env('ABACUS_REST_API_CLIENT_ID'),
-        'client_secret' => env('ABACUS_REST_API_CLIENT_SECRET'),
-    ],
+<?php
 
-    'ide_helper' => [
-        'enabled' => env('ABACUS_IDE_HELPER_ENABLED', true),
-        'output_file' => env('ABACUS_IDE_HELPER_OUTPUT', '_ide_helper_abacus.php'),
-    ],
+namespace App\Services\Abacus\Reports\Models;
 
-    'models_namespace' => env('ABACUS_MODELS_NAMESPACE', 'App\\Models\\Abacus'),
-];
+use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
+
+class Department implements ReportModel
+{
+    public function __construct(
+        public readonly ?string $contactNumber,
+        public readonly ?string $subjectNumber,
+        public readonly ?string $name,
+    ) {
+    }
+}
 ```
 
-## Composer Scripts
+**2. Create a Report Class**
 
-Add to your `composer.json` for automatic IDE Helper generation:
+```php
+<?php
 
-```json
+namespace App\Services\Abacus\Reports;
+
+use Contoweb\AbacusApi\Reports\Abstracts\Report;
+use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
+use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
+use App\Services\Abacus\Reports\Models\Department;
+
+class DepartmentsReport extends Report implements RequiresValidationRules
 {
-  "scripts": {
-    "post-update-cmd": [
-      "@php artisan abacus:generate-ide-helper"
-    ]
-  }
+    /**
+     * Get validation rules for report parameters
+     */
+    public static function validationRules(): array
+    {
+        return [
+            'organization_number' => 'required|integer',
+        ];
+    }
+
+    /**
+     * Get the report name (with URL encoding)
+     */
+    public function name(): string
+    {
+        return '%2F' . 'contacts_organisations.avx';
+    }
+
+    /**
+     * Map JSON record to report model
+     */
+    public function mapping(array $record): ReportModel
+    {
+        return new Department(
+            $record['NR'] ?? null,
+            $record['SUBJEKT_NR'] ?? null,
+            $record['NAME'] ?? null,
+        );
+    }
 }
+```
+
+### Using Reports
+
+**Via Facade:**
+
+```php
+use Contoweb\AbacusApi\Reports\Facades\AbaReport;
+use App\Services\Abacus\Reports\DepartmentsReport;
+
+$departments = AbaReport::collection(new DepartmentsReport('organization_number' => 123));
+
+/* $departments is now an Illuminate\Support\Collection of Department models */
+foreach ($departments as $department) {
+    echo $department->name;
+}
+```
+
+**Via Dependency Injection:**
+
+```php
+use Contoweb\AbacusApi\Reports\AbacusReportsService;
+use App\Services\Abacus\Reports\DepartmentsReport;
+
+class YourController extends Controller
+{
+    public function __construct(
+        private AbacusReportsService $reportsService
+    ) {
+    }
+
+    public function index()
+    {
+        $departments = $this->reportsService
+            ->collection(new DepartmentsReport(['organization_number' => 123]));
+
+        return view('departments.index', compact('departments'));
+    }
+}
+```
+
+### Output Type
+
+By default, reports use `json` as the output type. You can override this in your report class by setting the `$outputType` property:
+
+```php
+class DepartmentsReport extends Report
+{
+    protected string $outputType = 'json_userdef';
+}
+```
+
+### Report Parameters
+
+Parameters can be passed directly via the constructor or set via `setParameter()`:
+
+```php
+$report = new DepartmentsReport(['year' => 2024, 'month' => 1]);
+
+$report = (new DepartmentsReport)->setParameter(['year' => 2024, 'month' => 1]);
+```
+
+### Parameter Validation
+
+Reports can implement the `RequiresValidationRules` interface to validate parameters:
+
+```php
+class DepartmentsReport implements Report, RequiresValidationRules
+{
+    public static function validationRules(): array
+    {
+        return [
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'customer_id' => 'nullable|integer',
+        ];
+    }
+
+    /* ... other methods */
+}
+```
+
+If validation fails, a `ReportValidationException` is thrown with the validation error message.
+
+### Report Examples
+
+**Report without validation:**
+
+```php
+class ProductsReport implements Report
+{
+    public function name(): string
+    {
+        return '%2F' . 'products.avx';
+    }
+
+    public function mapping(array $record): ReportModel
+    {
+        return new Product(
+            $record['ID'] ?? null,
+            $record['NAME'] ?? null,
+            (float)($record['PRICE'] ?? 0),
+        );
+    }
+}
+
+/* Usage */
+$products = AbaReport::collection(new ProductsReport());
+```
+
+**Report with validation:**
+
+```php
+class SalesReport implements Report, RequiresValidationRules
+{
+    public static function validationRules(): array
+    {
+        return [
+            'from_date' => 'required|date_format:Y-m-d',
+            'to_date' => 'required|date_format:Y-m-d|after:from_date',
+        ];
+    }
+
+    public function name(): string
+    {
+        return '%2F' . 'sales_report.avx';
+    }
+
+    public function mapping(array $record): ReportModel
+    {
+        return new Sale(
+            $record['ORDER_ID'] ?? null,
+            $record['CUSTOMER'] ?? null,
+            (float)($record['AMOUNT'] ?? 0),
+            $record['DATE'] ?? null,
+        );
+    }
+}
+
+/* Usage */
+$sales = AbaReport::collection(new SalesReport([
+    'from_date' => '2024-01-01',
+    'to_date' => '2024-12-31',
+]));
 ```
 
 ## Testing
@@ -638,63 +754,47 @@ $subjects = Subject::paginate()->items();
 $this->assertCount(1, $subjects);
 ```
 
-## OData Features
-
-### Supported Filter Operators
-
-- `eq` - Equal
-- `lt` - Less than
-- `gt` - Greater than
-- `le` - Less than or equal
-- `ge` - Greater than or equal
-
-### Supported Query Options
-
-- `$filter` - Filter conditions
-- `$select` - Property selection
-- `$orderby` - Sorting (only one per query)
-- `$top` - Limit
-- `$expand` - Load navigation properties
-- `$format` - Response format (json, atom, xml)
-
-## Example Models
-
-```php
-/* Subject (Contacts/Addresses) */
-class Subject extends AbacusModel
-{
-    protected static string $resource = 'Subjects';
-}
-
-/* Invoice */
-class Invoice extends AbacusModel
-{
-    protected static string $resource = 'Invoices';
-}
-
-/* Article */
-class Article extends AbacusModel
-{
-    protected static string $resource = 'Articles';
-}
-```
-
 ## IDE Support
 
-The package automatically generates `_ide_helper_abacus.php` with complete PHPDoc annotations:
+This package supports PHPDoc for all properties based on the Abacus OData metadata file:
 
-```php
-$subject = Subject::find(1);
-$subject->FirstName /* ✅ Autocomplete works! */
-$subject->Email     /* ✅ Type-hints available! */
+```bash
+php artisan abacus:generate-ide-helper
 ```
-
-### .gitignore
 
 Add to your `.gitignore`:
 
 ```
 _ide_helper_abacus.php
+```
+
+Add to your `composer.json` for automatic IDE Helper generation:
+
+```json
+{
+  "scripts": {
+    "post-update-cmd": [
+      "@php artisan abacus:generate-ide-helper"
+    ]
+  }
+}
+```
+
+#### How It Works
+
+The command:
+1. Reads the OData metadata XML file (by default bundled with the package under `resources/metadata/`)
+2. Parses all `EntityType` definitions
+3. Maps OData types to PHP types
+
+#### Options
+
+```bash
+# Use a custom metadata XML file
+php artisan abacus:generate-ide-helper --source=/absolute/path/to/metadata.xml
+ 
+# Override the output file
+php artisan abacus:generate-ide-helper --output=_ide_helper_abacus.php
 ```
 
 ## Troubleshooting
@@ -714,17 +814,6 @@ php artisan abacus:generate-ide-helper
 File → Invalidate Caches → Restart
 ```
 
-### Config not loading
-
-```bash
-php artisan config:clear
-php artisan config:cache
-```
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md)
-
 ## Contributing
 
 Pull Requests are welcome!
@@ -733,12 +822,8 @@ Pull Requests are welcome!
 
 MIT License. See [LICENSE.md](LICENSE.md)
 
-## Credits
-
-- [Your Name](https://github.com/yourname)
-- [All Contributors](../../contributors)
-
 ## Links
 
 - [Abacus API Hub](https://apihub.abacus.ch/)
+- [Abacus AbaReport Entity](https://apihub.abacus.ch/apis/notodata/entity/aba-report.api)
 - [OData v4.0 Documentation](https://www.odata.org/documentation/)

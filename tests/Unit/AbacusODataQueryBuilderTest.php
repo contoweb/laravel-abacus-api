@@ -331,7 +331,7 @@ class AbacusODataQueryBuilderTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(42)' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects(42)' => Http::response([
                 'Id' => 42,
                 'Name' => 'Found Item',
             ], 200),
@@ -352,7 +352,7 @@ class AbacusODataQueryBuilderTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/Subjects(42)/Name' => Http::response([
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Name' => Http::response([
                 'value' => 'John Doe',
             ], 200),
         ]);

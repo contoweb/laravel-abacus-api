@@ -35,7 +35,7 @@ class AbacusServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/' => Http::response([
+            '*/api/entity/v1/mandants/1212/' => Http::response([
                 'value' => [
                     ['name' => 'Subjects', 'url' => 'Subjects'],
                     ['name' => 'Invoices', 'url' => 'Invoices'],
@@ -62,7 +62,7 @@ class AbacusServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/$metadata' => Http::response(
+            '*/api/entity/v1/mandants/1212/$metadata' => Http::response(
                 '<?xml version="1.0"?><edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0"></edmx:Edmx>',
                 200,
                 ['Content-Type' => 'application/xml']
@@ -84,7 +84,7 @@ class AbacusServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/$metadata' => Http::response(
+            '*/api/entity/v1/mandants/1212/$metadata' => Http::response(
                 '<?xml version="1.0"?><edmx:Edmx>cached metadata</edmx:Edmx>',
                 200
             ),
@@ -119,7 +119,7 @@ class AbacusServiceTest extends TestCase
 
         $this->service->metadata();
 
-        $cacheKey = 'abacus_metadata_test-mandate';
+        $cacheKey = 'abacus_metadata_1212';
         $this->assertTrue(Cache::has($cacheKey));
     }
 
@@ -136,7 +136,7 @@ class AbacusServiceTest extends TestCase
 
         $this->service->metadata();
 
-        $cacheKey = 'abacus_metadata_test-mandate';
+        $cacheKey = 'abacus_metadata_1212';
 
         /* Cache should exist */
         $this->assertTrue(Cache::has($cacheKey));
@@ -218,7 +218,7 @@ class AbacusServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/test-mandate/' => Http::response([
+            '*/api/entity/v1/mandants/1212/' => Http::response([
                 'error' => 'Internal Server Error',
             ], 500),
         ]);
