@@ -10,6 +10,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use stdClass;
 use Symfony\Component\HttpFoundation\Request;
 
 abstract class AbacusClient
@@ -179,7 +180,7 @@ abstract class AbacusClient
 
             event(new AbacusRequestSent(Request::METHOD_POST, $path, $data));
 
-            return $this->client()->post($path, $data);
+            return $this->client()->post($path, empty($data) ? new stdClass : $data);
         })->throw();
     }
 

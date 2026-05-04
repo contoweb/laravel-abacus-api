@@ -6,6 +6,7 @@ use Contoweb\AbacusApi\Batch\BatchContext;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataEnum;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Models\AbacusComponent;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use DateTime;
 use Illuminate\Http\Client\ConnectionException;
@@ -212,6 +213,43 @@ class AbacusODataQueryBuilder
             ->json();
 
         return new $this->modelClass($result);
+    }
+
+    /**
+     * Execute a bound OData action on an entity
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @param  string  $actionName  Fully qualified action name (e.g. ch.abacus.orde.TriggerSalesOrderNextStep)
+     * @param  array<string, mixed>  $data  Action parameters
+     * @return mixed|array|null
+     *
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public function action(int|string|array $idOrCriteria, string $actionName, array $data = [], AbacusModel|AbacusComponent|null $returnType = null): mixed
+    {
+        $this->id($idOrCriteria);
+        $path = $this->buildPathWithId($this->client, $this->resource).'/'.$actionName;
+
+        $response = $this->client
+            ->post($path, $data, $this->buildODataQuery());
+
+        if ($response->noContent()) {
+            return null;
+        }
+
+        $result = $response->json();
+
+        if (is_null($returnType)) {
+            return $result;
+        }
+
+        if (isset($result['value']) && is_array($result['value'])) {
+            return collect($result['value'])
+                ->map(fn (array $item) => new $returnType($item));
+        }
+
+        return new $returnType($result);
     }
 
     /**
