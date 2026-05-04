@@ -194,6 +194,8 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $report = new SimpleReport(['filter' => 'active']);
+        $this->assertEquals(['filter' => 'active'], $report->parameters());
+
         $results = $this->service->collection($report);
 
         $this->assertCount(1, $results);
@@ -232,6 +234,8 @@ class AbacusReportsServiceTest extends TestCase
 
         $report = new SimpleReport;
         $report->setParameters(['filter' => 'active']);
+        $this->assertEquals(['filter' => 'active'], $report->parameters());
+
         $results = $this->service->collection($report);
 
         $this->assertCount(1, $results);
