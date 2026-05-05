@@ -27,15 +27,14 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
     - [Creating Reports](#creating-reports)
     - [Using Reports](#using-reports)
     - [Parameter Validation](#parameter-validation)
-    - [Report Examples](#report-examples)
+    - [Mapping Reports](#mapping-reports)
 - [IDE Support](#ide-support)
-- [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 - [Links](#links)
 
 ## Requirements
 
-- **Laravel** 11.x or 12.x
+- **Laravel** 11.x, 12.x or 13.x
 - **PHP** 8.2, 8.3, or 8.4
 
 ## Features
@@ -525,36 +524,10 @@ This package supports Abacus AbaReports (non-OData endpoints) in addition to the
 #### Using the Artisan Command
 
 ```bash
-php artisan make:abacus-report DepartmentsReport --model=Department
+php artisan make:abacus-report DepartmentsReport
 ```
-
-This creates two files:
-- `app/Services/Abacus/Reports/DepartmentsReport.php` - The report class
-- `app/Services/Abacus/Reports/Models/Department.php` - The model class
 
 #### Manual Creation
-
-**1. Create a Report Model**
-
-```php
-<?php
-
-namespace App\Services\Abacus\Reports\Models;
-
-use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
-
-class Department implements ReportModel
-{
-    public function __construct(
-        public readonly ?string $contactNumber,
-        public readonly ?string $subjectNumber,
-        public readonly ?string $name,
-    ) {
-    }
-}
-```
-
-**2. Create a Report Class**
 
 ```php
 <?php
@@ -562,80 +535,37 @@ class Department implements ReportModel
 namespace App\Services\Abacus\Reports;
 
 use Contoweb\AbacusApi\Reports\Abstracts\Report;
-use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
-use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
-use App\Services\Abacus\Reports\Models\Department;
 
-class DepartmentsReport extends Report implements RequiresValidationRules
+class DepartmentsReport extends Report
 {
     /**
-     * Get validation rules for report parameters
-     */
-    public static function validationRules(): array
-    {
-        return [
-            'organization_number' => 'required|integer',
-        ];
-    }
-
-    /**
-     * Get the report name (with URL encoding)
+     * Get the report name.
      */
     public function name(): string
     {
-        return '%2F' . 'contacts_organisations.avx';
+        return '%2F' . 'contacts_organisations.avw';
     }
 
     /**
-     * Map JSON record to report model
+     * Map JSON record.
      */
-    public function mapping(array $record): ReportModel
+    public function mapping(array $record): array
     {
-        return new Department(
-            $record['NR'] ?? null,
-            $record['SUBJEKT_NR'] ?? null,
-            $record['NAME'] ?? null,
-        );
+        return $record
     }
 }
 ```
 
 ### Using Reports
 
-**Via Facade:**
-
 ```php
 use Contoweb\AbacusApi\Reports\Facades\AbaReport;
 use App\Services\Abacus\Reports\DepartmentsReport;
 
-$departments = AbaReport::collection(new DepartmentsReport(['organization_number' => 123]));
+$departments = AbaReport::collection(new DepartmentsReport());
 
-/* $departments is now an Illuminate\Support\Collection of Department models */
 foreach ($departments as $department) {
-    echo $department->name;
-}
-```
-
-**Via Dependency Injection:**
-
-```php
-use Contoweb\AbacusApi\Reports\AbacusReportsService;
-use App\Services\Abacus\Reports\DepartmentsReport;
-
-class YourController extends Controller
-{
-    public function __construct(
-        private AbacusReportsService $reportsService
-    ) {
-    }
-
-    public function index()
-    {
-        $departments = $this->reportsService
-            ->collection(new DepartmentsReport(['organization_number' => 123]));
-
-        return view('departments.index', compact('departments'));
-    }
+    echo $department['name'];
 }
 ```
 
@@ -649,6 +579,8 @@ class DepartmentsReport extends Report
     protected string $outputType = 'json_userdef';
 }
 ```
+
+For a full list of available output types refer to the [Abacus AbaReport REST API documentation](https://downloads.abacus.ch/fileadmin/ablage/abaconnect/htmlfiles/docs/restapi/abacus_abareport_rest_api.html).
 
 ### Report Parameters
 
@@ -665,7 +597,7 @@ $report = (new DepartmentsReport)->setParameters(['year' => 2024, 'month' => 1])
 Reports can implement the `RequiresValidationRules` interface to validate parameters:
 
 ```php
-class DepartmentsReport implements Report, RequiresValidationRules
+class DepartmentsReport extends Report implements RequiresValidationRules
 {
     public static function validationRules(): array
     {
@@ -675,92 +607,34 @@ class DepartmentsReport implements Report, RequiresValidationRules
             'customer_id' => 'nullable|integer',
         ];
     }
-
-    /* ... other methods */
 }
 ```
 
 If validation fails, a `ReportValidationException` is thrown with the validation error message.
 
-### Report Examples
+### Mapping Reports
 
-**Report without validation:**
+The `mapping()` method is called for each record in the report response. By default, you can simply return the raw `$record` array — the result will be a collection of plain arrays:
 
 ```php
-class ProductsReport implements Report
+public function mapping(array $record): array
 {
-    public function name(): string
-    {
-        return '%2F' . 'products.avx';
-    }
-
-    public function mapping(array $record): ReportModel
-    {
-        return new Product(
-            $record['ID'] ?? null,
-            $record['NAME'] ?? null,
-            (float)($record['PRICE'] ?? 0),
-        );
-    }
+    return $record;
 }
-
-/* Usage */
-$products = AbaReport::collection(new ProductsReport());
 ```
 
-**Report with validation:**
+If you want structured, type-safe objects instead, return a custom DTO. The result will then be a collection of those objects:
 
 ```php
-class SalesReport implements Report, RequiresValidationRules
+public function mapping(array $record): Sale
 {
-    public static function validationRules(): array
-    {
-        return [
-            'from_date' => 'required|date_format:Y-m-d',
-            'to_date' => 'required|date_format:Y-m-d|after:from_date',
-        ];
-    }
-
-    public function name(): string
-    {
-        return '%2F' . 'sales_report.avx';
-    }
-
-    public function mapping(array $record): ReportModel
-    {
-        return new Sale(
-            $record['ORDER_ID'] ?? null,
-            $record['CUSTOMER'] ?? null,
-            (float)($record['AMOUNT'] ?? 0),
-            $record['DATE'] ?? null,
-        );
-    }
+    return new Sale(
+        id: $record['ORDER_ID'] ?? null,
+        customer: $record['CUSTOMER'] ?? null,
+        amount: (float) ($record['AMOUNT'] ?? 0),
+        date: $record['DATE'] ?? null,
+    );
 }
-
-/* Usage */
-$sales = AbaReport::collection(new SalesReport([
-    'from_date' => '2024-01-01',
-    'to_date' => '2024-12-31',
-]));
-```
-
-## Testing
-
-```php
-use Illuminate\Support\Facades\Http;
-use App\Models\Abacus\Subject;
-
-/* Mock HTTP Requests */
-Http::fake([
-    'entity-api1-1.demo.abacus.ch/*' => Http::response([
-        'value' => [
-            ['Id' => 1, 'FirstName' => 'Max', 'LastName' => 'Test'],
-        ]
-    ], 200)
-]);
-
-$subjects = Subject::paginate()->items();
-$this->assertCount(1, $subjects);
 ```
 
 ## IDE Support
