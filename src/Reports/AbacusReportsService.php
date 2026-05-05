@@ -3,7 +3,6 @@
 namespace Contoweb\AbacusApi\Reports;
 
 use Contoweb\AbacusApi\Reports\Contracts\Report;
-use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
@@ -24,7 +23,6 @@ class AbacusReportsService
      * Execute report and return collection of models
      *
      * @param  Report  $report  Report instance
-     * @return Collection<int, ReportModel> Collection of report models
      *
      * @throws ConnectionException
      * @throws ReportExecutionException
@@ -63,7 +61,7 @@ class AbacusReportsService
         /* Check for immediate errors */
         if (isset($jobResponse['status']) && ($jobResponse['status'] === 403 || $jobResponse['status'] === 500)) {
             throw new ReportExecutionException(
-                'AbaReport failed with message: '.($jobResponse['title'] ?? 'Unknown error')
+                'AbaReport response indicates unsuccessful request with message: '.($jobResponse['title'] ?? 'Unknown error')
             );
         }
 
@@ -81,7 +79,7 @@ class AbacusReportsService
         /* Check final status */
         if (($finalStatus['state'] ?? null) !== 'FinishedSuccess') {
             throw new ReportExecutionException(
-                'AbaReport failed since it was not successful. Message: '.($finalStatus['message'] ?? 'unknown')
+                'AbaReport response indicates unsuccessful request with message: '.($finalStatus['message'] ?? 'Unknown error')
             );
         }
 
