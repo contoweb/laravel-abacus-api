@@ -75,11 +75,12 @@ trait HasCasting
 
                 // Check if it's an AbacusComponent
                 if (class_exists($castType) && is_subclass_of($castType, AbacusComponent::class)) {
-                    return $this->asComponent($key, $value, $castType);
+                    return $this->asInstance($key, $value, $castType, AbacusComponent::class);
                 }
 
+                // Check if it's an AbacusModel
                 if (class_exists($castType) && is_subclass_of($castType, AbacusModel::class)) {
-                    return $this->asAbacusModel($key, $value, $castType);
+                    return $this->asInstance($key, $value, $castType, AbacusModel::class);
                 }
 
                 return $value;
@@ -119,32 +120,11 @@ trait HasCasting
     }
 
     /**
-     * Cast the given value to an AbacusComponent.
+     * Cast the given value to an AbacusComponent, AbacusModel or Collection.
      */
-    protected function asComponent(string $key, mixed $value, string $componentClass): AbacusComponent
+    protected function asInstance(string $key, mixed $value, string $instanceClass, string $baseClass): AbacusModel|AbacusComponent|Collection
     {
-        if ($value instanceof AbacusComponent) {
-            return $value;
-        }
-
-        // Ensure value is an array for the component constructor
-        if (! is_array($value)) {
-            $value = [];
-        }
-
-        // Create component and store it in attributes so modifications persist
-        $component = new $componentClass($value);
-        $this->attributes[$key] = $component;
-
-        return $component;
-    }
-
-    /**
-     * Cast the given value to an AbacusModel or Collection with AbacusModels.
-     */
-    protected function asAbacusModel(string $key, mixed $value, string $modelClass): AbacusModel|Collection
-    {
-        if ($value instanceof AbacusModel) {
+        if ($value instanceof $baseClass) {
             return $value;
         }
 
@@ -153,18 +133,18 @@ trait HasCasting
         }
 
         // Collection (array of arrays)
-        if (is_array($value) && array_is_list($value)) {
-            $models = collect($value)->map(fn ($item) => new $modelClass($item));
-            $this->attributes[$key] = $models;
+        if (is_array($value) && ! empty($value) && array_is_list($value)) {
+            $class = collect($value)->map(fn ($item) => new $instanceClass($item));
+            $this->attributes[$key] = $class;
 
-            return $models;
+            return $class;
         }
 
-        // Single model
-        $model = new $modelClass(is_array($value) ? $value : []);
-        $this->attributes[$key] = $model;
+        // Create AbacusModel or AbacusComponent and store it in attributes so modifications persist
+        $class = new $instanceClass(is_array($value) ? $value : []);
+        $this->attributes[$key] = $class;
 
-        return $model;
+        return $class;
     }
 
     /**
