@@ -5,7 +5,6 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 use Contoweb\AbacusApi\Reports\AbacusReportsClient;
 use Contoweb\AbacusApi\Reports\AbacusReportsService;
 use Contoweb\AbacusApi\Reports\Abstracts\Report;
-use Contoweb\AbacusApi\Reports\Contracts\ReportModel;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
@@ -14,7 +13,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
 /* Test report model */
-class SimpleReportModel implements ReportModel
+class SimpleReportModel
 {
     public function __construct(
         public ?int $id = null,
@@ -30,12 +29,9 @@ class SimpleReport extends Report
         return 'test-report.avx';
     }
 
-    public function mapping(array $record): ReportModel
+    public function mapping(array $record): array
     {
-        return new SimpleReportModel(
-            id: $record['Id'] ?? null,
-            name: $record['Name'] ?? null
-        );
+        return $record;
     }
 }
 
@@ -46,11 +42,11 @@ class ValidatedReport extends Report implements RequiresValidationRules
         return 'validated-report.avx';
     }
 
-    public function mapping(array $record): ReportModel
+    public function mapping(array $record): SimpleReportModel
     {
         return new SimpleReportModel(
             id: $record['Id'] ?? null,
-            name: null
+            name: $record['Name'] ?? null
         );
     }
 
@@ -72,9 +68,9 @@ class CompactOutputReport extends Report
         return 'compact-report.avx';
     }
 
-    public function mapping(array $record): ReportModel
+    public function mapping(array $record): array
     {
-        return new SimpleReportModel(id: $record['Id'] ?? null);
+        return $record;
     }
 }
 
@@ -168,8 +164,8 @@ class AbacusReportsServiceTest extends TestCase
         $results = $this->service->collection($report);
 
         $this->assertCount(2, $results);
-        $this->assertEquals(1, $results[0]->id);
-        $this->assertEquals('Item 1', $results[0]->name);
+        $this->assertEquals(1, $results[0]['Id']);
+        $this->assertEquals('Item 1', $results[0]['Name']);
     }
 
     #[Test]
@@ -283,8 +279,8 @@ class AbacusReportsServiceTest extends TestCase
 
         $this->assertCount(1, $results1);
         $this->assertCount(1, $results2);
-        $this->assertEquals(1, $results1[0]->id);
-        $this->assertEquals(2, $results2[0]->id);
+        $this->assertEquals(1, $results1[0]['Id']);
+        $this->assertEquals(2, $results2[0]['Id']);
     }
 
     #[Test]
@@ -348,7 +344,7 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport failed with message: Access denied');
+        $this->expectExceptionMessage('AbaReport response indicates unsuccessful request with message: Access denied');
 
         $report = new SimpleReport;
         $this->service->collection($report);
@@ -395,7 +391,7 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport failed since it was not successful');
+        $this->expectExceptionMessage('AbaReport response indicates unsuccessful request with message: Report execution failed');
 
         $report = new SimpleReport;
         $this->service->collection($report);
