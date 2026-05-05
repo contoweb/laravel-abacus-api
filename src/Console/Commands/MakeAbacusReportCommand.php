@@ -81,11 +81,11 @@ use Contoweb\AbacusApi\Reports\Abstracts\Report;
 class {{class}} extends Report
 {
     /**
-     * Get the report name
+     * Get the report name.
      */
     public function name(): string
     {
-        return 'your_report.awv';
+        return 'your_report.avw';
     }
 
     /**

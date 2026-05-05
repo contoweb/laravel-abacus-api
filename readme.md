@@ -547,7 +547,7 @@ class DepartmentsReport extends Report
     }
 
     /**
-     * Map JSON record.
+     * Map the JSON record.
      */
     public function mapping(array $record): array
     {
