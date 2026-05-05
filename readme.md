@@ -20,6 +20,7 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
     - [Create Your Own Model](#create-your-own-model)
     - [Use the Models](#use-the-models)
     - [CRUD Operations](#crud-operations)
+    - [Bound OData Actions](#bound-odata-actions)
     - [Pagination](#pagination)
     - [Batch Requests](#batch-requests)
     - [Working Directly with the Service](#working-directly-with-the-service)
@@ -199,6 +200,37 @@ $subject->update(['Email' => 'new@example.com']);
 
 /* Delete */
 $subject->delete();
+```
+
+### Bound OData Actions
+
+Bound OData Actions allow you to trigger server-side operations on a specific entity.
+
+#### Parameters
+
+- `$idOrCriteria` — Entity ID as `int`, `string`, or composite key `array`
+- `$actionName` — Fully qualified action name (e.g. `ch.abacus.orde.TriggerSalesOrderNextStep`)
+- `$data` — Optional action parameters as key-value pairs
+- `$returnType` — Optional model class to map the response to
+
+#### Return Value
+
+- Returns `null` if the action responds with `204 No Content`
+- Returns the raw response array if no `$returnType` is provided
+- Returns a mapped model instance if `$returnType` is provided and the response contains a single object
+- Returns a `Collection` of mapped models if `$returnType` is provided and the response contains a list
+
+#### Usage
+
+```php
+SalesOrder::action(
+    [
+        'SalesOrderId'        => $salesOrderId,
+        'SalesOrderBacklogId' => $salesOrderBacklogId,
+    ],
+    'ch.abacus.orde.TriggerSalesOrderNextStep',
+    ['TypeOfPrinting' => 'DoNotPrint']
+);
 ```
 
 ### Pagination
