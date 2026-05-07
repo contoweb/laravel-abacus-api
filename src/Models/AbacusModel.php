@@ -148,8 +148,12 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      * @throws ConnectionException
      * @throws RequestException
      */
-    public static function action(int|string|array $idOrCriteria, string $actionName, array $data = [], AbacusModel|AbacusComponent|null $returnType = null): mixed
-    {
+    public static function action(
+        int|string|array $idOrCriteria,
+        string $actionName,
+        array $data = [],
+        AbacusModel|AbacusComponent|null $returnType = null
+    ): mixed {
         return static::query()->action($idOrCriteria, $actionName, $data, $returnType);
     }
 

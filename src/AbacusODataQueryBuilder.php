@@ -226,8 +226,12 @@ class AbacusODataQueryBuilder
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function action(int|string|array $idOrCriteria, string $actionName, array $data = [], AbacusModel|AbacusComponent|null $returnType = null): mixed
-    {
+    public function action(
+        int|string|array $idOrCriteria,
+        string $actionName,
+        array $data = [],
+        AbacusModel|AbacusComponent|null $returnType = null
+    ): mixed {
         $this->id($idOrCriteria);
         $path = $this->buildPathWithId($this->client, $this->resource).'/'.$actionName;
 
