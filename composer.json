@@ -19,14 +19,13 @@
     ],
     "require": {
         "php": "^8.2|^8.3|^8.4",
-        "illuminate/support": "^11.0|^12.0",
-        "illuminate/http": "^11.0|^12.0",
-        "illuminate/console": "^11.0|^12.0",
-        "guzzlehttp/guzzle": "^7.0"
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "illuminate/http": "^11.0|^12.0|^13.0",
+        "illuminate/console": "^11.0|^12.0|^13.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.0|^11.0",
-        "orchestra/testbench": "^9.0|^10.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
         "mockery/mockery": "^1.5",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.0"
