@@ -140,7 +140,7 @@ trait HasCasting
             return $class;
         }
 
-        // Create AbacusModel or AbacusComponent and store it in attributes so modifications persist
+        // Create an AbacusModel or AbacusComponent and store it in attributes to persist modifications
         $class = new $instanceClass(is_array($value) ? $value : []);
         $this->attributes[$key] = $class;
 

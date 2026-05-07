@@ -81,7 +81,7 @@ use Contoweb\AbacusApi\Reports\Abstracts\Report;
 class {{class}} extends Report
 {
     /**
-     * Get the report name.
+     * The report name.
      */
     public function name(): string
     {

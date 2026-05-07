@@ -539,7 +539,7 @@ use Contoweb\AbacusApi\Reports\Abstracts\Report;
 class DepartmentsReport extends Report
 {
     /**
-     * Get the report name.
+     * The report name.
      */
     public function name(): string
     {
@@ -626,9 +626,9 @@ public function mapping(array $record): array
 If you want structured, type-safe objects instead, return a custom DTO. The result will then be a collection of those objects:
 
 ```php
-public function mapping(array $record): Sale
+public function mapping(array $record): SalesOrderDto
 {
-    return new Sale(
+    return new SalesOrderDto(
         id: $record['ORDER_ID'] ?? null,
         customer: $record['CUSTOMER'] ?? null,
         amount: (float) ($record['AMOUNT'] ?? 0),

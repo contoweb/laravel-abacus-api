@@ -20,7 +20,7 @@ interface Report
     public function parameters(): array|string;
 
     /**
-     * Get the report name.
+     * The report name.
      *
      * @return string Report identifier
      */
