@@ -133,7 +133,7 @@ trait HasCasting
         }
 
         // Collection (array of arrays)
-        if (is_array($value) && ! empty($value) && array_is_list($value)) {
+        if (is_array($value) && array_is_list($value)) {
             $class = collect($value)->map(fn ($item) => new $instanceClass($item));
             $this->attributes[$key] = $class;
 

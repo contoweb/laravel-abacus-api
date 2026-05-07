@@ -5,6 +5,7 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 use Carbon\Carbon;
 use Contoweb\AbacusApi\Models\AbacusComponent;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Support\Collection;
 use PHPUnit\Framework\Attributes\Test;
 
 /* Test enum for component casting */
@@ -350,13 +351,10 @@ class AbacusComponentTest extends TestCase
     #[Test]
     public function it_handles_empty_component_arrays_with_casts(): void
     {
-        $component = new TestMeasurementsWithCasts([
-            'Dimension' => [],
-        ]);
+        $component = new TestMeasurementsWithCasts(['Dimension' => []]);
 
-        $this->assertInstanceOf(TestDimension::class, $component->Dimension);
-        $this->assertNull($component->Dimension->value);
-        $this->assertNull($component->Dimension->unit);
+        $this->assertInstanceOf(Collection::class, $component->Dimension);
+        $this->assertTrue($component->Dimension->isEmpty());
     }
 
     #[Test]

@@ -818,13 +818,10 @@ class AbacusModelTest extends TestCase
     #[Test]
     public function it_handles_empty_component_arrays(): void
     {
-        $product = new TestProduct([
-            'Id' => 1,
-            'Measurements' => [],
-        ]);
+        $product = new TestProduct(['Id' => 1, 'Measurements' => []]);
 
-        $this->assertInstanceOf(TestMeasurements::class, $product->Measurements);
-        $this->assertNull($product->Measurements->Length);
+        $this->assertInstanceOf(Collection::class, $product->Measurements);
+        $this->assertTrue($product->Measurements->isEmpty());
     }
 
     #[Test]
