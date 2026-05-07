@@ -5,9 +5,10 @@ namespace Contoweb\AbacusApi\Models;
 use ArrayAccess;
 use Contoweb\AbacusApi\Models\Concerns\HasAttributes;
 use Contoweb\AbacusApi\Models\Concerns\HasCasting;
+use Illuminate\Contracts\Support\Arrayable;
 use JsonSerializable;
 
-abstract class AbacusComponent implements ArrayAccess, JsonSerializable
+abstract class AbacusComponent implements Arrayable, ArrayAccess, JsonSerializable
 {
     use HasAttributes,
         HasCasting;

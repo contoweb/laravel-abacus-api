@@ -20,18 +20,16 @@ interface Report
     public function parameters(): array|string;
 
     /**
-     * Get the report name (including path encoding)
-     * Example: "mandate%2Freport.avx"
+     * The report name.
      *
      * @return string Report identifier
      */
     public function name(): string;
 
     /**
-     * Map JSON record to report model
+     * Map the JSON record.
      *
      * @param  array  $record  Associative array representing a single record
-     * @return ReportModel Model instance with mapped data
      */
-    public function mapping(array $record): ReportModel;
+    public function mapping(array $record);
 }
