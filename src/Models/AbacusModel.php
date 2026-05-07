@@ -138,6 +138,26 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
+     * Execute a bound OData action on an entity
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @param  string  $actionName  Fully qualified action name (e.g. ch.abacus.orde.TriggerSalesOrderNextStep)
+     * @param  array<string, mixed>  $data  Action parameters
+     * @return mixed|array|null
+     *
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public static function action(
+        int|string|array $idOrCriteria,
+        string $actionName,
+        array $data = [],
+        AbacusModel|AbacusComponent|null $returnType = null
+    ): mixed {
+        return static::query()->action($idOrCriteria, $actionName, $data, $returnType);
+    }
+
+    /**
      * Execute query and return first result
      *
      * @throws ConnectionException

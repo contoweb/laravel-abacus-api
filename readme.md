@@ -20,6 +20,7 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
     - [Create Your Own Model](#create-your-own-model)
     - [Use the Models](#use-the-models)
     - [CRUD Operations](#crud-operations)
+    - [Bound OData Actions](#bound-odata-actions)
     - [Pagination](#pagination)
     - [Batch Requests](#batch-requests)
     - [Working Directly with the Service](#working-directly-with-the-service)
@@ -155,15 +156,6 @@ $subject = Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.P
 /* Results in: $filter=Type eq ch.abacus.orde.ProductType'Article' */
 ```
 
-### Example Models & Components
-
-The `examples/` directory contains reference implementations to help you get started:
-
-- **`examples/Models/`** - Example model classes (Product, Stock, ...)
-- **`examples/Components/`** - Example component classes for nested OData schemas (Measurements, Weights, ...)
-
-See [`examples/README.md`](examples/README.md)
-
 #### Supported Filter Operators
 
 - `eq` - Equal
@@ -180,6 +172,15 @@ See [`examples/README.md`](examples/README.md)
 - `$top` - Limit
 - `$expand` - Load navigation properties
 - `$format` - Response format (json, atom, xml)
+
+### Example Models & Components
+
+The `examples/` directory contains reference implementations to help you get started:
+
+- **`examples/Models/`** - Example model classes (Product, Stock, ...)
+- **`examples/Components/`** - Example component classes for nested OData schemas (Measurements, Weights, ...)
+
+See [`examples/README.md`](examples/README.md)
 
 ### CRUD Operations
 
@@ -199,6 +200,51 @@ $subject->update(['Email' => 'new@example.com']);
 
 /* Delete */
 $subject->delete();
+```
+
+#### Composite Keys
+
+Some Abacus entities don't have a single numeric ID, but are uniquely identified by a **combination of multiple fields**.
+
+Instead of passing a single value to `find()`, `update()`, or `delete()`, you pass an associative array with all key fields:
+
+```php
+$stockBatch = StockBatch::find([
+    'BatchNumber' => '5436',
+    'ProductId'   => 12276,
+    'VariantId'   => 0,
+]);
+```
+
+### Bound OData Actions
+
+Bound OData Actions allow you to trigger server-side operations on a specific entity.
+
+#### Parameters
+
+- `$idOrCriteria` — Entity ID as `int`, `string`, or [composite key](#composite-keys)
+- `$actionName` — Fully qualified action name (e.g. `ch.abacus.orde.TriggerSalesOrderNextStep`)
+- `$data` — Optional action parameters as key-value pairs
+- `$returnType` — Optional model class to map the response to
+
+#### Return Value
+
+- Returns `null` if the action responds with `204 No Content`
+- Returns the raw response array if no `$returnType` is provided
+- Returns a mapped model instance if `$returnType` is provided and the response contains a single object
+- Returns a `Collection` of mapped models if `$returnType` is provided and the response contains a list
+
+#### Usage
+
+```php
+SalesOrder::action(
+    [
+        'SalesOrderId'        => $salesOrderId,
+        'SalesOrderBacklogId' => $salesOrderBacklogId,
+    ],
+    'ch.abacus.orde.TriggerSalesOrderNextStep',
+    ['TypeOfPrinting' => 'DoNotPrint']
+);
 ```
 
 ### Pagination
