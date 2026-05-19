@@ -58,7 +58,7 @@ class AbacusReportsClientTest extends TestCase
             ], 202),
         ]);
 
-        $result = $this->client->submitReport('test-report.avx', ['param1' => 'value1'], 'json');
+        $result = $this->client->startReport('test-report.avx', ['param1' => 'value1'], 'json');
 
         $this->assertIsArray($result);
         $this->assertEquals('job-123', $result['id']);
@@ -89,7 +89,7 @@ class AbacusReportsClientTest extends TestCase
             ], 202),
         ]);
 
-        $this->client->submitReport('simple.avx');
+        $this->client->startReport('simple.avx');
 
         Http::assertSent(function ($request) {
             $data = $request->data();
@@ -323,7 +323,7 @@ class AbacusReportsClientTest extends TestCase
             ], 202),
         ]);
 
-        $this->client->submitReport('no-params.avx', []);
+        $this->client->startReport('no-params.avx', []);
 
         Http::assertSent(function ($request) {
             $data = $request->data();
