@@ -143,9 +143,9 @@ class AbacusReportsClientTest extends TestCase
 
         $result = $this->client->getJobOutput('job-999');
 
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('data', $result);
-        $this->assertCount(2, $result['data']);
+        $this->assertIsString($result);
+        $this->assertStringContainsString('"Result 1"', $result);
+        $this->assertStringContainsString('"Result 2"', $result);
 
         Http::assertSent(function ($request) {
             return $request->method() === 'GET' &&
@@ -154,7 +154,7 @@ class AbacusReportsClientTest extends TestCase
     }
 
     #[Test]
-    public function it_returns_empty_array_for_null_output(): void
+    public function it_returns_empty_string_for_empty_output(): void
     {
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
@@ -166,8 +166,8 @@ class AbacusReportsClientTest extends TestCase
 
         $result = $this->client->getJobOutput('job-empty');
 
-        $this->assertIsArray($result);
-        $this->assertEmpty($result);
+        $this->assertIsString($result);
+        $this->assertSame('', $result);
     }
 
     #[Test]

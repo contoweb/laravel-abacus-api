@@ -118,7 +118,7 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $report = new CompactOutputReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
 
         Http::assertSent(function ($request) {
             if (! str_contains($request->url(), '/report/1212/compact-report.avx')) {
@@ -161,7 +161,7 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $report = new SimpleReport;
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(2, $results);
         $this->assertEquals(1, $results[0]['Id']);
@@ -192,7 +192,7 @@ class AbacusReportsServiceTest extends TestCase
         $report = new SimpleReport(['filter' => 'active']);
         $this->assertEquals(['filter' => 'active'], $report->parameters());
 
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(1, $results);
 
@@ -232,7 +232,7 @@ class AbacusReportsServiceTest extends TestCase
         $report->setParameters(['filter' => 'active']);
         $this->assertEquals(['filter' => 'active'], $report->parameters());
 
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(1, $results);
 
@@ -274,8 +274,8 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $results1 = $this->service->collection(new SimpleReport(['param' => 'value1']));
-        $results2 = $this->service->collection(new SimpleReport(['param' => 'value2']));
+        $results1 = $this->service->run(new SimpleReport(['param' => 'value1']))->toCollection();
+        $results2 = $this->service->run(new SimpleReport(['param' => 'value2']))->toCollection();
 
         $this->assertCount(1, $results1);
         $this->assertCount(1, $results2);
@@ -296,7 +296,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectException(ReportValidationException::class);
 
         $report = new ValidatedReport(['startDate' => '2024-01-01']);  /* Missing endDate */
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -324,7 +324,7 @@ class AbacusReportsServiceTest extends TestCase
             'startDate' => '2024-01-01',
             'endDate' => '2024-12-31',
         ]);
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(1, $results);
     }
@@ -347,7 +347,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectExceptionMessage('AbaReport response indicates unsuccessful request with message: Access denied');
 
         $report = new SimpleReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -368,7 +368,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectExceptionMessage('Report submission did not return a job ID');
 
         $report = new SimpleReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -394,7 +394,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectExceptionMessage('AbaReport response indicates unsuccessful request with message: Report execution failed');
 
         $report = new SimpleReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -423,7 +423,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectExceptionMessage('Report record is not a valid array');
 
         $report = new SimpleReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -446,8 +446,72 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $report = new SimpleReport;
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(0, $results);
+    }
+
+    #[Test]
+    public function it_returns_raw_string_output(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-raw',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-raw' => Http::response([
+                'id' => 'job-raw',
+                'state' => 'FinishedSuccess',
+            ], 200),
+            '*/api/abareport/v1/jobs/job-raw/output' => Http::response([
+                ['Id' => 1, 'Name' => 'Raw Item'],
+            ], 200),
+        ]);
+
+        $raw = $this->service->run(new SimpleReport)->raw();
+
+        $this->assertIsString($raw);
+        $this->assertStringContainsString('Raw Item', $raw);
+    }
+
+    #[Test]
+    public function it_returns_array_output(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-array',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-array' => Http::response([
+                'id' => 'job-array',
+                'state' => 'FinishedSuccess',
+            ], 200),
+            '*/api/abareport/v1/jobs/job-array/output' => Http::response([
+                ['Id' => 1, 'Name' => 'Array Item'],
+                ['Id' => 2, 'Name' => 'Array Item 2'],
+            ], 200),
+        ]);
+
+        $result = $this->service->run(new SimpleReport)->toArray();
+
+        $this->assertIsArray($result);
+        $this->assertCount(2, $result);
+        $this->assertEquals(1, $result[0]['Id']);
+    }
+
+    #[Test]
+    public function it_throws_bad_method_call_exception_without_run(): void
+    {
+        $this->expectException(\BadMethodCallException::class);
+
+        $this->service->toArray();
     }
 }
