@@ -13,13 +13,14 @@ class AbacusReportsClient extends AbacusClient
      * Submit a report for execution
      *
      * @param  string  $reportName  Name of the report (e.g., "mandate%2Freport.avx")
-     * @param  array  $parameters  Report parameters
+     * @param  array|string  $parameters  Report parameters
      * @param  string  $outputType  Output format (default: json)
      * @return array Response containing job ID and state
      *
-     * @throws RequestException|ConnectionException
+     * @throws ConnectionException
+     * @throws RequestException
      */
-    public function submitReport(string $reportName, array $parameters = [], string $outputType = 'json'): array
+    public function submitReport(string $reportName, array|string $parameters = [], string $outputType = 'json'): array
     {
         $path = $this->reportPath($reportName);
 
@@ -52,15 +53,15 @@ class AbacusReportsClient extends AbacusClient
      * Get job output (final result)
      *
      * @param  string  $jobId  Job identifier
-     * @return array Parsed JSON output
+     * @return string Job output
      *
      * @throws RequestException|ConnectionException
      */
-    public function getJobOutput(string $jobId): array
+    public function getJobOutput(string $jobId): string
     {
         $path = $this->jobOutputPath($jobId);
 
-        return $this->get($path)->json() ?? [];
+        return $this->get($path)->body();
     }
 
     /**

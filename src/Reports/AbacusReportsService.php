@@ -2,6 +2,7 @@
 
 namespace Contoweb\AbacusApi\Reports;
 
+use BadMethodCallException;
 use Contoweb\AbacusApi\Reports\Contracts\Report;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
@@ -15,47 +16,90 @@ use function Illuminate\Support\defer;
 
 class AbacusReportsService
 {
+    protected ?Report $report = null;
+
+    protected ?string $result = null;
+
     public function __construct(
         protected AbacusReportsClient $client
     ) {}
 
     /**
-     * Execute report and return collection of models
+     * Executes the given report.
      *
-     * @param  Report  $report  Report instance
-     *
-     * @throws ConnectionException
-     * @throws ReportExecutionException
      * @throws ReportValidationException
+     * @throws ConnectionException
      * @throws RequestException
+     * @throws ReportExecutionException
      */
-    public function collection(Report $report): Collection
+    public function run(Report $report): static
     {
-        /* Execute report and get models */
-        return collect($this->executeReport($report));
+        $this->report = $report;
+        $this->result = null;
+
+        return $this->executeReport();
     }
 
     /**
-     * Execute report and map to models
+     * Returns the raw report result.
+     */
+    public function raw(): ?string
+    {
+        return $this->result;
+    }
+
+    /**
+     * Maps the report result to a collection of models defined in the report mapping.
      *
+     * @see Report::mapping()
+     *
+     * @throws ReportExecutionException
+     */
+    public function toCollection(): Collection
+    {
+        return collect($this->parseAndMapJson());
+    }
+
+    /**
+     * Decodes the raw report result and returns it as an associative array.
+     *
+     * @throws ReportExecutionException
+     */
+    public function toArray(): array
+    {
+        if (is_null($this->report)) {
+            throw new BadMethodCallException('Trying to access the report result before calling run().');
+        }
+
+        $value = json_decode($this->result, true);
+
+        if (is_null($value)) {
+            throw new ReportExecutionException('Failed to parse the report result');
+        }
+
+        return $value;
+    }
+
+    /**
+     * Submits the report, polls until completion and stores the result.
      *
      * @throws ReportExecutionException
      * @throws ReportValidationException
      * @throws ConnectionException
      * @throws RequestException
      */
-    protected function executeReport(Report $report): array
+    protected function executeReport(): static
     {
         /* Validate parameters if required */
-        if ($report instanceof RequiresValidationRules) {
-            $this->validateParameters($report->parameters(), $report::validationRules());
+        if ($this->report instanceof RequiresValidationRules) {
+            $this->validateParameters($this->report->parameters(), $this->report::validationRules());
         }
 
         /* Submit report */
         $jobResponse = $this->client->submitReport(
-            $report->name(),
-            $report->parameters(),
-            $report->outputType()
+            $this->report->name(),
+            $this->report->parameters(),
+            $this->report->outputType()
         );
 
         /* Check for immediate errors */
@@ -83,15 +127,13 @@ class AbacusReportsService
             );
         }
 
-        /* Get result JSON */
-        $jsonData = $this->client->getJobOutput($jobId);
+        /* Get the result */
+        $this->result = $this->client->getJobOutput($jobId);
 
         /* Close the report session */
         defer(fn () => $this->client->deleteJob($jobId));
 
-        /* Parse and map to models */
-
-        return $this->parseAndMapJson($jsonData, $report);
+        return $this;
     }
 
     /**
@@ -99,8 +141,10 @@ class AbacusReportsService
      *
      * @throws ReportExecutionException
      */
-    protected function parseAndMapJson(array $jsonData, Report $report): array
+    protected function parseAndMapJson(): array
     {
+        $jsonData = $this->toArray();
+
         /* Check if data is empty */
         if (empty($jsonData)) {
             return [];
@@ -113,7 +157,7 @@ class AbacusReportsService
                 throw new ReportExecutionException('Report record is not a valid array');
             }
 
-            $models[] = $report->mapping($record);
+            $models[] = $this->report->mapping($record);
         }
 
         return $models;

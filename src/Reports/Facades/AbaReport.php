@@ -8,7 +8,10 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static Collection collection(Report $report)
+ * @method static static run(Report $report)
+ * @method static Collection toCollection()
+ * @method static array toArray()
+ * @method static string|null raw()
  *
  * @see AbacusReportsService
  */
