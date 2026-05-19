@@ -18,7 +18,7 @@ return [
         'mandate' => env('ABACUS_REST_API_MANDATE'),
         'client_id' => env('ABACUS_REST_API_CLIENT_ID'),
         'client_secret' => env('ABACUS_REST_API_CLIENT_SECRET'),
-        'version' => env('ABACUS_REST_API_VERSION', 'v1'),
+        'version' => 'v1',
     ],
 
     /*
