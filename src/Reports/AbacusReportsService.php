@@ -6,6 +6,7 @@ use Contoweb\AbacusApi\Reports\Contracts\Report;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Validator;
@@ -15,7 +16,8 @@ use function Illuminate\Support\defer;
 class AbacusReportsService
 {
     public function __construct(
-        private readonly AbacusReportsClient $client
+        private readonly AbacusReportsClient $client,
+        private readonly ConfigRepository $configRepository
     ) {}
 
     /**
@@ -30,8 +32,8 @@ class AbacusReportsService
     {
         $jobId = $this->startReport($report);
 
-        $pollInterval = config('abacus-api.reports.poll_interval', 200000);
-        $maxAttempts = config('abacus-api.reports.max_poll_attempts', 150);
+        $pollInterval = $this->configRepository->get('abacus-api.reports.poll_interval');
+        $maxAttempts = $this->configRepository->get('abacus-api.reports.max_poll_attempts');
 
         $this->pollJobUntilCompleted($jobId, $pollInterval, $maxAttempts);
 
