@@ -3,8 +3,8 @@
 namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\Reports\AbacusReportsClient;
-use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -171,142 +171,51 @@ class AbacusReportsClientTest extends TestCase
     }
 
     #[Test]
-    public function it_polls_job_until_complete(): void
+    public function it_throws_exception_when_start_report_fails(): void
     {
-        $callCount = 0;
-
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/jobs/job-poll' => function () use (&$callCount) {
-                $callCount++;
-
-                /* First two calls return Running state */
-                if ($callCount <= 2) {
-                    return Http::response([
-                        'id' => 'job-poll',
-                        'state' => 'Running',
-                    ], 200);
-                }
-
-                /* Third call returns Finished */
-                return Http::response([
-                    'id' => 'job-poll',
-                    'state' => 'Finished',
-                ], 200);
-            },
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response('Access denied', 403),
         ]);
 
-        $result = $this->client->pollJobUntilComplete('job-poll', 10000, 10);
+        $this->expectException(RequestException::class);
 
-        $this->assertEquals('Finished', $result['state']);
-        $this->assertEquals(3, $callCount); /* 2 running + 1 finished */
+        $this->client->startReport('test-report.avx');
     }
 
     #[Test]
-    public function it_throws_exception_when_polling_times_out(): void
+    public function it_throws_exception_when_get_job_status_fails(): void
     {
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/jobs/job-timeout' => Http::response([
-                'id' => 'job-timeout',
-                'state' => 'Running',
-            ], 200),
+            '*/api/abareport/v1/jobs/job-error' => Http::response('Internal Server Error', 500),
         ]);
 
-        $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('Report job polling timed out after 5 attempts');
+        $this->expectException(RequestException::class);
 
-        $this->client->pollJobUntilComplete('job-timeout', 10000, 5);
+        $this->client->getJobStatus('job-error');
     }
 
     #[Test]
-    public function it_throws_exception_on_403_error(): void
+    public function it_throws_exception_when_get_job_output_fails(): void
     {
         Http::fake([
             '*/oauth/oauth2/v1/token' => Http::response([
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/jobs/job-forbidden' => Http::response([
-                'id' => 'job-forbidden',
-                'status' => 403,
-                'title' => 'Access forbidden',
-            ], 200),
+            '*/api/abareport/v1/jobs/job-error/output' => Http::response('Internal Server Error', 500),
         ]);
 
-        $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport failed with message: Access forbidden');
+        $this->expectException(RequestException::class);
 
-        $this->client->pollJobUntilComplete('job-forbidden', 10000, 10);
-    }
-
-    #[Test]
-    public function it_throws_exception_on_500_error(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/jobs/job-error' => Http::response([
-                'id' => 'job-error',
-                'status' => 500,
-                'title' => 'Internal server error',
-            ], 200),
-        ]);
-
-        $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport failed with message: Internal server error');
-
-        $this->client->pollJobUntilComplete('job-error', 10000, 10);
-    }
-
-    #[Test]
-    public function it_handles_error_without_title(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/jobs/job-no-title' => Http::response([
-                'id' => 'job-no-title',
-                'status' => 500,
-            ], 200),
-        ]);
-
-        $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport failed with message: Unknown error');
-
-        $this->client->pollJobUntilComplete('job-no-title', 10000, 10);
-    }
-
-    #[Test]
-    public function it_stops_polling_when_state_is_not_running(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/jobs/job-complete' => Http::response([
-                'id' => 'job-complete',
-                'state' => 'Finished',
-            ], 200),
-        ]);
-
-        $result = $this->client->pollJobUntilComplete('job-complete', 10000, 10);
-
-        $this->assertEquals('Finished', $result['state']);
-
-        /* Should only call once (token + status check) */
-        Http::assertSentCount(2);
+        $this->client->getJobOutput('job-error');
     }
 
     #[Test]
@@ -330,25 +239,6 @@ class AbacusReportsClientTest extends TestCase
 
             return isset($data['parameters']) && empty($data['parameters']);
         });
-    }
-
-    #[Test]
-    public function it_uses_custom_poll_interval(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/abareport/v1/jobs/job-custom' => Http::sequence()
-                ->push(['id' => 'job-custom', 'state' => 'Running'], 200)
-                ->push(['id' => 'job-custom', 'state' => 'Finished'], 200),
-        ]);
-
-        /* Using shorter interval for testing */
-        $result = $this->client->pollJobUntilComplete('job-custom', 1000, 10);
-
-        $this->assertEquals('Finished', $result['state']);
     }
 
     #[Test]

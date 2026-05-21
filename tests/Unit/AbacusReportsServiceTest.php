@@ -9,6 +9,8 @@ use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -85,7 +87,10 @@ class AbacusReportsServiceTest extends TestCase
         parent::setUp();
 
         $this->client = new AbacusReportsClient($this->makeCredentialsProvider());
-        $this->service = new AbacusReportsService($this->client);
+        $this->service = new AbacusReportsService(
+            $this->client,
+            $this->app->make(Repository::class)
+        );
     }
 
     #[Test]
@@ -337,14 +342,10 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
-                'status' => 403,
-                'title' => 'Access denied',
-            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response('Access denied', 403),
         ]);
 
-        $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport response indicates unsuccessful request with message: Access denied');
+        $this->expectException(RequestException::class);
 
         $report = new SimpleReport;
         $this->service->run($report)->toCollection();
@@ -365,7 +366,7 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('Report submission did not return a job ID');
+        $this->expectExceptionMessage('Report start response did not contain a job ID');
 
         $report = new SimpleReport;
         $this->service->run($report)->toCollection();
@@ -391,7 +392,7 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport response indicates unsuccessful request with message: Report execution failed');
+        $this->expectExceptionMessage('AbaReport job status finished in an unsuccessful state: Report execution failed');
 
         $report = new SimpleReport;
         $this->service->run($report)->toCollection();
@@ -508,10 +509,66 @@ class AbacusReportsServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_throws_bad_method_call_exception_without_run(): void
+    public function it_polls_job_multiple_times_before_completion(): void
     {
-        $this->expectException(\BadMethodCallException::class);
+        $callCount = 0;
 
-        $this->service->toArray();
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-poll',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-poll' => function () use (&$callCount) {
+                $callCount++;
+
+                if ($callCount <= 2) {
+                    return Http::response(['id' => 'job-poll', 'state' => 'Running'], 200);
+                }
+
+                return Http::response(['id' => 'job-poll', 'state' => 'FinishedSuccess'], 200);
+            },
+            '*/api/abareport/v1/jobs/job-poll/output' => Http::response([
+                ['Id' => 1, 'Name' => 'Polled Item'],
+            ], 200),
+        ]);
+
+        $results = $this->service->run(new SimpleReport)->toCollection();
+
+        $this->assertCount(1, $results);
+        $this->assertEquals(3, $callCount);
+    }
+
+    #[Test]
+    public function it_throws_exception_when_polling_times_out(): void
+    {
+        $this->app['config']->set('abacus-api.reports.max_poll_attempts', 2);
+        $this->service = new AbacusReportsService(
+            $this->client,
+            $this->app->make(Repository::class)
+        );
+
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-timeout',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-timeout' => Http::response([
+                'id' => 'job-timeout',
+                'state' => 'Running',
+            ], 200),
+        ]);
+
+        $this->expectException(ReportExecutionException::class);
+        $this->expectExceptionMessage('timed out after 2 attempts');
+
+        $this->service->run(new SimpleReport)->toCollection();
     }
 }

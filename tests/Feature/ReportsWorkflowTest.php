@@ -6,6 +6,7 @@ use Contoweb\AbacusApi\Reports\AbacusReportsClient;
 use Contoweb\AbacusApi\Reports\AbacusReportsService;
 use Contoweb\AbacusApi\Reports\Abstracts\Report;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -48,7 +49,10 @@ class ReportsWorkflowTest extends TestCase
         parent::setUp();
 
         $client = new AbacusReportsClient($this->makeCredentialsProvider());
-        $this->service = new AbacusReportsService($client);
+        $this->service = new AbacusReportsService(
+            $client,
+            $this->app->make(Repository::class)
+        );
     }
 
     #[Test]
