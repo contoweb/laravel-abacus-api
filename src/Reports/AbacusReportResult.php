@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 class AbacusReportResult
 {
     private Report $report;
+
     private string $result;
 
     public function __construct(Report $report, string $result)
@@ -17,12 +18,6 @@ class AbacusReportResult
         $this->report = $report;
     }
 
-    /**
-     *
-     * @param  Report  $report
-     * @param  string  $result
-     * @return self
-     */
     public static function make(Report $report, string $result): self
     {
         return new self($report, $result);
