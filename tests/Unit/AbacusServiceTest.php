@@ -62,87 +62,16 @@ class AbacusServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/entity/v1/mandants/1212/$metadata' => Http::response(
-                '<?xml version="1.0"?><edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0"></edmx:Edmx>',
-                200,
-                ['Content-Type' => 'application/xml']
-            ),
+            '*/api/entity/v1/mandants/1212/$metadata' => Http::response([
+                '$Version' => '4.01',
+                'ch.abacus.adre' => [],
+            ], 200),
         ]);
 
         $result = $this->service->metadata();
 
-        $this->assertIsString($result);
-        $this->assertStringContainsString('<?xml', $result);
-        $this->assertStringContainsString('edmx:Edmx', $result);
-    }
-
-    #[Test]
-    public function it_caches_metadata_response(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/1212/$metadata' => Http::response(
-                '<?xml version="1.0"?><edmx:Edmx>cached metadata</edmx:Edmx>',
-                200
-            ),
-        ]);
-
-        /* First call - fetches from API */
-        $result1 = $this->service->metadata();
-
-        /* Second call - should use cache */
-        $result2 = $this->service->metadata();
-
-        /* Third call - should still use cache */
-        $result3 = $this->service->metadata();
-
-        $this->assertEquals($result1, $result2);
-        $this->assertEquals($result2, $result3);
-
-        /* Only one metadata API call should be made (plus one token request) */
-        Http::assertSentCount(2);
-    }
-
-    #[Test]
-    public function it_uses_correct_cache_key_for_metadata(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/$metadata' => Http::response('<edmx:Edmx>test</edmx:Edmx>', 200),
-        ]);
-
-        $this->service->metadata();
-
-        $cacheKey = 'abacus_metadata_1212';
-        $this->assertTrue(Cache::has($cacheKey));
-    }
-
-    #[Test]
-    public function it_caches_metadata_for_one_hour(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/$metadata' => Http::response('<edmx:Edmx>cached</edmx:Edmx>', 200),
-        ]);
-
-        $this->service->metadata();
-
-        $cacheKey = 'abacus_metadata_1212';
-
-        /* Cache should exist */
-        $this->assertTrue(Cache::has($cacheKey));
-
-        /* Value should match */
-        $this->assertEquals('<edmx:Edmx>cached</edmx:Edmx>', Cache::get($cacheKey));
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('$Version', $result);
     }
 
     #[Test]

@@ -27,7 +27,7 @@ class AbacusServiceProvider extends ServiceProvider
             'abacus-api'
         );
 
-        $this->app->singleton(ConfigCredentialsProvider::class, function (Application $app) {
+        $this->app->bind(ConfigCredentialsProvider::class, function (Application $app) {
             $config = $app['config'];
 
             $values = [

@@ -38,7 +38,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('abacus-api.rest_api.version', 'v1');
         $app['config']->set('abacus-api.credentials_provider', ConfigCredentialsProvider::class);
         $app['config']->set('cache.default', 'array');
-        $app['config']->set('abacus-api.reports.poll_interval', 0);
+        $app['config']->set('abacus-api.reports.poll_interval', 200000);
         $app['config']->set('abacus-api.reports.max_poll_attempts', 150);
         $app['config']->set('abacus-api.models_namespace', 'App\Models\Abacus');
         $app['config']->set('abacus-api.reports.reports_namespace', 'App\Reports');

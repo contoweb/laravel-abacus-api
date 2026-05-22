@@ -6,7 +6,6 @@ use Contoweb\AbacusApi\Reports\AbacusReportsClient;
 use Contoweb\AbacusApi\Reports\AbacusReportsService;
 use Contoweb\AbacusApi\Reports\Abstracts\Report;
 use Contoweb\AbacusApi\Tests\TestCase;
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -51,7 +50,8 @@ class ReportsWorkflowTest extends TestCase
         $client = new AbacusReportsClient($this->makeCredentialsProvider());
         $this->service = new AbacusReportsService(
             $client,
-            $this->app->make(Repository::class)
+            $this->app['config']->get('abacus-api.reports.poll_interval'),
+            $this->app['config']->get('abacus-api.reports.max_poll_attempts')
         );
     }
 

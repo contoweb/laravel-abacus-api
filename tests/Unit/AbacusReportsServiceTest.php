@@ -9,7 +9,6 @@ use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
 use Contoweb\AbacusApi\Tests\TestCase;
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
@@ -89,7 +88,8 @@ class AbacusReportsServiceTest extends TestCase
         $this->client = new AbacusReportsClient($this->makeCredentialsProvider());
         $this->service = new AbacusReportsService(
             $this->client,
-            $this->app->make(Repository::class)
+            $this->app['config']->get('abacus-api.reports.poll_interval'),
+            $this->app['config']->get('abacus-api.reports.max_poll_attempts')
         );
     }
 
@@ -548,7 +548,8 @@ class AbacusReportsServiceTest extends TestCase
         $this->app['config']->set('abacus-api.reports.max_poll_attempts', 2);
         $this->service = new AbacusReportsService(
             $this->client,
-            $this->app->make(Repository::class)
+            $this->app['config']->get('abacus-api.reports.poll_interval'),
+            $this->app['config']->get('abacus-api.reports.max_poll_attempts')
         );
 
         Http::fake([

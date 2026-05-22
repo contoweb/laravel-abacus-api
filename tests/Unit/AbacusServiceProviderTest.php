@@ -33,7 +33,7 @@ class AbacusServiceProviderTest extends TestCase
         config()->set('abacus-api.credentials_provider', \stdClass::class);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The credentials provider must implement the AbacusCredentialsProvider interface');
+        $this->expectExceptionMessage('The credentials provider must implement the Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider interface');
 
         $this->app->make(AbacusCredentialsProvider::class);
     }

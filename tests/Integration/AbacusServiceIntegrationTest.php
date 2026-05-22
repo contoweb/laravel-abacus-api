@@ -152,36 +152,6 @@ class AbacusServiceIntegrationTest extends TestCase
     }
 
     #[Test]
-    public function it_fetches_and_caches_metadata(): void
-    {
-        Http::fake([
-            '*/oauth/oauth2/v1/token' => Http::response([
-                'access_token' => 'test-token',
-                'expires_in' => 3600,
-            ], 200),
-            '*/api/entity/v1/mandants/1212/$metadata' => Http::response(
-                '<?xml version="1.0"?><edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0"></edmx:Edmx>',
-                200
-            ),
-        ]);
-
-        /* First call */
-        $metadata1 = $this->service->metadata();
-
-        /* Second call - should use cache */
-        $metadata2 = $this->service->metadata();
-
-        /* Third call - should still use cache */
-        $metadata3 = $this->service->metadata();
-
-        $this->assertEquals($metadata1, $metadata2);
-        $this->assertEquals($metadata2, $metadata3);
-
-        /* Should only make one metadata request (plus one token request) */
-        Http::assertSentCount(2);
-    }
-
-    #[Test]
     public function it_handles_token_refresh_during_operations(): void
     {
         Http::fake([

@@ -12,7 +12,13 @@ class ConfigCredentialsProviderTest extends TestCase
     #[Test]
     public function it_reads_credentials_from_config(): void
     {
-        $provider = new ConfigCredentialsProvider($this->app['config']);
+        $provider = new ConfigCredentialsProvider(
+            $this->app['config']->get('abacus-api.rest_api.url'),
+            $this->app['config']->get('abacus-api.rest_api.mandate'),
+            $this->app['config']->get('abacus-api.rest_api.client_id'),
+            $this->app['config']->get('abacus-api.rest_api.client_secret'),
+            $this->app['config']->get('abacus-api.rest_api.version')
+        );
 
         $credentials = $provider->getCredentials();
 
@@ -27,10 +33,10 @@ class ConfigCredentialsProviderTest extends TestCase
     #[Test]
     public function it_reflects_config_changes(): void
     {
-        config()->set('abacus-api.rest_api.url', 'https://changed.example.com');
-        config()->set('abacus-api.rest_api.mandate', 'changed-mandate');
+        $this->app['config']->set('abacus-api.rest_api.url', 'https://changed.example.com');
+        $this->app['config']->set('abacus-api.rest_api.mandate', 'changed-mandate');
 
-        $provider = new ConfigCredentialsProvider($this->app['config']);
+        $provider = $this->app->make(ConfigCredentialsProvider::class);
         $credentials = $provider->getCredentials();
 
         $this->assertEquals('https://changed.example.com', $credentials->baseUrl);
