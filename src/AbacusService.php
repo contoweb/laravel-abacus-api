@@ -6,7 +6,6 @@ use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Cache;
 
 class AbacusService
 {
@@ -43,20 +42,18 @@ class AbacusService
     }
 
     /**
-     * Metadata abrufen (mit Caching)
-     * GET /api/entity/v1/mandants/{mandate}/$metadata
+     * Fetch the OData metadata containing all entities, complex types and enums.
+     *
+     * @throws RequestException
+     * @throws ConnectionException
      */
-    public function metadata(): string
+    public function metadata(): array
     {
-        $mandate = $this->client->getMandate();
+        $path = $this->client->metadataPath();
 
-        return Cache::remember("abacus_metadata_{$mandate}", 3600, function () {
-            $path = $this->client->metadataPath();
-
-            return $this->client
-                ->get($path)
-                ->body();
-        });
+        return $this->client
+            ->get($path)
+            ->json();
     }
 
     /**

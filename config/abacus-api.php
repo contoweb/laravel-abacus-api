@@ -31,7 +31,6 @@ return [
     */
 
     'ide_helper' => [
-        'enabled' => env('ABACUS_IDE_HELPER_ENABLED', true),
         'output_file' => env('ABACUS_IDE_HELPER_OUTPUT', '_ide_helper_abacus.php'),
     ],
 

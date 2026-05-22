@@ -12,13 +12,20 @@ class MakeAbacusModelCommand extends Command
 
     protected $description = 'Create a new Abacus REST model';
 
+    private readonly string $modelsNamespace;
+
+    public function __construct(string $modelsNamespace)
+    {
+        parent::__construct();
+        $this->modelsNamespace = $modelsNamespace;
+    }
+
     public function handle(): int
     {
         $name = $this->argument('name');
         $resource = $this->option('resource') ?? Str::plural($name);
-        $namespace = config('abacus-api.models_namespace');
 
-        $path = $this->getPath($namespace, $name);
+        $path = $this->getPath($this->modelsNamespace, $name);
 
         if (File::exists($path)) {
             $this->error("Model {$name} already exists!");
@@ -29,7 +36,7 @@ class MakeAbacusModelCommand extends Command
         $this->makeDirectory($path);
 
         $stub = $this->getStub();
-        $content = $this->replaceStub($stub, $name, $resource, $namespace);
+        $content = $this->replaceStub($stub, $name, $resource, $this->modelsNamespace);
 
         File::put($path, $content);
 

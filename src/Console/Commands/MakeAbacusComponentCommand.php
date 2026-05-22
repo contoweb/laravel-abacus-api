@@ -11,12 +11,19 @@ class MakeAbacusComponentCommand extends Command
 
     protected $description = 'Create a new Abacus component (OData complex types)';
 
+    private readonly string $componentsNamespace;
+
+    public function __construct(string $componentsNamespace)
+    {
+        parent::__construct();
+        $this->componentsNamespace = $componentsNamespace;
+    }
+
     public function handle(): int
     {
         $name = $this->argument('name');
-        $namespace = config('abacus-api.components_namespace');
 
-        $path = $this->getPath($namespace, $name);
+        $path = $this->getPath($this->componentsNamespace, $name);
 
         if (File::exists($path)) {
             $this->error("Component {$name} already exists!");
@@ -27,7 +34,7 @@ class MakeAbacusComponentCommand extends Command
         $this->makeDirectory($path);
 
         $stub = $this->getStub();
-        $content = $this->replaceStub($stub, $name, $namespace);
+        $content = $this->replaceStub($stub, $name, $this->componentsNamespace);
 
         File::put($path, $content);
 

@@ -11,13 +11,20 @@ class MakeAbacusReportCommand extends Command
 
     protected $description = 'Create a new Abacus report class';
 
+    private readonly string $reportsNamespace;
+
+    public function __construct(string $reportsNamespace)
+    {
+        parent::__construct();
+        $this->reportsNamespace = $reportsNamespace;
+    }
+
     public function handle(): int
     {
         $name = $this->argument('name');
-        $reportsNamespace = config('abacus-api.reports.reports_namespace');
 
         /* Create report class */
-        $reportPath = $this->getPath($reportsNamespace, $name);
+        $reportPath = $this->getPath($this->reportsNamespace, $name);
 
         if (File::exists($reportPath)) {
             $this->error("Report $name already exists!");
@@ -28,7 +35,7 @@ class MakeAbacusReportCommand extends Command
         $this->makeDirectory($reportPath);
 
         $reportStub = $this->getReportStub();
-        $reportContent = $this->replaceReportStub($reportStub, $name, $reportsNamespace);
+        $reportContent = $this->replaceReportStub($reportStub, $name, $this->reportsNamespace);
 
         File::put($reportPath, $reportContent);
 

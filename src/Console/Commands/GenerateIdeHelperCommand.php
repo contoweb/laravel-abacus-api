@@ -30,15 +30,21 @@ class GenerateIdeHelperCommand extends Command
         'Edm.Single' => 'float',
     ];
 
+    private readonly string $outputFile;
+
+    private readonly string $modelsNamespace;
+
+    public function __construct(string $outputFile, string $modelsNamespace)
+    {
+        parent::__construct();
+        $this->outputFile = $outputFile;
+        $this->modelsNamespace = $modelsNamespace;
+    }
+
     public function handle(): int
     {
-        if (! config('abacus-api.ide_helper.enabled')) {
-            $this->info('IDE Helper generation is disabled in config.');
-
-            return 0;
-        }
         $this->info($this->option('source'));
-        $outputFile = base_path($this->option('output') ?? config('abacus-api.ide_helper.output_file'));
+        $outputFile = base_path($this->option('output') ?? $this->outputFile);
 
         try {
             if ($this->option('source')) {
@@ -177,8 +183,6 @@ class GenerateIdeHelperCommand extends Command
 
     protected function generateIdeHelper(array $models): string
     {
-        $namespace = config('abacus-api.models_namespace');
-
         $lines = [
             '<?php',
             '',
@@ -192,12 +196,12 @@ class GenerateIdeHelperCommand extends Command
             ' * This file is auto-generated and will be overwritten.',
             ' */',
             '',
-            "namespace {$namespace} {",
+            "namespace {$this->modelsNamespace} {",
             '',
         ];
 
         foreach ($models as $modelName => $model) {
-            $lines[] = $this->generateModelBlock($modelName, $model, $namespace);
+            $lines[] = $this->generateModelBlock($modelName, $model);
             $lines[] = '';
         }
 
@@ -207,7 +211,7 @@ class GenerateIdeHelperCommand extends Command
         return implode("\n", $lines);
     }
 
-    protected function generateModelBlock(string $modelName, array $model, string $namespace): string
+    protected function generateModelBlock(string $modelName, array $model): string
     {
         $lines = ['    /**'];
 
