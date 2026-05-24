@@ -21,7 +21,7 @@ class AbacusReportsService
     ) {}
 
     /**
-     * Executes the given report.
+     * Execute the given report.
      *
      * @throws ReportValidationException
      * @throws ConnectionException
