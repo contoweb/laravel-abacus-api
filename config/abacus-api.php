@@ -23,30 +23,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | IDE Helper Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Configuration for automatic IDE helper generation
-    |
-    */
-
-    'ide_helper' => [
-        'output_file' => env('ABACUS_IDE_HELPER_OUTPUT', '_ide_helper_abacus.php'),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Namespace
-    |--------------------------------------------------------------------------
-    |
-    | The namespace where your custom Abacus models and components are located.
-    |
-    */
-    'models_namespace' => env('ABACUS_MODELS_NAMESPACE', 'App\\Models\\Abacus'),
-    'components_namespace' => env('ABACUS_COMPONENTS_NAMESPACE', 'App\\Models\\Abacus\\Components'),
-
-    /*
-    |--------------------------------------------------------------------------
     | Reports Configuration
     |--------------------------------------------------------------------------
     |
@@ -57,7 +33,6 @@ return [
     'reports' => [
         'poll_interval' => env('ABACUS_REPORTS_POLL_INTERVAL', 200000), /* Microseconds (0.2 seconds) */
         'max_poll_attempts' => env('ABACUS_REPORTS_MAX_POLL_ATTEMPTS', 150),
-        'reports_namespace' => env('ABACUS_REPORTS_NAMESPACE', 'App\\Services\\Abacus\\Reports'),
     ],
 
     /*

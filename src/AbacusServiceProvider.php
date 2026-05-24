@@ -82,25 +82,6 @@ class AbacusServiceProvider extends ServiceProvider
                 $app['config']->get('abacus-api.reports.max_poll_attempts')
             );
         });
-
-        $this->app->bind(GenerateIdeHelperCommand::class, function (Application $app) {
-            return new GenerateIdeHelperCommand(
-                $app['config']->get('abacus-api.ide_helper.output_file'),
-                $app['config']->get('abacus-api.models_namespace')
-            );
-        });
-
-        $this->app->bind(MakeAbacusComponentCommand::class, function (Application $app) {
-            return new MakeAbacusComponentCommand($app['config']->get('abacus-api.components_namespace'));
-        });
-
-        $this->app->bind(MakeAbacusModelCommand::class, function (Application $app) {
-            return new MakeAbacusModelCommand($app['config']->get('abacus-api.models_namespace'));
-        });
-
-        $this->app->bind(MakeAbacusReportCommand::class, function (Application $app) {
-            return new MakeAbacusReportCommand($app['config']->get('abacus-api.reports.reports_namespace'));
-        });
     }
 
     /**

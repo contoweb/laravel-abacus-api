@@ -7,24 +7,18 @@ use Illuminate\Support\Facades\File;
 
 class MakeAbacusReportCommand extends Command
 {
-    protected $signature = 'make:abacus-report {name}';
+    protected $signature = 'make:abacus-report {name}
+                           {--namespace= : Override the default namespace}';
 
     protected $description = 'Create a new Abacus report class';
-
-    private readonly string $reportsNamespace;
-
-    public function __construct(string $reportsNamespace)
-    {
-        parent::__construct();
-        $this->reportsNamespace = $reportsNamespace;
-    }
 
     public function handle(): int
     {
         $name = $this->argument('name');
+        $namespace = $this->option('namespace') ?? 'App\\Services\\Abacus\\Reports';
 
         /* Create report class */
-        $reportPath = $this->getPath($this->reportsNamespace, $name);
+        $reportPath = $this->getPath($namespace, $name);
 
         if (File::exists($reportPath)) {
             $this->error("Report $name already exists!");
@@ -35,7 +29,7 @@ class MakeAbacusReportCommand extends Command
         $this->makeDirectory($reportPath);
 
         $reportStub = $this->getReportStub();
-        $reportContent = $this->replaceReportStub($reportStub, $name, $this->reportsNamespace);
+        $reportContent = $this->replaceReportStub($reportStub, $name, $namespace);
 
         File::put($reportPath, $reportContent);
 

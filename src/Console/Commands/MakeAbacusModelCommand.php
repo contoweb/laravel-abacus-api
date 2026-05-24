@@ -8,24 +8,19 @@ use Illuminate\Support\Str;
 
 class MakeAbacusModelCommand extends Command
 {
-    protected $signature = 'make:abacus-model {name} {--resource=}';
+    protected $signature = 'make:abacus-model {name}
+                            {--resource= : Abacus OData endpoint}
+                            {--namespace= : Override the default namespace}';
 
     protected $description = 'Create a new Abacus REST model';
-
-    private readonly string $modelsNamespace;
-
-    public function __construct(string $modelsNamespace)
-    {
-        parent::__construct();
-        $this->modelsNamespace = $modelsNamespace;
-    }
 
     public function handle(): int
     {
         $name = $this->argument('name');
         $resource = $this->option('resource') ?? Str::plural($name);
+        $namespace = $this->option('namespace') ?? 'App\\Models\\Abacus';
 
-        $path = $this->getPath($this->modelsNamespace, $name);
+        $path = $this->getPath($namespace, $name);
 
         if (File::exists($path)) {
             $this->error("Model {$name} already exists!");
@@ -36,7 +31,7 @@ class MakeAbacusModelCommand extends Command
         $this->makeDirectory($path);
 
         $stub = $this->getStub();
-        $content = $this->replaceStub($stub, $name, $resource, $this->modelsNamespace);
+        $content = $this->replaceStub($stub, $name, $resource, $namespace);
 
         File::put($path, $content);
 

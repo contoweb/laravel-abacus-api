@@ -7,23 +7,17 @@ use Illuminate\Support\Facades\File;
 
 class MakeAbacusComponentCommand extends Command
 {
-    protected $signature = 'make:abacus-component {name}';
+    protected $signature = 'make:abacus-component {name}
+                            {--namespace= : Override the default namespace}';
 
     protected $description = 'Create a new Abacus component (OData complex types)';
-
-    private readonly string $componentsNamespace;
-
-    public function __construct(string $componentsNamespace)
-    {
-        parent::__construct();
-        $this->componentsNamespace = $componentsNamespace;
-    }
 
     public function handle(): int
     {
         $name = $this->argument('name');
+        $namespace = $this->option('namespace') ?? 'App\\Models\\Abacus\\Components';
 
-        $path = $this->getPath($this->componentsNamespace, $name);
+        $path = $this->getPath($namespace, $name);
 
         if (File::exists($path)) {
             $this->error("Component {$name} already exists!");
@@ -34,7 +28,7 @@ class MakeAbacusComponentCommand extends Command
         $this->makeDirectory($path);
 
         $stub = $this->getStub();
-        $content = $this->replaceStub($stub, $name, $this->componentsNamespace);
+        $content = $this->replaceStub($stub, $name, $namespace);
 
         File::put($path, $content);
 

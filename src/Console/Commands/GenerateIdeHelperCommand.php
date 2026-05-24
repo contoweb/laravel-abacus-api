@@ -8,8 +8,9 @@ use Illuminate\Console\Command;
 class GenerateIdeHelperCommand extends Command
 {
     protected $signature = 'abacus:generate-ide-helper
-                          {--output= : Override output file from config}
-                          {--source= : Absolute path to the OData metadata XML file}';
+                          {--output= : Override output file}
+                          {--source= : Absolute path to the OData metadata XML file}
+                          {--namespace= : Override the default namespace}';
 
     protected $description = 'Generate IDE helper file from Abacus OData metadata';
 
@@ -30,21 +31,11 @@ class GenerateIdeHelperCommand extends Command
         'Edm.Single' => 'float',
     ];
 
-    private readonly string $outputFile;
-
-    private readonly string $modelsNamespace;
-
-    public function __construct(string $outputFile, string $modelsNamespace)
-    {
-        parent::__construct();
-        $this->outputFile = $outputFile;
-        $this->modelsNamespace = $modelsNamespace;
-    }
-
     public function handle(): int
     {
         $this->info($this->option('source'));
-        $outputFile = base_path($this->option('output') ?? $this->outputFile);
+        $outputFile = base_path($this->option('output') ?? '_ide_helper_abacus.php');
+        $namespace = $this->option('namespace') ?? 'App\\Models\\Abacus';
 
         try {
             if ($this->option('source')) {
@@ -161,7 +152,7 @@ class GenerateIdeHelperCommand extends Command
             $this->info('Found '.count($entityModels).' entity types in metadata');
 
             $this->info('Generating IDE helper file...');
-            $content = $this->generateIdeHelper($entityModels);
+            $content = $this->generateIdeHelper($entityModels, $namespace);
 
             file_put_contents($outputFile, $content);
 
@@ -181,7 +172,7 @@ class GenerateIdeHelperCommand extends Command
         return $this->typeMapping[$odataType] ?? 'mixed';
     }
 
-    protected function generateIdeHelper(array $models): string
+    protected function generateIdeHelper(array $models, string $namespace): string
     {
         $lines = [
             '<?php',
@@ -196,7 +187,7 @@ class GenerateIdeHelperCommand extends Command
             ' * This file is auto-generated and will be overwritten.',
             ' */',
             '',
-            "namespace {$this->modelsNamespace} {",
+            "namespace {$namespace} {",
             '',
         ];
 

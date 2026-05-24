@@ -16,8 +16,8 @@ class AbacusReportsService
 {
     public function __construct(
         private readonly AbacusReportsClient $client,
-        private readonly int $pollInterval,
-        private readonly int $maxPollAttempts
+        private readonly int $pollInterval = 200000,
+        private readonly int $maxPollAttempts = 150
     ) {}
 
     /**
