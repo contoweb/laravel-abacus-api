@@ -15,7 +15,7 @@ class MakeAbacusReportCommandTest extends TestCase
         parent::setUp();
 
         /* Set up a test reports path */
-        $this->testReportsPath = base_path('app/Reports');
+        $this->testReportsPath = base_path('app/Services/Abacus/Reports');
     }
 
     protected function tearDown(): void
@@ -35,7 +35,7 @@ class MakeAbacusReportCommandTest extends TestCase
             ->assertExitCode(0)
             ->expectsOutput('Report SalesReport created successfully.');
 
-        $expectedPath = app_path('Reports/SalesReport.php');
+        $expectedPath = app_path('Services/Abacus/Reports/SalesReport.php');
         $this->assertFileExists($expectedPath);
     }
 
@@ -58,10 +58,10 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->artisan('make:abacus-report', ['name' => 'TestReport'])
             ->assertExitCode(0);
 
-        $path = app_path('Reports/TestReport.php');
+        $path = app_path('Services/Abacus/Reports/TestReport.php');
         $content = File::get($path);
 
-        $this->assertStringContainsString('namespace App\Reports;', $content);
+        $this->assertStringContainsString('namespace App\Services\Abacus\Reports;', $content);
         $this->assertStringContainsString('class TestReport extends Report', $content);
     }
 
@@ -85,7 +85,7 @@ class MakeAbacusReportCommandTest extends TestCase
         $this->artisan('make:abacus-report', ['name' => 'ValidReport'])
             ->assertExitCode(0);
 
-        $reportPath = app_path('Reports/ValidReport.php');
+        $reportPath = app_path('Services/Abacus/Reports/ValidReport.php');
         $reportContent = File::get($reportPath);
 
         $this->assertStringStartsWith('<?php', $reportContent);

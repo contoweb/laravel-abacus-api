@@ -8,8 +8,9 @@ use Illuminate\Console\Command;
 class GenerateIdeHelperCommand extends Command
 {
     protected $signature = 'abacus:generate-ide-helper
-                          {--output= : Override output file from config}
-                          {--source= : Absolute path to the OData metadata XML file}';
+                          {--output= : Override output file}
+                          {--source= : Absolute path to the OData metadata XML file}
+                          {--namespace= : Override the default namespace}';
 
     protected $description = 'Generate IDE helper file from Abacus OData metadata';
 
@@ -32,13 +33,9 @@ class GenerateIdeHelperCommand extends Command
 
     public function handle(): int
     {
-        if (! config('abacus-api.ide_helper.enabled')) {
-            $this->info('IDE Helper generation is disabled in config.');
-
-            return 0;
-        }
         $this->info($this->option('source'));
-        $outputFile = base_path($this->option('output') ?? config('abacus-api.ide_helper.output_file'));
+        $outputFile = base_path($this->option('output') ?? '_ide_helper_abacus.php');
+        $namespace = $this->option('namespace') ?? 'App\\Models\\Abacus';
 
         try {
             if ($this->option('source')) {
@@ -155,7 +152,7 @@ class GenerateIdeHelperCommand extends Command
             $this->info('Found '.count($entityModels).' entity types in metadata');
 
             $this->info('Generating IDE helper file...');
-            $content = $this->generateIdeHelper($entityModels);
+            $content = $this->generateIdeHelper($entityModels, $namespace);
 
             file_put_contents($outputFile, $content);
 
@@ -175,10 +172,8 @@ class GenerateIdeHelperCommand extends Command
         return $this->typeMapping[$odataType] ?? 'mixed';
     }
 
-    protected function generateIdeHelper(array $models): string
+    protected function generateIdeHelper(array $models, string $namespace): string
     {
-        $namespace = config('abacus-api.models_namespace');
-
         $lines = [
             '<?php',
             '',
@@ -197,7 +192,7 @@ class GenerateIdeHelperCommand extends Command
         ];
 
         foreach ($models as $modelName => $model) {
-            $lines[] = $this->generateModelBlock($modelName, $model, $namespace);
+            $lines[] = $this->generateModelBlock($modelName, $model);
             $lines[] = '';
         }
 
@@ -207,7 +202,7 @@ class GenerateIdeHelperCommand extends Command
         return implode("\n", $lines);
     }
 
-    protected function generateModelBlock(string $modelName, array $model, string $namespace): string
+    protected function generateModelBlock(string $modelName, array $model): string
     {
         $lines = ['    /**'];
 

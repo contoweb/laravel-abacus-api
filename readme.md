@@ -604,15 +604,30 @@ class DepartmentsReport extends Report
 
 ### Using Reports
 
+After running a report, you can retrieve the result in different formats:
+
+**As a Collection**
+
+Returns a collection of mapped objects or arrays, as defined in the report's `mapping()` method:
+
 ```php
-use Contoweb\AbacusApi\Reports\Facades\AbaReport;
-use App\Services\Abacus\Reports\DepartmentsReport;
+$departments = AbaReport::run(new DepartmentsReport())->toCollection();
+```
 
-$departments = AbaReport::collection(new DepartmentsReport());
+**As an Array**
 
-foreach ($departments as $department) {
-    echo $department['name'];
-}
+Returns the report result as a decoded PHP array:
+
+```php
+$data = AbaReport::run(new DepartmentsReport())->toArray();
+```
+
+**Raw Output**
+
+Returns the raw result string as returned by the API:
+
+```php
+$raw = AbaReport::run(new DepartmentsReport())->raw();
 ```
 
 ### Output Type

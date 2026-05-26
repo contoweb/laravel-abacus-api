@@ -8,7 +8,9 @@ use Illuminate\Support\Str;
 
 class MakeAbacusModelCommand extends Command
 {
-    protected $signature = 'make:abacus-model {name} {--resource=}';
+    protected $signature = 'make:abacus-model {name}
+                            {--resource= : Abacus OData endpoint}
+                            {--namespace= : Override the default namespace}';
 
     protected $description = 'Create a new Abacus REST model';
 
@@ -16,7 +18,7 @@ class MakeAbacusModelCommand extends Command
     {
         $name = $this->argument('name');
         $resource = $this->option('resource') ?? Str::plural($name);
-        $namespace = config('abacus-api.models_namespace');
+        $namespace = $this->option('namespace') ?? 'App\\Models\\Abacus';
 
         $path = $this->getPath($namespace, $name);
 

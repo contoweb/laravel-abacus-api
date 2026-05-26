@@ -7,14 +7,15 @@ use Illuminate\Support\Facades\File;
 
 class MakeAbacusComponentCommand extends Command
 {
-    protected $signature = 'make:abacus-component {name}';
+    protected $signature = 'make:abacus-component {name}
+                            {--namespace= : Override the default namespace}';
 
     protected $description = 'Create a new Abacus component (OData complex types)';
 
     public function handle(): int
     {
         $name = $this->argument('name');
-        $namespace = config('abacus-api.components_namespace');
+        $namespace = $this->option('namespace') ?? 'App\\Models\\Abacus\\Components';
 
         $path = $this->getPath($namespace, $name);
 

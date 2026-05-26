@@ -270,7 +270,7 @@ abstract class AbacusClient
     /**
      * Encrypt access token for caching
      */
-    protected function encryptToken(string $token): string
+    private function encryptToken(string $token): string
     {
         return encrypt($token);
     }
@@ -278,7 +278,7 @@ abstract class AbacusClient
     /**
      * Decrypt access token from cache
      */
-    protected function decryptToken(string $encryptedToken): string
+    private function decryptToken(string $encryptedToken): string
     {
         return decrypt($encryptedToken);
     }

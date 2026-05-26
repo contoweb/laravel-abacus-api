@@ -9,6 +9,7 @@ use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
 use Contoweb\AbacusApi\Tests\TestCase;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -85,7 +86,11 @@ class AbacusReportsServiceTest extends TestCase
         parent::setUp();
 
         $this->client = new AbacusReportsClient($this->makeCredentialsProvider());
-        $this->service = new AbacusReportsService($this->client);
+        $this->service = new AbacusReportsService(
+            $this->client,
+            $this->app['config']->get('abacus-api.reports.poll_interval'),
+            $this->app['config']->get('abacus-api.reports.max_poll_attempts')
+        );
     }
 
     #[Test]
@@ -118,7 +123,7 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $report = new CompactOutputReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
 
         Http::assertSent(function ($request) {
             if (! str_contains($request->url(), '/report/1212/compact-report.avx')) {
@@ -161,7 +166,7 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $report = new SimpleReport;
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(2, $results);
         $this->assertEquals(1, $results[0]['Id']);
@@ -192,7 +197,7 @@ class AbacusReportsServiceTest extends TestCase
         $report = new SimpleReport(['filter' => 'active']);
         $this->assertEquals(['filter' => 'active'], $report->parameters());
 
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(1, $results);
 
@@ -232,7 +237,7 @@ class AbacusReportsServiceTest extends TestCase
         $report->setParameters(['filter' => 'active']);
         $this->assertEquals(['filter' => 'active'], $report->parameters());
 
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(1, $results);
 
@@ -274,8 +279,8 @@ class AbacusReportsServiceTest extends TestCase
             ], 200),
         ]);
 
-        $results1 = $this->service->collection(new SimpleReport(['param' => 'value1']));
-        $results2 = $this->service->collection(new SimpleReport(['param' => 'value2']));
+        $results1 = $this->service->run(new SimpleReport(['param' => 'value1']))->toCollection();
+        $results2 = $this->service->run(new SimpleReport(['param' => 'value2']))->toCollection();
 
         $this->assertCount(1, $results1);
         $this->assertCount(1, $results2);
@@ -296,7 +301,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectException(ReportValidationException::class);
 
         $report = new ValidatedReport(['startDate' => '2024-01-01']);  /* Missing endDate */
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -324,7 +329,7 @@ class AbacusReportsServiceTest extends TestCase
             'startDate' => '2024-01-01',
             'endDate' => '2024-12-31',
         ]);
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(1, $results);
     }
@@ -337,17 +342,13 @@ class AbacusReportsServiceTest extends TestCase
                 'access_token' => 'test-token',
                 'expires_in' => 3600,
             ], 200),
-            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
-                'status' => 403,
-                'title' => 'Access denied',
-            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response('Access denied', 403),
         ]);
 
-        $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport response indicates unsuccessful request with message: Access denied');
+        $this->expectException(RequestException::class);
 
         $report = new SimpleReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -365,10 +366,10 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('Report submission did not return a job ID');
+        $this->expectExceptionMessage('Report start response did not contain a job ID');
 
         $report = new SimpleReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -391,10 +392,10 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $this->expectException(ReportExecutionException::class);
-        $this->expectExceptionMessage('AbaReport response indicates unsuccessful request with message: Report execution failed');
+        $this->expectExceptionMessage('AbaReport job status finished in an unsuccessful state: Report execution failed');
 
         $report = new SimpleReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -423,7 +424,7 @@ class AbacusReportsServiceTest extends TestCase
         $this->expectExceptionMessage('Report record is not a valid array');
 
         $report = new SimpleReport;
-        $this->service->collection($report);
+        $this->service->run($report)->toCollection();
     }
 
     #[Test]
@@ -446,8 +447,129 @@ class AbacusReportsServiceTest extends TestCase
         ]);
 
         $report = new SimpleReport;
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(0, $results);
+    }
+
+    #[Test]
+    public function it_returns_raw_string_output(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-raw',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-raw' => Http::response([
+                'id' => 'job-raw',
+                'state' => 'FinishedSuccess',
+            ], 200),
+            '*/api/abareport/v1/jobs/job-raw/output' => Http::response([
+                ['Id' => 1, 'Name' => 'Raw Item'],
+            ], 200),
+        ]);
+
+        $raw = $this->service->run(new SimpleReport)->raw();
+
+        $this->assertIsString($raw);
+        $this->assertStringContainsString('Raw Item', $raw);
+    }
+
+    #[Test]
+    public function it_returns_array_output(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-array',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-array' => Http::response([
+                'id' => 'job-array',
+                'state' => 'FinishedSuccess',
+            ], 200),
+            '*/api/abareport/v1/jobs/job-array/output' => Http::response([
+                ['Id' => 1, 'Name' => 'Array Item'],
+                ['Id' => 2, 'Name' => 'Array Item 2'],
+            ], 200),
+        ]);
+
+        $result = $this->service->run(new SimpleReport)->toArray();
+
+        $this->assertIsArray($result);
+        $this->assertCount(2, $result);
+        $this->assertEquals(1, $result[0]['Id']);
+    }
+
+    #[Test]
+    public function it_polls_job_multiple_times_before_completion(): void
+    {
+        $callCount = 0;
+
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-poll',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-poll' => function () use (&$callCount) {
+                $callCount++;
+
+                if ($callCount <= 2) {
+                    return Http::response(['id' => 'job-poll', 'state' => 'Running'], 200);
+                }
+
+                return Http::response(['id' => 'job-poll', 'state' => 'FinishedSuccess'], 200);
+            },
+            '*/api/abareport/v1/jobs/job-poll/output' => Http::response([
+                ['Id' => 1, 'Name' => 'Polled Item'],
+            ], 200),
+        ]);
+
+        $results = $this->service->run(new SimpleReport)->toCollection();
+
+        $this->assertCount(1, $results);
+        $this->assertEquals(3, $callCount);
+    }
+
+    #[Test]
+    public function it_throws_exception_when_polling_times_out(): void
+    {
+        $this->app['config']->set('abacus-api.reports.max_poll_attempts', 2);
+        $this->service = new AbacusReportsService(
+            $this->client,
+            $this->app['config']->get('abacus-api.reports.poll_interval'),
+            $this->app['config']->get('abacus-api.reports.max_poll_attempts')
+        );
+
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/abareport/v1/report/1212/test-report.avx' => Http::response([
+                'id' => 'job-timeout',
+                'state' => 'Running',
+            ], 202),
+            '*/api/abareport/v1/jobs/job-timeout' => Http::response([
+                'id' => 'job-timeout',
+                'state' => 'Running',
+            ], 200),
+        ]);
+
+        $this->expectException(ReportExecutionException::class);
+        $this->expectExceptionMessage('timed out after 2 attempts');
+
+        $this->service->run(new SimpleReport)->toCollection();
     }
 }

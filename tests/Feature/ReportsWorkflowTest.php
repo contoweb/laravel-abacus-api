@@ -48,7 +48,11 @@ class ReportsWorkflowTest extends TestCase
         parent::setUp();
 
         $client = new AbacusReportsClient($this->makeCredentialsProvider());
-        $this->service = new AbacusReportsService($client);
+        $this->service = new AbacusReportsService(
+            $client,
+            $this->app['config']->get('abacus-api.reports.poll_interval'),
+            $this->app['config']->get('abacus-api.reports.max_poll_attempts')
+        );
     }
 
     #[Test]
@@ -104,7 +108,7 @@ class ReportsWorkflowTest extends TestCase
             'startDate' => '2024-01-01',
             'endDate' => '2024-01-31',
         ]);
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(2, $results);
         $this->assertEquals('INV-001', $results[0]->invoice_id);
@@ -143,7 +147,7 @@ class ReportsWorkflowTest extends TestCase
         $salesReport = new SalesReport(['type' => 'sales']);
 
         /* Execute report */
-        $salesResults = $this->service->collection($salesReport);
+        $salesResults = $this->service->run($salesReport)->toCollection();
 
         $this->assertCount(1, $salesResults);
         $this->assertEquals('S-001', $salesResults[0]->invoice_id);
@@ -171,7 +175,7 @@ class ReportsWorkflowTest extends TestCase
         ]);
 
         $report = new SalesReport;
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(1, $results);
     }
@@ -206,7 +210,7 @@ class ReportsWorkflowTest extends TestCase
         ]);
 
         $report = new SalesReport;
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(1000, $results);
         $this->assertEquals('INV-1', $results[0]->invoice_id);
@@ -233,7 +237,7 @@ class ReportsWorkflowTest extends TestCase
         ]);
 
         $report = new SalesReport;
-        $results = $this->service->collection($report);
+        $results = $this->service->run($report)->toCollection();
 
         $this->assertCount(0, $results);
     }
@@ -263,9 +267,9 @@ class ReportsWorkflowTest extends TestCase
         ]);
 
         /* Execute multiple times with different parameters */
-        $results1 = $this->service->collection(new SalesReport(['region' => 'US']));
-        $results2 = $this->service->collection(new SalesReport(['region' => 'EU']));
-        $results3 = $this->service->collection(new SalesReport(['region' => 'ASIA']));
+        $results1 = $this->service->run(new SalesReport(['region' => 'US']))->toCollection();
+        $results2 = $this->service->run(new SalesReport(['region' => 'EU']))->toCollection();
+        $results3 = $this->service->run(new SalesReport(['region' => 'ASIA']))->toCollection();
 
         $this->assertCount(1, $results1);
         $this->assertCount(1, $results2);

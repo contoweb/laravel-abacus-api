@@ -10,16 +10,18 @@ use Illuminate\Http\Client\RequestException;
 class AbacusReportsClient extends AbacusClient
 {
     /**
-     * Submit a report for execution
+     * Start a report.
      *
      * @param  string  $reportName  Name of the report (e.g., "mandate%2Freport.avx")
-     * @param  array  $parameters  Report parameters
+     * @param  array|string  $parameters  Report parameters
      * @param  string  $outputType  Output format (default: json)
      * @return array Response containing job ID and state
      *
-     * @throws RequestException|ConnectionException
+     * @throws ConnectionException
+     * @throws RequestException
+     * @throws ReportExecutionException
      */
-    public function submitReport(string $reportName, array $parameters = [], string $outputType = 'json'): array
+    public function startReport(string $reportName, array|string $parameters = [], string $outputType = 'json'): array
     {
         $path = $this->reportPath($reportName);
 
@@ -28,16 +30,24 @@ class AbacusReportsClient extends AbacusClient
             'parameters' => $parameters,
         ]);
 
+        if ($response->failed()) {
+            throw new ReportExecutionException(
+                'Starting AbaReport failed with '.$response->status().': '.$response->body()
+            );
+        }
+
         return $response->json();
     }
 
     /**
-     * Get job status
+     * Get the job status.
      *
      * @param  string  $jobId  Job identifier
      * @return array Job status information
      *
-     * @throws RequestException|ConnectionException
+     * @throws ConnectionException
+     * @throws ReportExecutionException
+     * @throws RequestException
      */
     public function getJobStatus(string $jobId): array
     {
@@ -45,74 +55,63 @@ class AbacusReportsClient extends AbacusClient
 
         $response = $this->get($path);
 
+        if ($response->failed()) {
+            throw new ReportExecutionException(
+                'Fetching AbaReport status for job id "'.$jobId.
+                '" failed with '.$response->status().': '.$response->body()
+            );
+        }
+
         return $response->json();
     }
 
     /**
-     * Get job output (final result)
+     * Get the job output (final result).
      *
      * @param  string  $jobId  Job identifier
-     * @return array Parsed JSON output
+     * @return string Job output
      *
-     * @throws RequestException|ConnectionException
+     * @throws ConnectionException
+     * @throws RequestException
+     * @throws ReportExecutionException
      */
-    public function getJobOutput(string $jobId): array
+    public function getJobOutput(string $jobId): string
     {
         $path = $this->jobOutputPath($jobId);
 
-        return $this->get($path)->json() ?? [];
+        $response = $this->get($path);
+
+        if ($response->failed()) {
+            throw new ReportExecutionException(
+                'Fetching AbaReport output for job id "'.$jobId.
+                '" responded with '.$response->status().': '.$response->body()
+            );
+        }
+
+        return $response->body();
     }
 
     /**
-     * Delete/close a report job session
+     * Delete/close a report job session.
      *
      * @param  string  $jobId  Job identifier
      *
-     * @throws RequestException|ConnectionException
+     * @throws ConnectionException
+     * @throws RequestException
+     * @throws ReportExecutionException
      */
     public function deleteJob(string $jobId): void
     {
         $path = $this->jobPath($jobId);
 
-        $this->delete($path);
-    }
+        $response = $this->delete($path);
 
-    /**
-     * Poll job until completion
-     *
-     * @param  string  $jobId  Job identifier
-     * @param  int  $pollInterval  Microseconds between polls (default: 200000 = 0.2s)
-     * @param  int  $maxAttempts  Maximum number of poll attempts
-     * @return array Final job status
-     *
-     * @throws ConnectionException
-     * @throws ReportExecutionException
-     * @throws RequestException
-     */
-    public function pollJobUntilComplete(string $jobId, int $pollInterval = 200000, int $maxAttempts = 150): array
-    {
-        $attempts = 0;
-
-        while ($attempts < $maxAttempts) {
-            $status = $this->getJobStatus($jobId);
-
-            /* Check for error states */
-            if (isset($status['status']) && ($status['status'] === 403 || $status['status'] === 500)) {
-                throw new ReportExecutionException(
-                    'AbaReport failed with message: '.($status['title'] ?? 'Unknown error')
-                );
-            }
-
-            /* Check if job is complete */
-            if (isset($status['state']) && $status['state'] !== 'Running') {
-                return $status;
-            }
-
-            usleep($pollInterval);
-            $attempts++;
+        if ($response->failed()) {
+            throw new ReportExecutionException(
+                'Deleting AbaReport with job id "'.$jobId.
+                '" failed with '.$response->status().': '.$response->body()
+            );
         }
-
-        throw new ReportExecutionException('Report job polling timed out after '.$maxAttempts.' attempts');
     }
 
     /**

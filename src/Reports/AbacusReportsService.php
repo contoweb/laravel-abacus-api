@@ -8,7 +8,6 @@ use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportValidationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 
 use function Illuminate\Support\defer;
@@ -16,107 +15,129 @@ use function Illuminate\Support\defer;
 class AbacusReportsService
 {
     public function __construct(
-        protected AbacusReportsClient $client
+        private readonly AbacusReportsClient $client,
+        private readonly int $pollInterval = 200000,
+        private readonly int $maxPollAttempts = 150
     ) {}
 
     /**
-     * Execute report and return collection of models
+     * Execute the given report.
      *
-     * @param  Report  $report  Report instance
-     *
-     * @throws ConnectionException
-     * @throws ReportExecutionException
      * @throws ReportValidationException
+     * @throws ConnectionException
      * @throws RequestException
+     * @throws ReportExecutionException
      */
-    public function collection(Report $report): Collection
+    public function run(Report $report): AbacusReportResult
     {
-        /* Execute report and get models */
-        return collect($this->executeReport($report));
+        $jobId = $this->startReport($report);
+
+        $this->pollJobUntilCompleted($jobId, $this->pollInterval, $this->maxPollAttempts);
+
+        $result = $this->result($report, $jobId);
+
+        /* Run the delete / cleanup action deferred. */
+        defer(fn () => $this->client->deleteJob($jobId));
+
+        return $result;
     }
 
     /**
-     * Execute report and map to models
-     *
+     * Starts the report and returns the responded job id.
      *
      * @throws ReportExecutionException
      * @throws ReportValidationException
      * @throws ConnectionException
      * @throws RequestException
      */
-    protected function executeReport(Report $report): array
+    public function startReport(Report $report): string
     {
-        /* Validate parameters if required */
+        /* Validate input parameters if required */
         if ($report instanceof RequiresValidationRules) {
-            $this->validateParameters($report->parameters(), $report::validationRules());
+            $this->validateParameters(
+                $report->parameters(),
+                $report::validationRules()
+            );
         }
 
-        /* Submit report */
-        $jobResponse = $this->client->submitReport(
+        $jobResponse = $this->client->startReport(
             $report->name(),
             $report->parameters(),
             $report->outputType()
         );
 
-        /* Check for immediate errors */
-        if (isset($jobResponse['status']) && ($jobResponse['status'] === 403 || $jobResponse['status'] === 500)) {
-            throw new ReportExecutionException(
-                'AbaReport response indicates unsuccessful request with message: '.($jobResponse['title'] ?? 'Unknown error')
-            );
-        }
-
         if (! isset($jobResponse['id'])) {
-            throw new ReportExecutionException('Report submission did not return a job ID');
+            throw new ReportExecutionException('Report start response did not contain a job ID');
         }
 
-        $jobId = $jobResponse['id'];
-
-        /* Poll until complete */
-        $pollInterval = config('abacus-api.reports.poll_interval', 200000);
-        $maxAttempts = config('abacus-api.reports.max_poll_attempts', 150);
-        $finalStatus = $this->client->pollJobUntilComplete($jobId, $pollInterval, $maxAttempts);
-
-        /* Check final status */
-        if (($finalStatus['state'] ?? null) !== 'FinishedSuccess') {
-            throw new ReportExecutionException(
-                'AbaReport response indicates unsuccessful request with message: '.($finalStatus['message'] ?? 'Unknown error')
-            );
-        }
-
-        /* Get result JSON */
-        $jsonData = $this->client->getJobOutput($jobId);
-
-        /* Close the report session */
-        defer(fn () => $this->client->deleteJob($jobId));
-
-        /* Parse and map to models */
-
-        return $this->parseAndMapJson($jsonData, $report);
+        return $jobResponse['id'];
     }
 
     /**
-     * Parse JSON and map each record to a model
+     * Check if the job has finished (successfully).
      *
+     *
+     * @throws ConnectionException
      * @throws ReportExecutionException
+     * @throws RequestException
      */
-    protected function parseAndMapJson(array $jsonData, Report $report): array
+    public function checkJobFinished($jobId): bool
     {
-        /* Check if data is empty */
-        if (empty($jsonData)) {
-            return [];
-        }
+        $status = $this->client->getJobStatus($jobId);
 
-        $models = [];
-
-        foreach ($jsonData as $record) {
-            if (! is_array($record)) {
-                throw new ReportExecutionException('Report record is not a valid array');
+        /* Check if job is complete */
+        if (isset($status['state']) && $status['state'] !== 'Running') {
+            if ($status['state'] !== 'FinishedSuccess') {
+                throw new ReportExecutionException(
+                    'AbaReport job status finished in an unsuccessful state: '.
+                    ($status['message'] ?? 'Unknown error')
+                );
             }
 
-            $models[] = $report->mapping($record);
+            return true;
         }
 
-        return $models;
+        return false;
+    }
+
+    /**
+     * Poll the job until it is indicated as finished.
+     *
+     * @throws ConnectionException
+     * @throws ReportExecutionException
+     * @throws RequestException
+     */
+    public function pollJobUntilCompleted(string $jobId, int $pollInterval, int $maxAttempts): AbacusReportsService
+    {
+        $attempts = 0;
+
+        while ($attempts < $maxAttempts) {
+            if ($this->checkJobFinished($jobId) === true) {
+                return $this;
+            }
+
+            usleep($pollInterval);
+            $attempts++;
+        }
+
+        throw new ReportExecutionException(
+            'Job polling of id '.
+            $jobId.' timed out after '.$maxAttempts.' attempts.'
+        );
+    }
+
+    /**
+     * Get the job / report output.
+     *
+     * @throws RequestException
+     * @throws ReportExecutionException
+     * @throws ConnectionException
+     */
+    public function result(Report $report, string $jobId): AbacusReportResult
+    {
+        $result = $this->client->getJobOutput($jobId);
+
+        return AbacusReportResult::make($report, $result);
     }
 
     /**
@@ -124,7 +145,7 @@ class AbacusReportsService
      *
      * @throws ReportValidationException
      */
-    protected function validateParameters(array $data, array $validationRules): void
+    private function validateParameters(array $data, array $validationRules): void
     {
         $validator = Validator::make($data, $validationRules);
 
