@@ -6,6 +6,8 @@ use Contoweb\AbacusApi\Batch\BatchContext;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataEnum;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Models\AbacusComponent;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use DateTime;
@@ -55,8 +57,9 @@ class AbacusODataQueryBuilder
      * Returns a BatchRequestItem in batch context, otherwise an OdataPaginator
      *
      * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws RequestException
-     * @throws InvalidArgumentException
      */
     public function paginate(?int $perPage = null): OdataPaginator|BatchRequestItem
     {
@@ -103,6 +106,8 @@ class AbacusODataQueryBuilder
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -134,6 +139,8 @@ class AbacusODataQueryBuilder
      * @param  array<string, mixed>  $data  Request body data
      * @return AbacusModel|BatchRequestItem The created entity
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -163,6 +170,8 @@ class AbacusODataQueryBuilder
      * @param  int|string|array<string, int|string>  $idOrCriteria
      * @return BatchRequestItem|null Returns BatchRequestItem in batch mode, null otherwise
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -191,6 +200,8 @@ class AbacusODataQueryBuilder
      * @param  array<string, mixed>  $data  Request body data
      * @return AbacusModel|BatchRequestItem The updated entity
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -223,6 +234,8 @@ class AbacusODataQueryBuilder
      * @param  array<string, mixed>  $data  Action parameters
      * @return mixed|array|null
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws RequestException
      */
@@ -259,10 +272,14 @@ class AbacusODataQueryBuilder
     /**
      * Fetch specific property of an entity
      *
+     * @return array|mixed
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function findProperty($id, string $property)
+    public function findProperty($id, string $property): mixed
     {
         $path = $this->client->entityPropertyPath($this->resource, $id, $property);
 
@@ -274,6 +291,8 @@ class AbacusODataQueryBuilder
     /**
      * Execute query and return first result
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws RequestException
      */

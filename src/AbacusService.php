@@ -4,6 +4,8 @@ namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
+use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 
@@ -29,8 +31,10 @@ class AbacusService
      * List of all available entity IDs
      * GET /api/entity/v1/mandants/{mandate}/
      *
-     * @throws RequestException
      * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws RequestException
      */
     public function listEntityIds(): array
     {
@@ -44,8 +48,10 @@ class AbacusService
     /**
      * Fetch the OData metadata containing all entities, complex types and enums.
      *
-     * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
+     * @throws RequestException
      */
     public function metadata(): array
     {

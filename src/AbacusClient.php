@@ -2,8 +2,11 @@
 
 namespace Contoweb\AbacusApi;
 
+use Closure;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
 use Contoweb\AbacusApi\Events\AbacusRequestSent;
+use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\RequestException;
@@ -39,8 +42,11 @@ abstract class AbacusClient
         $this->apiVersion = $credentials->apiVersion;
     }
 
-    /*
+    /**
      * HTTP client with OAuth2 bearer token
+     *
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
      */
     protected function client(): PendingRequest
     {
@@ -52,7 +58,7 @@ abstract class AbacusClient
             ->timeout(30);
     }
 
-    /*
+    /**
      * Base URL with https:// prefix
      */
     protected function getBaseUrl(): string
@@ -66,7 +72,7 @@ abstract class AbacusClient
         return $url;
     }
 
-    /*
+    /**
      * Generate a unique cache key for the access token
      */
     protected function getCacheKey(): string
@@ -74,8 +80,11 @@ abstract class AbacusClient
         return self::CACHE_NAMESPACE.md5($this->baseUrl.$this->clientId.$this->mandate);
     }
 
-    /*
+    /**
      * Get a cached access token or fetch a new one if not available
+     *
+     * @throws AbacusAuthenticationException
+     * @throws ConnectionException
      */
     protected function getAccessToken(): string
     {
@@ -89,7 +98,7 @@ abstract class AbacusClient
         return $this->fetchFreshAccessToken();
     }
 
-    /*
+    /**
      * Get the OAuth token endpoint path
      */
     protected function getTokenEndpoint(): string
@@ -97,8 +106,11 @@ abstract class AbacusClient
         return "/oauth/oauth2/{$this->apiVersion}/token";
     }
 
-    /*
+    /**
      * Force fetch a fresh access token and update cache
+     *
+     * @throws AbacusAuthenticationException
+     * @throws ConnectionException
      */
     protected function fetchFreshAccessToken(): string
     {
@@ -110,7 +122,7 @@ abstract class AbacusClient
             ]);
 
         if ($response->failed() || $response->json('access_token') === null) {
-            throw new \RuntimeException('Cannot fetch access token from API.');
+            throw new AbacusAuthenticationException('Cannot fetch access token from API.');
         }
 
         $accessToken = $response->json('access_token');
@@ -126,7 +138,7 @@ abstract class AbacusClient
         return $accessToken;
     }
 
-    /*
+    /**
      * Retries the HTTP call if the response status is 401
      * This can happen if the token became invalid
      */
@@ -149,7 +161,10 @@ abstract class AbacusClient
     /**
      * GET Request
      *
-     * @throws RequestException|ConnectionException
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function get(string $path, $queryString = []): Response
     {
@@ -162,13 +177,16 @@ abstract class AbacusClient
             event(new AbacusRequestSent(Request::METHOD_GET, $path));
 
             return $this->client()->get($path, $queryString);
-        })->throw();
+        })->throw($this->toException());
     }
 
     /**
      * POST Request
      *
-     * @throws RequestException|ConnectionException
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function post(string $path, array $data = [], $queryString = []): Response
     {
@@ -181,13 +199,16 @@ abstract class AbacusClient
             event(new AbacusRequestSent(Request::METHOD_POST, $path, $data));
 
             return $this->client()->post($path, empty($data) ? new stdClass : $data);
-        })->throw();
+        })->throw($this->toException());
     }
 
     /**
      * PATCH Request
      *
-     * @throws RequestException|ConnectionException
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function patch(string $path, array $data = [], $queryString = []): Response
     {
@@ -200,13 +221,16 @@ abstract class AbacusClient
             event(new AbacusRequestSent(Request::METHOD_PATCH, $path, $data));
 
             return $this->client()->patch($path, $data);
-        })->throw();
+        })->throw($this->toException());
     }
 
     /**
      * PUT Request
      *
-     * @throws RequestException|ConnectionException
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function put(string $path, array $data = [], $queryString = []): Response
     {
@@ -219,13 +243,16 @@ abstract class AbacusClient
             event(new AbacusRequestSent(Request::METHOD_PUT, $path, $data));
 
             return $this->client()->put($path, $data);
-        })->throw();
+        })->throw($this->toException());
     }
 
     /**
      * DELETE Request
      *
-     * @throws RequestException|ConnectionException
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function delete(string $path): Response
     {
@@ -234,7 +261,7 @@ abstract class AbacusClient
             event(new AbacusRequestSent(Request::METHOD_DELETE, $path));
 
             return $this->client()->delete($path);
-        })->throw();
+        })->throw($this->toException());
     }
 
     /**
@@ -281,5 +308,19 @@ abstract class AbacusClient
     private function decryptToken(string $encryptedToken): string
     {
         return decrypt($encryptedToken);
+    }
+
+    /**
+     * Handels the failed response.
+     */
+    protected function toException(): Closure
+    {
+        return function (Response $response, RequestException $e) {
+            if ($response->tooManyRequests()) {
+                throw new AbacusRateLimitException($response);
+            }
+
+            throw $e;
+        };
     }
 }

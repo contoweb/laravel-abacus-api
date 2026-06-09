@@ -7,6 +7,8 @@ use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Models\Concerns\HasAttributes;
 use Contoweb\AbacusApi\Models\Concerns\HasCasting;
 use Contoweb\AbacusApi\OdataPaginator;
@@ -46,6 +48,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public static function paginate(?int $limit = null): OdataPaginator|BatchRequestItem
     {
@@ -59,6 +63,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public static function find(int|string|array $idOrCriteria): static|BatchRequestItem
     {
@@ -104,6 +110,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public static function create(array $data): static|BatchRequestItem
     {
@@ -117,6 +125,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public static function delete(int|string|array $idOrCriteria): ?BatchRequestItem
     {
@@ -131,6 +141,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public static function update(int|string|array $idOrCriteria, array $data): static|BatchRequestItem
     {
@@ -147,6 +159,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public static function action(
         int|string|array $idOrCriteria,
@@ -162,6 +176,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public static function first(): AbacusModel|BatchRequestItem|null
     {
