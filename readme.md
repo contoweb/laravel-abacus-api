@@ -1,6 +1,6 @@
 # Abacus REST API Package for Laravel
 
-<p align="center">
+<p>
     <img src="https://contoweb.ch/assets/bcbf8b02-ed68-4a2a-92e5-197366bcd673.png" alt="Banner" style="width: 100%; max-width: 800px;" />
 </p>
 
@@ -69,16 +69,10 @@ php artisan vendor:publish --tag=abacus-config
 Add to your `.env` file:
 
 ```env
-# OData Entity API (required)
 ABACUS_REST_API_URL=entity-api1-1.demo.abacus.ch
 ABACUS_REST_API_MANDATE=7777
 ABACUS_REST_API_CLIENT_ID=your-client-id
 ABACUS_REST_API_CLIENT_SECRET=your-client-secret
- 
-# AbaReports (optional)
-ABACUS_REPORTS_POLL_INTERVAL=200000
-ABACUS_REPORTS_MAX_POLL_ATTEMPTS=150
-ABACUS_REPORTS_NAMESPACE=App\Services\Abacus\Reports
 ```
 
 ## OData
