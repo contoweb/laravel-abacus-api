@@ -4,6 +4,8 @@ namespace Contoweb\AbacusApi;
 
 use Contoweb\AbacusApi\Batch\MultipartEncoder;
 use Contoweb\AbacusApi\Events\AbacusRequestSent;
+use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
@@ -16,16 +18,22 @@ class AbacusODataClient extends AbacusClient
      * Follow OData nextLink for pagination
      * Accepts full URL from @odata.nextLink
      *
-     * @throws RequestException|ConnectionException
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function getNextLink(string $url): Response
     {
         return $this->callWithTokenRefresh(function () use ($url) {
+
+            event(new AbacusRequestSent(Request::METHOD_GET, $url));
+
             return Http::withToken($this->getAccessToken())
                 ->withHeaders(['Accept' => 'application/json'])
                 ->timeout(30)
                 ->get($url);
-        })->throw();
+        })->throw($this->toException());
     }
 
     /**
@@ -89,6 +97,7 @@ class AbacusODataClient extends AbacusClient
      *
      * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
      */
     public function sendBatch(string $path, string $body): Response
     {
@@ -99,6 +108,6 @@ class AbacusODataClient extends AbacusClient
             return $this->client()
                 ->withBody($body, MultipartEncoder::getContentType())
                 ->post($path);
-        })->throw();
+        })->throw($this->toException());
     }
 }

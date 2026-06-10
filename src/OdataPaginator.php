@@ -2,6 +2,8 @@
 
 namespace Contoweb\AbacusApi;
 
+use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -54,6 +56,8 @@ class OdataPaginator
      *
      * @throws RequestException
      * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function nextPage(): void
     {

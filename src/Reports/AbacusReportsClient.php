@@ -3,6 +3,8 @@
 namespace Contoweb\AbacusApi\Reports;
 
 use Contoweb\AbacusApi\AbacusClient;
+use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -18,8 +20,10 @@ class AbacusReportsClient extends AbacusClient
      * @return array Response containing job ID and state
      *
      * @throws ConnectionException
-     * @throws RequestException
      * @throws ReportExecutionException
+     * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function startReport(string $reportName, array|string $parameters = [], string $outputType = 'json'): array
     {
@@ -45,6 +49,8 @@ class AbacusReportsClient extends AbacusClient
      * @param  string  $jobId  Job identifier
      * @return array Job status information
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws ReportExecutionException
      * @throws RequestException
@@ -74,6 +80,7 @@ class AbacusReportsClient extends AbacusClient
      * @throws ConnectionException
      * @throws RequestException
      * @throws ReportExecutionException
+     * @throws AbacusAuthenticationException
      */
     public function getJobOutput(string $jobId): string
     {
@@ -96,9 +103,11 @@ class AbacusReportsClient extends AbacusClient
      *
      * @param  string  $jobId  Job identifier
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
-     * @throws RequestException
      * @throws ReportExecutionException
+     * @throws RequestException
      */
     public function deleteJob(string $jobId): void
     {

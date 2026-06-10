@@ -2,6 +2,8 @@
 
 namespace Contoweb\AbacusApi\Reports;
 
+use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Reports\Contracts\Report;
 use Contoweb\AbacusApi\Reports\Contracts\RequiresValidationRules;
 use Contoweb\AbacusApi\Reports\Exceptions\ReportExecutionException;
@@ -23,10 +25,12 @@ class AbacusReportsService
     /**
      * Execute the given report.
      *
-     * @throws ReportValidationException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
-     * @throws RequestException
      * @throws ReportExecutionException
+     * @throws ReportValidationException
+     * @throws RequestException
      */
     public function run(Report $report): AbacusReportResult
     {
@@ -45,10 +49,12 @@ class AbacusReportsService
     /**
      * Starts the report and returns the responded job id.
      *
+     * @throws ConnectionException
      * @throws ReportExecutionException
      * @throws ReportValidationException
-     * @throws ConnectionException
      * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      */
     public function startReport(Report $report): string
     {
@@ -77,6 +83,8 @@ class AbacusReportsService
      * Check if the job has finished (successfully).
      *
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws ReportExecutionException
      * @throws RequestException
@@ -103,6 +111,8 @@ class AbacusReportsService
     /**
      * Poll the job until it is indicated as finished.
      *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws ReportExecutionException
      * @throws RequestException
