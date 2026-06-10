@@ -35,7 +35,7 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
 
 ## Requirements
 
-- **Laravel** 11.x, 12.x or 13.x
+- **Laravel** 12.x or 13.x
 - **PHP** 8.2, 8.3, or 8.4
 
 ## Features
