@@ -211,20 +211,50 @@ $stockBatch = StockBatch::find([
 ]);
 ```
 
-#### Retrieving Files
+### Retrieving Files
 
-Fetch binary content (PDFs, images, etc.) from Abacus entities:
+Fetch binary content such as PDFs, images, and other files from Abacus entities.
+
+#### Using Content Endpoint
+
+Endpoints ending with `Documents` support Abacus "Dossiers" and allow file downloads via the `content()` method.<br> 
+Example endpoints: `ProductDocuments`, `SalesOrderDocuments`, `AccountDocuments`
+
+The `content()` method requires a document ID, which can be retrieved by expanding the `Documents` navigation property:
 
 ```php
-/* Get file via /Content by entity ID */
-$pdf = ProductDocument::query()->content('de53063d-5cf4-61c9-f294-c1f1f08093b4');
+use App\Models\Abacus\ProductDocument;
 
-/* Get file via FileStream with composite key */
-$image = ShopProductAttachment::query()->fileStream([
-    'ClassificationId' => 123,
+/* Retrieve the document */
+$document = Product::find(1)
+    ->expand('Documents')
+    ->first();
+
+/* Download the file content */
+$binaryData = ProductDocument::query()->content($document->Id);
+
+/* The $binaryData variable now contains the raw file content */
+```
+
+#### Using FileStream Endpoint
+
+For attachments identified by composite keys (such as classification attachments), use the `fileStream()` method:
+
+```php
+use App\Models\Abacus\ProductClassificationElements;
+use App\Models\Abacus\ProductClassificationAttachments;
+
+/* Retrieve the classification */
+$classification = ProductClassificationElements::paginate(1)->items()->first();
+
+/* Download the file using a composite key */
+$binaryData = ProductClassificationAttachments::query()->fileStream([
+    'ClassificationId' => $classification->Id,
     'Language' => 'de',
     'SortOrder' => 1,
 ]);
+
+/* The $binaryData variable now contains the raw file content */
 ```
 
 ### Bound OData Actions
