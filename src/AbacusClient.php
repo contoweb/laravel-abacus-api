@@ -6,6 +6,8 @@ use Closure;
 use Contoweb\AbacusApi\Credentials\AbacusCredentialsProvider;
 use Contoweb\AbacusApi\Events\AbacusRequestSent;
 use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusBadRequestException;
+use Contoweb\AbacusApi\Exceptions\AbacusForbiddenException;
 use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -318,6 +320,14 @@ abstract class AbacusClient
         return function (Response $response, RequestException $e) {
             if ($response->tooManyRequests()) {
                 throw new AbacusRateLimitException($response);
+            }
+
+            if ($response->badRequest()) {
+                throw new AbacusBadRequestException($response);
+            }
+
+            if ($response->forbidden()) {
+                throw new AbacusForbiddenException($response);
             }
 
             throw $e;
