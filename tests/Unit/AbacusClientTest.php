@@ -4,6 +4,8 @@ namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
+use Contoweb\AbacusApi\Exceptions\AbacusBadRequestException;
+use Contoweb\AbacusApi\Exceptions\AbacusForbiddenException;
 use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Http\Client\Request;
@@ -378,6 +380,38 @@ class AbacusClientTest extends TestCase
         ]);
 
         $this->expectException(AbacusRateLimitException::class);
+
+        $this->client->get('/api/entities');
+    }
+
+    #[Test]
+    public function it_throws_bad_request_exception_on_400_response(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities' => Http::response(['error' => 'Bad Request'], 400),
+        ]);
+
+        $this->expectException(AbacusBadRequestException::class);
+
+        $this->client->get('/api/entities');
+    }
+
+    #[Test]
+    public function it_throws_forbidden_exception_on_403_response(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities' => Http::response(['error' => 'Forbidden'], 403),
+        ]);
+
+        $this->expectException(AbacusForbiddenException::class);
 
         $this->client->get('/api/entities');
     }
