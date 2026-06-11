@@ -364,6 +364,79 @@ class AbacusODataQueryBuilderTest extends TestCase
     }
 
     #[Test]
+    public function it_fetches_content(): void
+    {
+        $binaryContent = 'fake-binary-pdf-content-12345';
+
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/ProductDocuments(de53063d-5cf4-61c9-f294-c1f1f08093b4)/Content' => Http::response(
+                $binaryContent,
+                200,
+                ['Content-Type' => 'application/pdf']
+            ),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'ProductDocuments', TestSubject::class);
+        $result = $builder->content('de53063d-5cf4-61c9-f294-c1f1f08093b4');
+
+        $this->assertEquals($binaryContent, $result);
+    }
+
+    #[Test]
+    public function it_fetches_file_stream_with_array_parameters(): void
+    {
+        $binaryContent = 'fake-file-stream-content';
+
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            "*/api/entity/v1/mandants/1212/ShopProductAttachments(ClassificationId='ABC123',Language='de',SortOrder=1)/FileStream" => Http::response(
+                $binaryContent,
+                200,
+                ['Content-Type' => 'application/pdf']
+            ),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'ShopProductAttachments', TestSubject::class);
+        $result = $builder->fileStream([
+            'ClassificationId' => 'ABC123',
+            'Language' => 'de',
+            'SortOrder' => 1,
+        ]);
+
+        $this->assertEquals($binaryContent, $result);
+    }
+
+    #[Test]
+    public function it_fetches_file_stream_with_string_id(): void
+    {
+        $binaryContent = 'fake-file-stream-content';
+
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/ShopProductAttachments(de53063d-5cf4-61c9-f294-c1f1f08093b4)/FileStream' => Http::response(
+                $binaryContent,
+                200,
+                ['Content-Type' => 'application/pdf']
+            ),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'ShopProductAttachments', TestSubject::class);
+        $result = $builder->fileStream('de53063d-5cf4-61c9-f294-c1f1f08093b4');
+
+        $this->assertEquals($binaryContent, $result);
+    }
+
+    #[Test]
     public function it_chains_multiple_methods_fluently(): void
     {
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);

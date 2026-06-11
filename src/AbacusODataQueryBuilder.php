@@ -289,6 +289,47 @@ class AbacusODataQueryBuilder
     }
 
     /**
+     * Fetch file via GET call to /Content.
+     *
+     * @param  int|string|array<string, int|string>  $id
+     * @return string The raw binary content
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public function content(int|string|array $id): string
+    {
+        $path = $this->client->entityPropertyPath($this->resource, $id, 'Content');
+
+        return $this->client
+            ->get($path)
+            ->body();
+    }
+
+    /**
+     * Fetch file via GET call to /FileStream.
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @return string The raw binary content
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public function fileStream(int|string|array $idOrCriteria): string
+    {
+        $this->id($idOrCriteria);
+        $path = $this->buildPathWithId($this->client, $this->resource);
+
+        return $this->client
+            ->get($path.'/FileStream')
+            ->body();
+    }
+
+    /**
      * Execute query and return first result
      *
      * @throws AbacusAuthenticationException

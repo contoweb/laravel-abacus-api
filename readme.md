@@ -20,6 +20,7 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
     - [Create Your Own Model](#create-your-own-model)
     - [Use the Models](#use-the-models)
     - [CRUD Operations](#crud-operations)
+    - [Retrieving Files](#retrieving-files)
     - [Bound OData Actions](#bound-odata-actions)
     - [Pagination](#pagination)
     - [Batch Requests](#batch-requests)
@@ -207,6 +208,22 @@ $stockBatch = StockBatch::find([
     'BatchNumber' => '5436',
     'ProductId'   => 12276,
     'VariantId'   => 0,
+]);
+```
+
+#### Retrieving Files
+
+Fetch binary content (PDFs, images, etc.) from Abacus entities:
+
+```php
+/* Get file via /Content by entity ID */
+$pdf = ProductDocument::query()->content('de53063d-5cf4-61c9-f294-c1f1f08093b4');
+
+/* Get file via FileStream with composite key */
+$image = ShopProductAttachment::query()->fileStream([
+    'ClassificationId' => 123,
+    'Language' => 'de',
+    'SortOrder' => 1,
 ]);
 ```
 
