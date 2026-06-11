@@ -20,6 +20,7 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
     - [Create Your Own Model](#create-your-own-model)
     - [Use the Models](#use-the-models)
     - [CRUD Operations](#crud-operations)
+    - [Retrieving Files](#retrieving-files)
     - [Bound OData Actions](#bound-odata-actions)
     - [Pagination](#pagination)
     - [Batch Requests](#batch-requests)
@@ -208,6 +209,52 @@ $stockBatch = StockBatch::find([
     'ProductId'   => 12276,
     'VariantId'   => 0,
 ]);
+```
+
+### Retrieving Files
+
+Fetch binary content such as PDFs, images, and other files from Abacus entities.
+
+#### Using Content Endpoint
+
+Endpoints ending with `Documents` support Abacus "Dossiers" and allow file downloads via the `content()` method.<br> 
+Example endpoints: `ProductDocuments`, `SalesOrderDocuments`, `AccountDocuments`
+
+The `content()` method requires a document ID, which can be retrieved by expanding the `Documents` navigation property:
+
+```php
+use App\Models\Abacus\ProductDocument;
+
+/* Retrieve the document */
+$document = Product::find(1)
+    ->expand('Documents')
+    ->first();
+
+/* Download the file content */
+$binaryData = ProductDocument::query()->content($document->Id);
+
+/* The $binaryData variable now contains the raw file content */
+```
+
+#### Using FileStream Endpoint
+
+For attachments identified by composite keys (such as classification attachments), use the `fileStream()` method:
+
+```php
+use App\Models\Abacus\ProductClassificationElements;
+use App\Models\Abacus\ProductClassificationAttachments;
+
+/* Retrieve the classification */
+$classification = ProductClassificationElements::paginate(1)->items()->first();
+
+/* Download the file using a composite key */
+$binaryData = ProductClassificationAttachments::query()->fileStream([
+    'ClassificationId' => $classification->Id,
+    'Language' => 'de',
+    'SortOrder' => 1,
+]);
+
+/* The $binaryData variable now contains the raw file content */
 ```
 
 ### Bound OData Actions
