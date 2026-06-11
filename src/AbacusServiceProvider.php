@@ -2,6 +2,7 @@
 
 namespace Contoweb\AbacusApi;
 
+use Contoweb\AbacusApi\Actions\PriceFinding\PriceFindingService;
 use Contoweb\AbacusApi\Console\Commands\GenerateIdeHelperCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusComponentCommand;
 use Contoweb\AbacusApi\Console\Commands\MakeAbacusModelCommand;
@@ -81,6 +82,10 @@ class AbacusServiceProvider extends ServiceProvider
                 $app['config']->get('abacus-api.reports.poll_interval'),
                 $app['config']->get('abacus-api.reports.max_poll_attempts')
             );
+        });
+
+        $this->app->bind(PriceFindingService::class, function (Application $app) {
+            return new PriceFindingService($app->make(AbacusODataClient::class));
         });
     }
 

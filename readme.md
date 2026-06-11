@@ -25,6 +25,8 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
     - [Pagination](#pagination)
     - [Batch Requests](#batch-requests)
     - [Working Directly with the Service](#working-directly-with-the-service)
+- [OData Action API](#odata-action-api)
+    - [Price Finding](#price-finding)
 - [AbaReports](#abareports)
     - [Creating Reports](#creating-reports)
     - [Using Reports](#using-reports)
@@ -260,6 +262,7 @@ $binaryData = ProductClassificationAttachments::query()->fileStream([
 ### Bound OData Actions
 
 Bound OData Actions allow you to trigger server-side operations on a specific entity.
+For unbound actions on the mandant level (e.g. price finding), see the [OData Action API](#odata-action-api) chapter.
 
 #### Parameters
 
@@ -600,6 +603,107 @@ $metadata = $service->metadata();
 
 /* Entity IDs */
 $entities = $service->listEntityIds();
+```
+
+## OData Action API
+
+In addition to the entity endpoints, the Abacus API provides unbound OData Actions that trigger server-side operations without being bound to a specific entity.
+
+Each implemented action family is exposed through its own service under the `Contoweb\AbacusApi\Actions` namespace
+and is documented below.
+
+### Price Finding
+
+The `PriceFindingService` covers the three price finding actions, which calculate product prices including
+customer-specific pricing, discounts, graduations, taxes and fees:
+
+| Action | Method | Purpose                                         |
+|--------|--------|-------------------------------------------------|
+| `FindProductPrice` | `findProductPrice()` | Price of a single product position              |
+| `FindProductsPriceOverview` | `findProductsPriceOverview()` | Current prices of multiple positions            |
+| `FindProductsPriceShoppingCart` | `findProductsPriceShoppingCart()` | Prices of multiple positions in a shopping cart |
+
+#### Finding a Single Product Price
+
+```php
+use Contoweb\AbacusApi\Actions\PriceFinding\Facades\PriceFinder;
+use Contoweb\AbacusApi\Actions\PriceFinding\Requests\ProductPricingRequest;
+use Contoweb\AbacusApi\Actions\PriceFinding\Requests\RequestPosition;
+
+$result = PriceFinder::findProductPrice(new ProductPricingRequest(
+    customerNumber: 10042,
+    currency: 'CHF',
+    calculationDate: now(), // optional, defaults to the current date on the server
+    position: new RequestPosition(productId: 1234, quantity: 5),
+));
+
+$result->position->perUnitValue->priceInclTax;
+$result->position->taxDetail->rate;
+```
+
+#### Price Overview & Shopping Cart
+
+Both actions accept the same `ProductsPricingRequest` with multiple positions and return the same response structure.
+The difference: the overview returns the current price per product, while the shopping cart evaluates all positions
+as one order and additionally applies order-related discounts (e.g. a product gets an extra discount when ordered
+together with another one).
+
+```php
+use Contoweb\AbacusApi\Actions\PriceFinding\Facades\PriceFinder;
+use Contoweb\AbacusApi\Actions\PriceFinding\Requests\DeliveryAddressCondition;
+use Contoweb\AbacusApi\Actions\PriceFinding\Requests\ProductsPricingRequest;
+use Contoweb\AbacusApi\Actions\PriceFinding\Requests\RequestPosition;
+
+$request = new ProductsPricingRequest(
+    customerNumber: 10042,
+    currency: 'CHF',
+    positions: [
+        new RequestPosition(productId: 1234, quantity: 2),
+        new RequestPosition(productId: 5678),
+    ],
+    deliveryAddressCondition: new DeliveryAddressCondition(deliveryAddressNumber: 7),
+    includeCalculationDocumentDiscount: true,
+);
+
+$overview = PriceFinder::findProductsPriceOverview($request);
+$cart = PriceFinder::findProductsPriceShoppingCart($request);
+
+foreach ($cart->positions as $position) {
+    $position->perUnitValue->priceExclTax;
+}
+
+foreach ($cart->documentDiscounts as $discount) {
+    $discount->percent;
+}
+```
+
+#### Working with Results
+
+`findProductPrice()` returns a `ProductPriceResult` with a single `position`; the other two actions return a
+`ProductsPriceResult` with `positions` and `documentDiscounts` arrays. Each calculated position exposes:
+
+- `perUnitValue` — prices incl./excl. tax, before and after discount
+- `quantityDetail` — ordered, shipped and charged quantities
+- `taxDetail` — tax code, rate and whether the price is inclusive
+- `discountDetails`, `graduationDetails`, `feeDetails` — applied discounts, graduations and fees
+
+All result objects keep the untouched decoded JSON response in `$result->raw`.
+
+> **Note:** The properties `priceInclTaxBeforDiscount` / `priceExclTaxBeforDiscount` intentionally keep the
+> "Befor" spelling of the Abacus API fields `PriceInclTaxBeforDiscount` / `PriceExclTaxBeforDiscount`.
+
+#### Using Plain Arrays
+
+All methods also accept the inner request object as a plain array (the wrapper key is added automatically):
+
+```php
+$result = PriceFinder::findProductPrice([
+    'CustomerNumber' => 10042,
+    'Currency' => 'CHF',
+    'Position' => ['ProductId' => 1234, 'Quantity' => 5],
+]);
+
+$result->raw['Position']['PerUnitValue']['PriceInclTax'];
 ```
 
 ## AbaReports

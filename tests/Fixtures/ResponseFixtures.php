@@ -145,6 +145,89 @@ XML;
         return $data;
     }
 
+    public static function calculatedPosition(string $requestKey = 'pos-1'): array
+    {
+        return [
+            'RequestKey' => $requestKey,
+            'PriceType' => 'SalesPrice',
+            'PerUnitValue' => [
+                'PriceInclTax' => 107.70,
+                'PriceExclTax' => 100.00,
+                'PriceInclTaxBeforDiscount' => 119.67,
+                'PriceExclTaxBeforDiscount' => 111.11,
+            ],
+            'QuantityDetail' => [
+                'Ordered' => 5.0,
+                'Shipped' => 0.0,
+                'Charged' => 5.0,
+            ],
+            'TaxDetail' => [
+                'Code' => 'N81',
+                'Rate' => 7.7,
+                'Inclusive' => false,
+            ],
+            'DiscountDetails' => [
+                [
+                    'Type' => 'CustomerDiscount',
+                    'Percent' => 10.0,
+                    'UseSubTotal' => false,
+                ],
+            ],
+            'GraduationDetails' => [
+                [
+                    'ValueType' => 'Amount',
+                    'ScaleType' => 'Piece',
+                    'DecreaseType' => 'Percent',
+                    'QuantityScale' => 10,
+                    'DecreaseScale' => 5.0,
+                    'ActiveFrom' => '2024-01-01',
+                    'ActiveTo' => '2024-12-31',
+                ],
+            ],
+            'FeeDetails' => [
+                [
+                    'FeeId' => 1,
+                    'PriceIncludingTax' => 2.15,
+                    'PriceExcludingTax' => 2.00,
+                    'TaxDetail' => [
+                        'Code' => 'N81',
+                        'Rate' => 7.7,
+                        'Inclusive' => false,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    public static function productPriceResponse(string $requestKey = 'req-1'): array
+    {
+        return [
+            'RequestKey' => $requestKey,
+            'Position' => self::calculatedPosition(),
+        ];
+    }
+
+    public static function productsPriceResponse(int $positions = 2, string $requestKey = 'req-1'): array
+    {
+        $items = [];
+        for ($i = 1; $i <= $positions; $i++) {
+            $items[] = self::calculatedPosition("pos-{$i}");
+        }
+
+        return [
+            'RequestKey' => $requestKey,
+            'Positions' => $items,
+            'DocumentDiscounts' => [
+                [
+                    'Number' => 1,
+                    'Percent' => 2.5,
+                    'AmountInclTax' => 5.40,
+                    'IsSubTotal' => false,
+                ],
+            ],
+        ];
+    }
+
     public static function errorResponse(int $statusCode = 400, string $message = 'Bad Request'): array
     {
         return [
