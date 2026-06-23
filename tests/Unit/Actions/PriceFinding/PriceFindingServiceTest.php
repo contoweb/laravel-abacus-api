@@ -3,6 +3,7 @@
 namespace Contoweb\AbacusApi\Tests\Unit\Actions\PriceFinding;
 
 use Contoweb\AbacusApi\AbacusODataClient;
+use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Actions\PriceFinding\PriceFindingService;
 use Contoweb\AbacusApi\Actions\PriceFinding\Requests\ProductPricingRequest;
 use Contoweb\AbacusApi\Actions\PriceFinding\Requests\ProductsPricingRequest;
@@ -24,7 +25,7 @@ class PriceFindingServiceTest extends TestCase
         parent::setUp();
 
         $this->service = new PriceFindingService(
-            new AbacusODataClient($this->makeCredentialsProvider())
+            new AbacusService(new AbacusODataClient($this->makeCredentialsProvider()))
         );
     }
 

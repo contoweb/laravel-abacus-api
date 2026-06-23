@@ -63,6 +63,26 @@ class AbacusService
     }
 
     /**
+     * Call an unbound OData action with a wrapped request body.
+     * POST /api/entity/v1/mandants/{mandate}/{action}
+     *
+     * @param  string  $action  The unbound action name
+     * @param  string  $wrapperKey  The OData parameter wrapper key
+     * @param  array  $payload  The request body to wrap
+     *
+     * @throws ConnectionException
+     * @throws RequestException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     */
+    public function callUnboundAction(string $action, string $wrapperKey, array $payload): array
+    {
+        return $this->client
+            ->post($this->client->entityPath($action), [$wrapperKey => $payload])
+            ->json() ?? [];
+    }
+
+    /**
      * Create a new fluent batch builder.
      *
      * @param  string|null  $name  Optional name for debugging/logging

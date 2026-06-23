@@ -2,7 +2,7 @@
 
 namespace Contoweb\AbacusApi\Actions\PriceFinding;
 
-use Contoweb\AbacusApi\AbacusODataClient;
+use Contoweb\AbacusApi\AbacusService;
 use Contoweb\AbacusApi\Actions\PriceFinding\Requests\ProductPricingRequest;
 use Contoweb\AbacusApi\Actions\PriceFinding\Requests\ProductsPricingRequest;
 use Contoweb\AbacusApi\Actions\PriceFinding\Responses\ProductPriceResult;
@@ -17,7 +17,7 @@ use Illuminate\Http\Client\RequestException;
 class PriceFindingService
 {
     public function __construct(
-        protected readonly AbacusODataClient $client,
+        protected readonly AbacusService $abacus,
     ) {}
 
     /**
@@ -88,8 +88,6 @@ class PriceFindingService
     {
         $payload = is_array($request) ? $request : $request->toArray();
 
-        return $this->client
-            ->post($this->client->entityPath($action), [$wrapperKey => $payload])
-            ->json() ?? [];
+        return $this->abacus->callUnboundAction($action, $wrapperKey, $payload);
     }
 }

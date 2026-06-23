@@ -85,7 +85,7 @@ class AbacusServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(PriceFindingService::class, function (Application $app) {
-            return new PriceFindingService($app->make(AbacusODataClient::class));
+            return new PriceFindingService($app->make(AbacusService::class));
         });
     }
 
