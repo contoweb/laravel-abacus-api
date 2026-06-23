@@ -75,6 +75,36 @@ class AbacusServiceTest extends TestCase
     }
 
     #[Test]
+    public function it_calls_an_unbound_odata_action_with_a_wrapped_body(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/FindProductPrice' => Http::response(['RequestKey' => 'req-1'], 200),
+        ]);
+
+        $result = $this->service->callUnboundAction('FindProductPrice', 'ProductPricingRequest', [
+            'CustomerNumber' => 10042,
+            'Position' => ['ProductId' => 1234],
+        ]);
+
+        $this->assertEquals(['RequestKey' => 'req-1'], $result);
+
+        Http::assertSent(function ($request) {
+            return $request->method() === 'POST' &&
+                   str_ends_with($request->url(), '/api/entity/v1/mandants/1212/FindProductPrice') &&
+                   $request->data() === [
+                       'ProductPricingRequest' => [
+                           'CustomerNumber' => 10042,
+                           'Position' => ['ProductId' => 1234],
+                       ],
+                   ];
+        });
+    }
+
+    #[Test]
     public function it_creates_batch_request_with_capture(): void
     {
         $batch = $this->service->newBatch();
