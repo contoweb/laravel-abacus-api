@@ -8,6 +8,7 @@ use Contoweb\AbacusApi\Events\AbacusRequestSent;
 use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
 use Contoweb\AbacusApi\Exceptions\AbacusBadRequestException;
 use Contoweb\AbacusApi\Exceptions\AbacusForbiddenException;
+use Contoweb\AbacusApi\Exceptions\AbacusNotFoundException;
 use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -328,6 +329,10 @@ abstract class AbacusClient
 
             if ($response->forbidden()) {
                 throw new AbacusForbiddenException($response);
+            }
+
+            if ($response->notFound()) {
+                throw new AbacusNotFoundException($response);
             }
 
             throw $e;

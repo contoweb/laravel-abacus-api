@@ -6,6 +6,7 @@ use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
 use Contoweb\AbacusApi\Exceptions\AbacusBadRequestException;
 use Contoweb\AbacusApi\Exceptions\AbacusForbiddenException;
+use Contoweb\AbacusApi\Exceptions\AbacusNotFoundException;
 use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Http\Client\Request;
@@ -414,6 +415,51 @@ class AbacusClientTest extends TestCase
         $this->expectException(AbacusForbiddenException::class);
 
         $this->client->get('/api/entities');
+    }
+
+    #[Test]
+    public function it_throws_not_found_exception_on_404_response(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities' => Http::response([
+                'error' => ['code' => null, 'message' => 'Entity not found'],
+            ], 404),
+        ]);
+
+        try {
+            $this->client->get('/api/entities');
+
+            $this->fail('Expected AbacusNotFoundException was not thrown.');
+        } catch (AbacusNotFoundException $e) {
+            $this->assertInstanceOf(RequestException::class, $e);
+            $this->assertEquals(404, $e->getCode());
+            $this->assertEquals('Entity not found', $e->response->json('error.message'));
+        }
+    }
+
+    #[Test]
+    public function it_throws_plain_request_exception_on_500_response(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entities' => Http::response(['error' => 'Server Error'], 500),
+        ]);
+
+        try {
+            $this->client->get('/api/entities');
+
+            $this->fail('Expected RequestException was not thrown.');
+        } catch (RequestException $e) {
+            $this->assertNotInstanceOf(AbacusNotFoundException::class, $e);
+            $this->assertEquals(500, $e->getCode());
+        }
     }
 
     #[Test]
