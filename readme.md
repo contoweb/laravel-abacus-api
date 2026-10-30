@@ -19,6 +19,8 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
 - [OData Entity API](#odata)
     - [Create Your Own Model](#create-your-own-model)
     - [Use the Models](#use-the-models)
+    - [Local Scopes](#local-scopes)
+    - [Nested Expand](#nested-expand)
     - [CRUD Operations](#crud-operations)
     - [Retrieving Files](#retrieving-files)
     - [Bound OData Actions](#bound-odata-actions)
@@ -51,6 +53,8 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
 - **CRUD Operations** - Create, Read, Update, Delete
 - **Batch Requests** - Multiple operations in a single HTTP request
 - **Query Builder** - Fluent interface for complex queries
+- **Local Scopes** - Reusable query conditions on the model`
+- **Nested Expand** - Set `$select`, `$filter`, `$orderby`, `$top` and `$expand` of an expanded relation with a closure
 - **Testable** - Easy mocking with Laravel HTTP Fake
 
 ## Installation
@@ -132,6 +136,11 @@ $subject = Subject::orderBy('LastName', 'desc')
     ->paginate()
     ->items();
 
+/* Limit the number of results ($top) */
+$subjects = Subject::top(10)
+    ->paginate()
+    ->items();
+
 /* Expand Navigation Properties */
 $subject = Subject::expand('Addresses')
     ->paginate()
@@ -166,9 +175,45 @@ $subject = Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.P
 - `$filter` - Filter conditions
 - `$select` - Property selection
 - `$orderby` - Sorting (only one per query)
-- `$top` - Limit
-- `$expand` - Load navigation properties
+- `$top` - Limit (`top()` or `paginate($perPage)`)
+- `$expand` - Load navigation properties, with nested query options via closure (see [Nested Expand](#nested-expand))
 - `$format` - Response format (json, atom, xml)
+
+### Local Scopes
+
+Local scopes allow you to define common sets of query constraints that you can re-use throughout your application. To define a scope, add the `Scope` attribute to a model method, or prefix the method name with `scope`. The first parameter is the query builder. Scopes should return the same query builder instance or nothing.
+
+```php
+use Contoweb\AbacusApi\AbacusODataQueryBuilder;
+use Contoweb\AbacusApi\Attributes\Scope;
+use Contoweb\AbacusApi\Models\AbacusModel;
+
+class StockBatches extends AbacusModel
+{
+    protected static string $resource = 'StockBatches';
+
+    /**
+     * Scope the query to the given variant.
+     */
+    #[Scope]
+    protected function whereVariant(AbacusODataQueryBuilder $query, int $variantId): void
+    {
+        $query->where('VariantId', 'eq', $variantId);
+    }
+}
+```
+
+### Nested Expand
+
+Pass a closure as second argument to `expand()` to set the query options of the expanded navigation property. The closure receives the query builder of the related model. The relation must be cast to an `AbacusModel` in the `$casts` of the model.
+
+```php
+Product::select(['Id'])
+    ->expand('StockBatches', fn (AbacusODataQueryBuilder $query) => $query
+        ->select(['BatchNumber', 'VariantId'])
+        ->whereVariant(0))
+    ->find(454);
+```
 
 ### Example Models & Components
 
@@ -617,10 +662,10 @@ and is documented below.
 The `PriceFindingService` covers the three price finding actions, which calculate product prices including
 customer-specific pricing, discounts, graduations, taxes and fees:
 
-| Action | Method | Purpose                                         |
-|--------|--------|-------------------------------------------------|
-| `FindProductPrice` | `findProductPrice()` | Price of a single product position              |
-| `FindProductsPriceOverview` | `findProductsPriceOverview()` | Current prices of multiple positions            |
+| Action                          | Method                            | Purpose                                         |
+|---------------------------------|-----------------------------------|-------------------------------------------------|
+| `FindProductPrice`              | `findProductPrice()`              | Price of a single product position              |
+| `FindProductsPriceOverview`     | `findProductsPriceOverview()`     | Current prices of multiple positions            |
 | `FindProductsPriceShoppingCart` | `findProductsPriceShoppingCart()` | Prices of multiple positions in a shopping cart |
 
 #### Finding a Single Product Price
@@ -845,17 +890,13 @@ public function mapping(array $record): SalesOrderDto
 
 ## IDE Support
 
-This package supports PHPDoc for all properties based on the Abacus OData metadata file:
+The package generates IDE helper files for your Abacus models, so your IDE suggests properties, query methods and your own local scopes:
 
 ```bash
 php artisan abacus:generate-ide-helper
 ```
 
-Add to your `.gitignore`:
-
-```
-_ide_helper_abacus.php
-```
+The files are written to `vendor/_abacus_ide_helper`. Your models are not modified.
 
 Add to your `composer.json` for automatic IDE Helper generation:
 
@@ -872,18 +913,24 @@ Add to your `composer.json` for automatic IDE Helper generation:
 #### How It Works
 
 The command:
-1. Reads the OData metadata XML file (by default bundled with the package under `resources/metadata/`)
-2. Parses all `EntityType` definitions
-3. Maps OData types to PHP types
+1. Scans the model directory for `AbacusModel` subclasses
+2. Generates `@property` tags from each model's `$casts`, using the OData metadata JSON
+3. Generates a dedicated builder class per model with its local scopes
 
 #### Options
 
 ```bash
-# Use a custom metadata XML file
-php artisan abacus:generate-ide-helper --source=/absolute/path/to/metadata.xml
- 
-# Override the output file
-php artisan abacus:generate-ide-helper --output=_ide_helper_abacus.php
+# Generate only specific models
+php artisan abacus:generate-ide-helper "App\Models\Abacus\StockBatches"
+
+# Scan other model directories (relative to the base path, supports globs)
+php artisan abacus:generate-ide-helper --dir=app/Models/Abacus --dir=app/Models/Other
+
+# Use a custom metadata JSON file
+php artisan abacus:generate-ide-helper --source=/absolute/path/to/metadata.json
+
+# Override the output directory
+php artisan abacus:generate-ide-helper --output-dir=/absolute/path/to/helper
 ```
 
 ## Troubleshooting
