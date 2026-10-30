@@ -1,0 +1,23 @@
+{
+    "$Version": "4.01",
+    "ch.abacus.orde": {
+        "ProductData": {
+            "$Kind": "EntityType",
+            "$Key": ["Id"],
+            "Id": {"$Type": "Edm.Int32", "$Nullable": false},
+            "Name": {"$Type": "Edm.String", "$Nullable": false},
+            "Batches": {"$Kind": "NavigationProperty", "$Type": "ch.abacus.orde.Batch", "$Collection": true}
+        },
+        "Batch": {
+            "$Kind": "EntityType",
+            "$Key": ["Id"]
+        }
+    },
+    "ch.abacus.odata": {
+        "container": {
+            "$Kind": "EntityContainer",
+            "Products": {"$Kind": "EntitySet", "$Type": "ch.abacus.orde.ProductData"},
+            "Batches": {"$Kind": "EntitySet", "$Type": "ch.abacus.orde.Batch"}
+        }
+    }
+}
