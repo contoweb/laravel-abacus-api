@@ -32,6 +32,7 @@ class CredentialsProviderIntegrationTest extends TestCase
         ));
         $userA->shouldReceive('getAuthIdentifierName')->andReturn('id');
         $userA->shouldReceive('getAuthIdentifier')->andReturn(1);
+        $userA->shouldReceive('getAuthPassword')->andReturn(null);
 
         // Create User B mock with different credentials
         $userB = Mockery::mock(Authenticatable::class, ProvidesApiCredentials::class);
@@ -44,6 +45,7 @@ class CredentialsProviderIntegrationTest extends TestCase
         ));
         $userB->shouldReceive('getAuthIdentifierName')->andReturn('id');
         $userB->shouldReceive('getAuthIdentifier')->andReturn(2);
+        $userB->shouldReceive('getAuthPassword')->andReturn(null);
 
         // Mock HTTP responses for both users
         Http::fake([
@@ -135,6 +137,7 @@ class CredentialsProviderIntegrationTest extends TestCase
         ));
         $user->shouldReceive('getAuthIdentifierName')->andReturn('id');
         $user->shouldReceive('getAuthIdentifier')->andReturn(1);
+        $user->shouldReceive('getAuthPassword')->andReturn(null);
         $user->shouldReceive('getRememberToken')->andReturn(null);
         $user->shouldReceive('setRememberToken')->andReturnNull();
 
