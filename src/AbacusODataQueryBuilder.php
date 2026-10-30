@@ -2,6 +2,8 @@
 
 namespace Contoweb\AbacusApi;
 
+use BadMethodCallException;
+use Closure;
 use Contoweb\AbacusApi\Batch\BatchContext;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataEnum;
@@ -14,15 +16,24 @@ use DateTime;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Traits\ForwardsCalls;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;
 
+/**
+ * @template TModel of AbacusModel
+ *
+ * @mixin TModel
+ */
 class AbacusODataQueryBuilder
 {
+    use ForwardsCalls;
+
     protected AbacusODataClient $client;
 
     protected string $resource;
 
+    /** @var class-string<TModel> */
     protected string $modelClass;
 
     protected array $filters = [];
@@ -43,6 +54,9 @@ class AbacusODataQueryBuilder
 
     protected bool $unescapeUuid = true;
 
+    /**
+     * @param  class-string<TModel>  $modelClass
+     */
     public function __construct(AbacusODataClient $client, string $resource, string $modelClass)
     {
         $this->client = $client;
@@ -55,6 +69,8 @@ class AbacusODataQueryBuilder
      *
      * The $perPage parameter controls the OData query option $top to set the number of items per page
      * Returns a BatchRequestItem in batch context, otherwise an OdataPaginator
+     *
+     * @return OdataPaginator<TModel>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws AbacusAuthenticationException
@@ -105,6 +121,7 @@ class AbacusODataQueryBuilder
      * Fetch entity via primary key
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @return TModel|BatchRequestItem
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -137,7 +154,7 @@ class AbacusODataQueryBuilder
      * Valid query methods: select(), expand()
      *
      * @param  array<string, mixed>  $data  Request body data
-     * @return AbacusModel|BatchRequestItem The created entity
+     * @return TModel|BatchRequestItem The created entity
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -198,7 +215,7 @@ class AbacusODataQueryBuilder
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @param  array<string, mixed>  $data  Request body data
-     * @return AbacusModel|BatchRequestItem The updated entity
+     * @return TModel|BatchRequestItem The updated entity
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -332,6 +349,8 @@ class AbacusODataQueryBuilder
     /**
      * Execute query and return first result
      *
+     * @return TModel|BatchRequestItem|null
+     *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
      * @throws ConnectionException
@@ -443,9 +462,11 @@ class AbacusODataQueryBuilder
     /**
      * $top - Return only top N elements
      */
-    private function top(int $limit): void
+    public function top(int $limit): static
     {
         $this->top = $limit;
+
+        return $this;
     }
 
     /**
@@ -464,15 +485,100 @@ class AbacusODataQueryBuilder
 
     /**
      * $expand - Expand navigation properties
+     *
+     * Pass a closure as second argument to set the nested query options
+     * of the expanded navigation property with the query builder of the related model.
      */
-    public function expand(array|string $relations): static
+    public function expand(array|string $relations, string|Closure|null $callback = null): static
     {
+        if ($callback instanceof Closure) {
+            if (! is_string($relations)) {
+                throw new InvalidArgumentException('An expand with a closure requires a single navigation property name.');
+            }
+
+            $relatedQuery = $this->newRelatedQuery($relations);
+
+            $callback($relatedQuery);
+
+            $this->expand[$relations] = $relatedQuery;
+
+            return $this;
+        }
+
         $this->expand = array_merge(
             $this->expand,
             is_array($relations) ? $relations : func_get_args()
         );
 
         return $this;
+    }
+
+    /**
+     * Create the query builder of the model a navigation property is cast to.
+     */
+    protected function newRelatedQuery(string $relation): self
+    {
+        $relatedModelClass = $this->newModelInstance()->getRelatedModelClass($relation);
+
+        return $relatedModelClass::query();
+    }
+
+    /**
+     * Create a new instance of the model this query builder belongs to.
+     *
+     * @return TModel
+     */
+    protected function newModelInstance(): AbacusModel
+    {
+        return new $this->modelClass;
+    }
+
+    /**
+     * Determine if the model has a local scope with the given name.
+     */
+    public function hasNamedScope(string $scope): bool
+    {
+        return $this->newModelInstance()->hasNamedScope($scope);
+    }
+
+    /**
+     * Apply the given local model scope on the model of this query builder.
+     *
+     * @param  array<int, mixed>  $parameters
+     */
+    protected function callNamedScope(string $scope, array $parameters = []): mixed
+    {
+        return $this->callScope(function (...$parameters) use ($scope) {
+            return $this->newModelInstance()->callNamedScope($scope, $parameters);
+        }, $parameters);
+    }
+
+    /**
+     * Apply the given scope callback with this query builder as first argument.
+     *
+     * @param  array<int, mixed>  $parameters
+     */
+    protected function callScope(callable $scope, array $parameters = []): mixed
+    {
+        array_unshift($parameters, $this);
+
+        return $scope(...$parameters) ?? $this;
+    }
+
+    /**
+     * Dynamically handle calls to local model scopes.
+     *
+     * @param  array<int, mixed>  $parameters
+     *
+     * @throws BadMethodCallException
+     */
+    public function __call(string $method, array $parameters): mixed
+    {
+        if ($this->hasNamedScope($method)) {
+            return $this->callNamedScope($method, $parameters);
+        }
+
+        static::throwBadMethodCallException($method);
     }
 
     /**
@@ -533,7 +639,13 @@ class AbacusODataQueryBuilder
 
         // $expand
         if (! empty($this->expand)) {
-            $query['$expand'] = implode(',', $this->expand);
+            $query['$expand'] = implode(',', array_map(
+                fn (string|self $expand, int|string $relation) => $expand instanceof self
+                    ? $this->buildNestedExpand((string) $relation, $expand)
+                    : $expand,
+                $this->expand,
+                array_keys($this->expand)
+            ));
         }
 
         // $format
@@ -542,6 +654,34 @@ class AbacusODataQueryBuilder
         }
 
         return $query;
+    }
+
+    /**
+     * Build an expand with nested query options.
+     */
+    private function buildNestedExpand(string $relation, self $relatedQuery): string
+    {
+        $relatedQueryOptions = $relatedQuery->buildODataQuery();
+
+        $options = [];
+
+        foreach (['$select', '$expand', '$filter', '$orderby', '$top'] as $option) {
+            if (isset($relatedQueryOptions[$option])) {
+                $options[$option] = $relatedQueryOptions[$option];
+            }
+        }
+
+        if ($options === []) {
+            return $relation;
+        }
+
+        $options = array_map(
+            fn (mixed $value, string $key) => "{$key}={$value}",
+            $options,
+            array_keys($options)
+        );
+
+        return $relation.'('.implode(';', $options).')';
     }
 
     /**
