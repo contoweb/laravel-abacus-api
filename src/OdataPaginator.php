@@ -9,16 +9,24 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 
+/**
+ * @template TModel of AbacusModel
+ */
 class OdataPaginator
 {
+    /** @var Collection<int, TModel> */
     private Collection $items;
 
     private ?string $nextLink;
 
     private AbacusODataClient $client;
 
+    /** @var class-string<TModel> */
     private string $modelClass;
 
+    /**
+     * @param  class-string<TModel>  $modelClass
+     */
     public function __construct(array $items, AbacusODataClient $client, string $modelClass, ?string $nextLink = null)
     {
         $this->items = new Collection;
@@ -31,7 +39,7 @@ class OdataPaginator
     /**
      * Returns all currently loaded items
      *
-     * @return Collection<int, AbacusModel>
+     * @return Collection<int, TModel>
      */
     public function items(): Collection
     {

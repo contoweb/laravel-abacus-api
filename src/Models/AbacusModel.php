@@ -3,8 +3,10 @@
 namespace Contoweb\AbacusApi\Models;
 
 use ArrayAccess;
+use Closure;
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\AbacusODataQueryBuilder;
+use Contoweb\AbacusApi\Attributes\Scope;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
@@ -15,11 +17,15 @@ use Contoweb\AbacusApi\OdataPaginator;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Traits\ForwardsCalls;
+use InvalidArgumentException;
 use JsonSerializable;
+use ReflectionMethod;
 
 abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
 {
-    use HasAttributes,
+    use ForwardsCalls,
+        HasAttributes,
         HasCasting;
 
     protected static string $resource;
@@ -34,6 +40,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
 
     /**
      * Create query builder.
+     *
+     * @return AbacusODataQueryBuilder<static>
      */
     public static function query(): AbacusODataQueryBuilder
     {
@@ -45,6 +53,7 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     /**
      * Execute query and return all paginated results as Collection.
      *
+     * @return OdataPaginator<static>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws RequestException
@@ -73,6 +82,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
 
     /**
      * Start where query.
+     *
+     * @return AbacusODataQueryBuilder<static>
      */
     public static function where(string $field, ODataOperator|string $operator, mixed $value): AbacusODataQueryBuilder
     {
@@ -81,6 +92,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
 
     /**
      * Start select query.
+     *
+     * @return AbacusODataQueryBuilder<static>
      */
     public static function select(array|string $fields): AbacusODataQueryBuilder
     {
@@ -88,7 +101,19 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
+     * $top - Return only top N elements
+     *
+     * @return AbacusODataQueryBuilder<static>
+     */
+    public static function top(int $limit): AbacusODataQueryBuilder
+    {
+        return static::query()->top($limit);
+    }
+
+    /**
      * OrderBy-Query starten.
+     *
+     * @return AbacusODataQueryBuilder<static>
      */
     public static function orderBy(string $field, string $direction = 'asc'): AbacusODataQueryBuilder
     {
@@ -97,10 +122,12 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
 
     /**
      * Expand Navigation Properties.
+     *
+     * @return AbacusODataQueryBuilder<static>
      */
-    public static function expand(array|string $relations): AbacusODataQueryBuilder
+    public static function expand(array|string $relations, string|Closure|null $callback = null): AbacusODataQueryBuilder
     {
-        return static::query()->expand($relations);
+        return static::query()->expand(...func_get_args());
     }
 
     /**
@@ -174,6 +201,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     /**
      * Execute query and return first result
      *
+     * @return static|BatchRequestItem|null
+     *
      * @throws ConnectionException
      * @throws RequestException
      * @throws AbacusAuthenticationException
@@ -188,6 +217,8 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      * Disable UUID escaping so UUID values are formatted without string quotes in OData queries.
      *
      * When disabled (default), UUID values are output as raw UUID: `$filter=Id eq 57bc1fe4-bac4-6549-53fa-8ce85e63f4cb`
+     *
+     * @return AbacusODataQueryBuilder<static>
      */
     public static function withoutUuidEscaping(): AbacusODataQueryBuilder
     {
@@ -198,10 +229,86 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      * Enable UUID escaping so UUID values are treated as regular strings in OData queries.
      *
      * When enabled, UUID values are wrapped in single quotes: `$filter=Id eq '57bc1fe4-bac4-6549-53fa-8ce85e63f4cb'`
+     *
+     * @return AbacusODataQueryBuilder<static>
      */
     public static function withUuidEscaping(): AbacusODataQueryBuilder
     {
         return static::query()->withUuidEscaping();
+    }
+
+    /**
+     * Get the model class a navigation property is cast to.
+     *
+     * @return class-string<AbacusModel>
+     *
+     * @throws InvalidArgumentException
+     */
+    public function getRelatedModelClass(string $relation): string
+    {
+        $cast = $this->casts[$relation] ?? null;
+
+        if (! is_string($cast) || ! is_subclass_of($cast, self::class)) {
+            throw new InvalidArgumentException("Navigation property [$relation] is not cast to an AbacusModel on [".static::class.'].');
+        }
+
+        return $cast;
+    }
+
+    /**
+     * Determine if the model has a named scope.
+     */
+    public function hasNamedScope(string $scope): bool
+    {
+        return method_exists($this, 'scope'.ucfirst($scope)) || static::isScopeMethodWithAttribute($scope);
+    }
+
+    /**
+     * Apply the given named scope if possible.
+     *
+     * @param  array<int, mixed>  $parameters
+     */
+    public function callNamedScope(string $scope, array $parameters = []): mixed
+    {
+        if ($this->isScopeMethodWithAttribute($scope)) {
+            return $this->{$scope}(...$parameters);
+        }
+
+        return $this->{'scope'.ucfirst($scope)}(...$parameters);
+    }
+
+    /**
+     * Determine if the given method has a scope attribute.
+     */
+    protected static function isScopeMethodWithAttribute(string $method): bool
+    {
+        if (method_exists(static::class, $method)) {
+            $reflectionMethod = new ReflectionMethod(static::class, $method);
+
+            return ! $reflectionMethod->isPrivate() && $reflectionMethod->getAttributes(Scope::class) !== [];
+        }
+
+        return false;
+    }
+
+    /**
+     * Handle dynamic method calls into the query builder.
+     *
+     * @param  array<int, mixed>  $parameters
+     */
+    public function __call(string $method, array $parameters): mixed
+    {
+        return $this->forwardCallTo(static::query(), $method, $parameters);
+    }
+
+    /**
+     * Handle dynamic static method calls into the model.
+     *
+     * @param  array<int, mixed>  $parameters
+     */
+    public static function __callStatic(string $method, array $parameters): mixed
+    {
+        return static::query()->$method(...$parameters);
     }
 
     /**

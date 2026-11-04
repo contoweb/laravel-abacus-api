@@ -2,257 +2,338 @@
 
 namespace Contoweb\AbacusApi\Console\Commands;
 
-use Exception;
+use Contoweb\AbacusApi\Attributes\Scope;
+use Contoweb\AbacusApi\Models\AbacusComponent;
+use Contoweb\AbacusApi\Models\AbacusModel;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use JsonException;
+use ReflectionClass;
+use ReflectionException;
+use ReflectionMethod;
+use ReflectionParameter;
+use ReflectionType;
+use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
 
 class GenerateIdeHelperCommand extends Command
 {
     protected $signature = 'abacus:generate-ide-helper
-                          {--output= : Override output file}
-                          {--source= : Absolute path to the OData metadata XML file}
-                          {--namespace= : Override the default namespace}';
+                          {model?* : Model classes to generate (default: all models found in --dir)}
+                          {--dir=* : Model directories relative to the base path, supports glob patterns (default: app/Models/Abacus)}
+                          {--source= : Absolute path to the OData metadata JSON file}
+                          {--output-dir= : Directory for the generated helper files (default: vendor/_abacus_ide_helper)}';
 
-    protected $description = 'Generate IDE helper file from Abacus OData metadata';
+    protected $description = 'Generate IDE helper files for the Abacus models';
 
-    protected array $typeMapping = [
-        'Edm.String' => 'string',
-        'Edm.Int32' => 'int',
-        'Edm.Int64' => 'int',
-        'Edm.Double' => 'float',
-        'Edm.Decimal' => 'float',
-        'Edm.Boolean' => 'bool',
-        'Edm.DateTime' => 'string',
-        'Edm.DateTimeOffset' => 'string',
-        'Edm.Guid' => 'string',
-        'Edm.Binary' => 'string',
-        'Edm.Byte' => 'int',
-        'Edm.SByte' => 'int',
-        'Edm.Int16' => 'int',
-        'Edm.Single' => 'float',
-    ];
+    protected const BUILDER_ENTRY_POINTS = ['query', 'select', 'where', 'orderBy', 'top', 'expand', 'withoutUuidEscaping', 'withUuidEscaping'];
 
-    public function handle(): int
+    protected const BUILTIN_TYPES = ['int', 'float', 'string', 'bool', 'array', 'callable', 'iterable', 'object', 'mixed', 'null', 'void', 'never', 'false', 'true', 'self', 'static'];
+
+    /** @var array<string, mixed> */
+    protected array $metadata = [];
+
+    /** @var array<string, mixed>|null */
+    protected ?array $entityContainer = null;
+
+    /**
+     * @throws FileNotFoundException
+     */
+    public function handle(Filesystem $files): int
     {
-        $this->info($this->option('source'));
-        $outputFile = base_path($this->option('output') ?? '_ide_helper_abacus.php');
-        $namespace = $this->option('namespace') ?? 'App\\Models\\Abacus';
+        $source = $this->option('source') ?? dirname(__DIR__, 3).'/resources/metadata/metadata-2026-201-p-2026-05-15.json';
+
+        if (! $files->exists($source)) {
+            $this->error('Metadata file not found: '.$source);
+
+            return self::FAILURE;
+        }
 
         try {
-            if ($this->option('source')) {
-                $metadataPath = $this->option('source');
-            } else {
-                $metadataPath = dirname(__DIR__, 3).'/resources/metadata/metadata-2025-203-p-2025-10-15.xml';
+            $this->metadata = json_decode($files->get($source), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $this->error('Failed to parse metadata JSON: '.$e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $modelDocs = [];
+        $builderDocs = [];
+
+        foreach ($this->loadModels($files) as $class) {
+            try {
+                $reflection = new ReflectionClass($class);
+                $builder = $this->builderClassName($reflection);
+
+                $modelDocs[$reflection->getNamespaceName()][] = $this->createModelDocs($reflection, $builder);
+                $builderDocs[$reflection->getNamespaceName()][] = $this->createBuilderDocs($reflection, $builder);
+            } catch (Throwable $e) {
+                $this->warn("Could not analyze model $class: {$e->getMessage()}");
+
+                continue;
             }
 
-            if (! file_exists($metadataPath)) {
-                $this->error('Metadata file not found: '.$metadataPath);
+            $this->comment("Loaded model $class", OutputInterface::VERBOSITY_VERBOSE);
+        }
 
-                return 1;
-            }
+        $this->writeFiles($files, $this->option('output-dir') ?? base_path('vendor/_abacus_ide_helper'), $modelDocs, $builderDocs);
 
-            $doc = simplexml_load_file($metadataPath);
+        $this->info('IDE helper generated for '.array_sum(array_map('count', $modelDocs)).' models.');
+        $this->comment('Restart PhpStorm or run "File → Invalidate Caches" if suggestions do not show up.');
 
-            if ($doc === false) {
-                $this->error('Failed to parse metadata XML');
+        return self::SUCCESS;
+    }
 
-                return 1;
-            }
+    /**
+     * @return list<class-string<AbacusModel>>
+     */
+    protected function loadModels(Filesystem $files): array
+    {
+        $classes = $this->argument('model') ?: $this->findModelClasses($files);
 
-            $namespaces = $doc->getNamespaces(true);
-            $doc->registerXPathNamespace('edmx', $namespaces['edmx'] ?? 'http://docs.oasis-open.org/odata/ns/edmx');
-            $doc->registerXPathNamespace('edm', $namespaces[''] ?? 'http://docs.oasis-open.org/odata/ns/edm');
+        return (new Collection($classes))
+            ->filter(fn (string $class) => class_exists($class))
+            ->filter(fn (string $class) => is_subclass_of($class, AbacusModel::class))
+            ->filter(fn (string $class) => (new ReflectionClass($class))->isInstantiable())
+            ->values()
+            ->all();
+    }
 
-            /* Collect all EntityTypes with their properties */
-            $entityTypes = [];
+    /**
+     * @return list<string>
+     */
+    protected function findModelClasses(Filesystem $files): array
+    {
+        $classes = [];
 
-            foreach ($doc->xpath('//edm:Schema') as $schema) {
-
-                $schema->registerXPathNamespace(
-                    'edm',
-                    'http://docs.oasis-open.org/odata/ns/edm'
-                );
-
-                $ns = (string) $schema['Namespace'];
-
-                foreach ($schema->xpath('edm:EntityType') as $et) {
-
-                    $et->registerXPathNamespace(
-                        'edm',
-                        'http://docs.oasis-open.org/odata/ns/edm'
+        foreach ($this->option('dir') ?: ['app/Models/Abacus'] as $pattern) {
+            foreach (glob(base_path($pattern), GLOB_ONLYDIR) ?: [] as $directory) {
+                foreach ($files->allFiles($directory) as $file) {
+                    $classes[] = $this->laravel->getNamespace().str_replace(
+                        ['/', '.php'],
+                        ['\\', ''],
+                        Str::after($file->getPathname(), app_path().DIRECTORY_SEPARATOR)
                     );
-
-                    $name = (string) $et['Name'];
-                    $fqn = "$ns.$name";
-
-                    $props = [];
-
-                    foreach ($et->xpath('edm:Property') as $prop) {
-                        $props[] = [
-                            'name' => (string) $prop['Name'],
-                            'type' => (string) $prop['Type'],
-                            'nullable' => (string) ($prop['Nullable'] ?? 'true'),
-                            'maxLength' => (string) ($prop['MaxLength'] ?? ''),
-                        ];
-                    }
-
-                    foreach ($et->xpath('edm:NavigationProperty') as $nav) {
-                        $props[] = [
-                            'name' => (string) $nav['Name'],
-                            'type' => (string) $nav['Type'],
-                            'nullable' => '',
-                            'maxLength' => '',
-                            'navigation' => true,
-                        ];
-                    }
-
-                    $entityTypes[$fqn] = $props;
                 }
             }
+        }
 
-            /* Collect EntitySets from EntityContainer (endpoint -> EntityType mapping) */
-            $entitySets = [];
-            foreach ($doc->xpath('//edm:EntityContainer/edm:EntitySet') as $es) {
-                $entitySets[] = [
-                    'resource' => (string) $es['Name'],
-                    'entityType' => (string) $es['EntityType'],
-                ];
+        return $classes;
+    }
+
+    /**
+     * @param  ReflectionClass<AbacusModel>  $reflection
+     *
+     * @throws ReflectionException
+     */
+    protected function createModelDocs(ReflectionClass $reflection, string $builder): string
+    {
+        $model = $reflection->newInstanceWithoutConstructor();
+        $resource = $model::getResource();
+        $entity = $this->findEntity($resource);
+        $casts = $reflection->getProperty('casts')->getValue($model);
+
+        if ($entity === []) {
+            $this->warn("{$reflection->getName()}: resource '$resource' not found in the metadata, properties are typed from the casts only.");
+        }
+
+        $keys = $entity['$Key'] ?? [];
+
+        $lines = [];
+
+        foreach ($casts as $name => $cast) {
+            $definition = is_array($entity[$name] ?? null) ? $entity[$name] : null;
+
+            if ($definition === null && $entity !== []) {
+                $this->warn("{$reflection->getName()}: '$name' is cast but not defined in the metadata for '$resource'.");
             }
 
-            /* Build entity models keyed by resource name with PHP types */
-            $entityModels = [];
-            foreach ($entitySets as $es) {
-                $resource = $es['resource'];
-                $entityType = $es['entityType'];
+            $lines[] = "@property {$this->castType((string) $cast, $definition, in_array($name, $keys, true))} \${$name}";
+        }
 
-                if (! isset($entityTypes[$entityType])) {
-                    continue;
-                }
+        foreach (self::BUILDER_ENTRY_POINTS as $method) {
+            $lines[] = "@method static $builder $method({$this->formatParameters(new ReflectionMethod(AbacusModel::class, $method))})";
+        }
 
-                $properties = [];
-                foreach ($entityTypes[$entityType] as $prop) {
-                    $phpType = isset($prop['navigation']) ? 'array' : $this->mapODataType($prop['type']);
+        foreach ($this->scopes($reflection) as $name => $method) {
+            $lines[] = "@method static $builder $name({$this->formatParameters($method, true)})";
+        }
 
-                    $isNullable = $prop['nullable'] === 'true';
+        $lines[] = "@mixin $builder";
 
-                    $description = ! empty($prop['maxLength']) ? "Max length: {$prop['maxLength']}" : '';
+        return $this->docBlock($lines)."\n    class {$reflection->getShortName()} extends \\{$reflection->getParentClass()->getName()} {}";
+    }
 
-                    $properties[$prop['name']] = [
-                        'type' => $phpType,
-                        'nullable' => $isNullable,
-                        'description' => $description,
-                    ];
-                }
+    protected function createBuilderDocs(ReflectionClass $reflection, string $builder): string
+    {
+        $lines = ["@extends \\Contoweb\\AbacusApi\\AbacusODataQueryBuilder<\\{$reflection->getName()}>"];
 
-                $entityModels[$resource] = [
-                    'properties' => $properties,
-                    'description' => null,
-                ];
+        foreach ($this->scopes($reflection) as $name => $method) {
+            $lines[] = "@method $builder {$name}({$this->formatParameters($method, true)})";
+        }
+
+        return $this->docBlock($lines)."\n    class ".Str::afterLast($builder, '\\').' extends \\Contoweb\\AbacusApi\\AbacusODataQueryBuilder {}';
+    }
+
+    /**
+     * @return array<string, ReflectionMethod>
+     */
+    protected function scopes(ReflectionClass $reflection): array
+    {
+        $scopes = [];
+
+        foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED) as $method) {
+            if ($method->isStatic() || $method->getDeclaringClass()->getName() === AbacusModel::class) {
+                continue;
             }
 
-            $this->info('Found '.count($entityModels).' entity types in metadata');
+            if ($method->getAttributes(Scope::class) !== []) {
+                $scopes[$method->getName()] = $method;
+            } elseif (str_starts_with($method->getName(), 'scope') && strlen($method->getName()) > 5) {
+                $scopes[lcfirst(substr($method->getName(), 5))] = $method;
+            }
+        }
 
-            $this->info('Generating IDE helper file...');
-            $content = $this->generateIdeHelper($entityModels, $namespace);
+        return $scopes;
+    }
 
-            file_put_contents($outputFile, $content);
+    /**
+     * @param  array<string, mixed>|null  $definition
+     */
+    protected function castType(string $cast, ?array $definition, bool $isKey = false): string
+    {
+        $cast = Str::before($cast, ':');
+        $nullable = $isKey ? '' : '|null';
 
-            $this->info("✓ IDE helper generated: {$outputFile}");
-            $this->comment('Restart your IDE or run "File → Invalidate Caches" in PhpStorm');
+        if (is_subclass_of($cast, AbacusModel::class) || is_subclass_of($cast, AbacusComponent::class)) {
+            $related = '\\'.$cast;
 
-            return 0;
-        } catch (Exception $e) {
-            $this->error("Error: {$e->getMessage()}");
+            return match (true) {
+                $definition === null => "\\Illuminate\\Support\\Collection<int, {$related}>|{$related}|null",
+                ($definition['$Collection'] ?? false) === true => "\\Illuminate\\Support\\Collection<int, {$related}>|null",
+                default => "{$related}|null",
+            };
+        }
 
-            return 1;
+        return match ($cast) {
+            'int', 'integer' => 'int'.$nullable,
+            'real', 'float', 'double' => 'float'.$nullable,
+            'string' => 'string'.$nullable,
+            'bool', 'boolean' => 'bool'.$nullable,
+            'object' => 'object'.$nullable,
+            'date', 'datetime', 'timestamp' => '\\Illuminate\\Support\\Carbon'.$nullable,
+            default => class_exists($cast) || enum_exists($cast) ? "\\{$cast}{$nullable}" : 'mixed',
+        };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function findEntity(string $resource): array
+    {
+        $type = $this->entityContainer()[$resource]['$Type'] ?? null;
+
+        if ($type === null) {
+            return [];
+        }
+
+        return $this->metadata[Str::beforeLast($type, '.')][Str::afterLast($type, '.')] ?? [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function entityContainer(): array
+    {
+        if ($this->entityContainer !== null) {
+            return $this->entityContainer;
+        }
+
+        foreach ($this->metadata as $schema) {
+            foreach (is_array($schema) ? $schema : [] as $element) {
+                if (is_array($element) && ($element['$Kind'] ?? null) === 'EntityContainer') {
+                    return $this->entityContainer = $element;
+                }
+            }
+        }
+
+        return $this->entityContainer = [];
+    }
+
+    protected function builderClassName(ReflectionClass $reflection): string
+    {
+        return "\\AbacusIdeHelper\\{$reflection->getNamespaceName()}\\_IH_{$reflection->getShortName()}_QB";
+    }
+
+    protected function formatParameters(ReflectionMethod $method, bool $skipFirst = false): string
+    {
+        $parameters = array_slice($method->getParameters(), $skipFirst ? 1 : 0);
+
+        return implode(', ', array_map(fn (ReflectionParameter $parameter): string => $this->formatParameter($parameter), $parameters));
+    }
+
+    protected function formatParameter(ReflectionParameter $parameter): string
+    {
+        $type = $parameter->hasType() ? $this->formatType($parameter->getType()).' ' : '';
+        $variadic = $parameter->isVariadic() ? '...' : '';
+        $default = $parameter->isDefaultValueAvailable() ? ' = '.$this->formatDefault($parameter->getDefaultValue()) : '';
+
+        return "{$type}{$variadic}\${$parameter->getName()}{$default}";
+    }
+
+    protected function formatType(ReflectionType $type): string
+    {
+        return preg_replace_callback(
+            '/[A-Za-z_\\\\][A-Za-z0-9_\\\\]*/',
+            fn (array $match): string => in_array(strtolower($match[0]), self::BUILTIN_TYPES, true) ? $match[0] : '\\'.ltrim($match[0], '\\'),
+            (string) $type
+        );
+    }
+
+    protected function formatDefault(mixed $value): string
+    {
+        return match (true) {
+            $value === null => 'null',
+            $value === [] => '[]',
+            default => var_export($value, true),
+        };
+    }
+
+    /**
+     * @param  list<string>  $lines
+     */
+    protected function docBlock(array $lines): string
+    {
+        return "    /**\n".implode("\n", array_map(fn (string $line): string => "     * {$line}", $lines))."\n     */";
+    }
+
+    /**
+     * @param  array<string, list<string>>  $modelDocs
+     * @param  array<string, list<string>>  $builderDocs
+     */
+    protected function writeFiles(Filesystem $files, string $directory, array $modelDocs, array $builderDocs): void
+    {
+        $files->deleteDirectory($directory);
+        $files->ensureDirectoryExists($directory);
+
+        $files->put($directory.'/.gitignore', "*\n");
+
+        foreach ($modelDocs as $namespace => $blocks) {
+            $suffix = str_replace('\\', '_', $namespace);
+
+            $files->put("$directory/_ide_helper_models_$suffix.php", $this->wrapNamespace($namespace, $blocks));
+            $files->put("$directory/_ide_helper_model_builders_$suffix.php", $this->wrapNamespace("AbacusIdeHelper\\$namespace", $builderDocs[$namespace]));
         }
     }
 
-    protected function mapODataType(string $odataType): string
+    /**
+     * @param  list<string>  $blocks
+     */
+    protected function wrapNamespace(string $namespace, array $blocks): string
     {
-        return $this->typeMapping[$odataType] ?? 'mixed';
-    }
-
-    protected function generateIdeHelper(array $models, string $namespace): string
-    {
-        $lines = [
-            '<?php',
-            '',
-            '/**',
-            ' * IDE Helper for Abacus REST Models',
-            ' * ',
-            ' * Generated with: php artisan abacus:generate-ide-helper',
-            ' * Date: '.now()->toDateTimeString(),
-            ' * ',
-            ' * DO NOT EDIT THIS FILE MANUALLY!',
-            ' * This file is auto-generated and will be overwritten.',
-            ' */',
-            '',
-            "namespace {$namespace} {",
-            '',
-        ];
-
-        foreach ($models as $modelName => $model) {
-            $lines[] = $this->generateModelBlock($modelName, $model);
-            $lines[] = '';
-        }
-
-        $lines[] = '}';
-        $lines[] = '';
-
-        return implode("\n", $lines);
-    }
-
-    protected function generateModelBlock(string $modelName, array $model): string
-    {
-        $lines = ['    /**'];
-
-        if (! empty($model['description'])) {
-            $lines[] = '     * '.$model['description'];
-            $lines[] = '     *';
-        }
-
-        foreach ($model['properties'] as $propertyName => $property) {
-            $type = $property['type'];
-            if ($property['nullable']) {
-                $type .= '|null';
-            }
-
-            $line = "     * @property {$type} \${$propertyName}";
-
-            if (! empty($property['description'])) {
-                $line .= ' '.$property['description'];
-            }
-
-            $lines[] = $line;
-        }
-
-        $lines[] = '     *';
-
-        $methods = [
-            "@method static {$modelName}|null find(\$id)",
-            "@method static {$modelName}|null first()",
-            '@method static \\Illuminate\\Support\\Collection|static[] all()',
-            '@method static \\Illuminate\\Support\\Collection|static[] firstPage()',
-            '@method static \\Illuminate\\Support\\Collection|static[] get()',
-            "@method static {$modelName} create(array \$attributes)",
-            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder query()',
-            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder where(string $field, string $operator, mixed $value)',
-            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder whereEquals(string $field, mixed $value)',
-            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder select(array|string $fields)',
-            "@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder orderBy(string \$field, string \$direction = 'asc')",
-            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder top(int $limit)',
-            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder limit(int $limit)',
-            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder take(int $limit)',
-            '@method static \\Contoweb\\AbacusApi\\AbacusQueryBuilder expand(array|string $relations)',
-        ];
-
-        foreach ($methods as $method) {
-            $lines[] = '     * '.$method;
-        }
-
-        $lines[] = '     */';
-        $lines[] = "    class {$modelName} extends \\Contoweb\\AbacusApi\\Models\\AbacusModel {}";
-
-        return implode("\n", $lines);
+        return "<?php\n/** @noinspection all */\n\nnamespace {$namespace} {\n\n".implode("\n\n", $blocks)."\n}\n";
     }
 }

@@ -1,0 +1,17 @@
+{
+    "$Version": "4.01",
+    "ch.abacus.orde": {
+        "ProductData": {
+            "$Kind": "EntityType",
+            "$Key": ["Id"],
+            "Id": {"$Type": "Edm.Int32", "$Nullable": false},
+            "Name": {"$Type": "Edm.String", "$Nullable": false}
+        }
+    },
+    "ch.abacus.odata": {
+        "container": {
+            "$Kind": "EntityContainer",
+            "Products": {"$Kind": "EntitySet", "$Type": "ch.abacus.orde.ProductData"}
+        }
+    }
+}
