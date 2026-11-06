@@ -248,6 +248,51 @@ class AbacusServiceTest extends TestCase
         $this->assertInstanceOf(AbacusODataClient::class, app(AbacusODataClient::class));
     }
 
+    #[Test]
+    public function it_uploads_a_file_and_returns_the_location(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/file-store/v1/user' => Http::response('', 201, [
+                'Location' => 'https://api.example.com/api/file-store/v1/user/abc-123',
+            ]),
+        ]);
+
+        $location = $this->service->fileUpload('raw-file-content');
+
+        $this->assertSame('https://api.example.com/api/file-store/v1/user/abc-123', $location);
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://api.example.com/api/file-store/v1/user'
+                && $request->body() === 'raw-file-content'
+                && $request->hasHeader('Content-Type', 'application/octet-stream');
+        });
+    }
+
+    #[Test]
+    public function it_passes_the_content_type_to_the_file_upload(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/file-store/v1/user' => Http::response('', 201, [
+                'Location' => 'https://api.example.com/api/file-store/v1/user/abc-123',
+            ]),
+        ]);
+
+        $this->service->fileUpload('%PDF-1.4', 'application/pdf');
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://api.example.com/api/file-store/v1/user'
+                && $request->hasHeader('Content-Type', 'application/pdf');
+        });
+    }
+
     /**
      * Helper to create a multipart batch response
      */

@@ -9,6 +9,7 @@ use Contoweb\AbacusApi\Batch\BatchContext;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Enums\ODataOperator;
+use Contoweb\AbacusApi\Exceptions\AbacusNotFoundException;
 use Contoweb\AbacusApi\OdataPaginator;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
 use Contoweb\AbacusApi\Tests\TestCase;
@@ -434,6 +435,105 @@ class AbacusODataQueryBuilderTest extends TestCase
         $result = $builder->fileStream('de53063d-5cf4-61c9-f294-c1f1f08093b4');
 
         $this->assertEquals($binaryContent, $result);
+    }
+
+    #[Test]
+    public function it_executes_find_property_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/SalesOrderHeader(SalesOrderId=2537,SalesOrderBacklogId=0)/Name' => Http::response([
+                'value' => 'Order 2537',
+            ], 200),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'SalesOrderHeader', TestSubject::class);
+        $result = $builder->findProperty([
+            'SalesOrderId' => 2537,
+            'SalesOrderBacklogId' => 0,
+        ], 'Name');
+
+        $this->assertEquals(['value' => 'Order 2537'], $result);
+    }
+
+    #[Test]
+    public function it_streams_a_property_with_simple_id(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Picture' => Http::response('fake-picture-bytes', 200, [
+                'Content-Type' => 'image/png',
+            ]),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+        $result = $builder->stream(42, 'Picture');
+
+        $this->assertSame('fake-picture-bytes', $result);
+    }
+
+    #[Test]
+    public function it_streams_a_property_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/SalesOrderHeader(SalesOrderId=2537,SalesOrderBacklogId=0)/PlainText' => Http::response('Plain text content', 200, [
+                'Content-Type' => 'text/plain',
+            ]),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'SalesOrderHeader', TestSubject::class);
+        $result = $builder->stream([
+            'SalesOrderId' => 2537,
+            'SalesOrderBacklogId' => 0,
+        ], 'PlainText');
+
+        $this->assertSame('Plain text content', $result);
+    }
+
+    #[Test]
+    public function it_returns_the_stream_body_without_decoding_json(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Content' => Http::response('{"Id":42}', 200, [
+                'Content-Type' => 'application/json',
+            ]),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+
+        $this->assertSame('{"Id":42}', $builder->stream(42, 'Content'));
+    }
+
+    #[Test]
+    public function it_throws_not_found_exception_when_stream_does_not_exist(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Content' => Http::response(['error' => 'Not found'], 404),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+
+        $this->expectException(AbacusNotFoundException::class);
+
+        $builder->stream(42, 'Content');
     }
 
     #[Test]

@@ -1110,4 +1110,83 @@ class AbacusModelTest extends TestCase
         $this->assertEquals(10.5, $result->Length);
         $this->assertEquals(5.0, $result->Width);
     }
+
+    #[Test]
+    public function it_finds_property_via_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Name' => Http::response([
+                'value' => 'John Doe',
+            ], 200),
+        ]);
+
+        $this->assertEquals(['value' => 'John Doe'], TestSubject::findProperty(42, 'Name'));
+    }
+
+    #[Test]
+    public function it_streams_property_via_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Picture' => Http::response('fake-picture-bytes', 200),
+        ]);
+
+        $this->assertSame('fake-picture-bytes', TestSubject::stream(42, 'Picture'));
+    }
+
+    #[Test]
+    public function it_streams_property_via_model_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            "*stock-batches(BatchNumber='123',BatchSequenceNumber=0,ProductId=456,VariantId=0)/Text" => Http::response('batch text', 200),
+        ]);
+
+        $text = TestStockBatch::stream([
+            'BatchNumber' => '123',
+            'BatchSequenceNumber' => 0,
+            'ProductId' => 456,
+            'VariantId' => 0,
+        ], 'Text');
+
+        $this->assertSame('batch text', $text);
+    }
+
+    #[Test]
+    public function it_fetches_content_via_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(de53063d-5cf4-61c9-f294-c1f1f08093b4)/Content' => Http::response('fake-binary-content', 200),
+        ]);
+
+        $this->assertSame('fake-binary-content', TestSubject::content('de53063d-5cf4-61c9-f294-c1f1f08093b4'));
+    }
+
+    #[Test]
+    public function it_fetches_file_stream_via_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(de53063d-5cf4-61c9-f294-c1f1f08093b4)/FileStream' => Http::response('fake-file-stream', 200),
+        ]);
+
+        $this->assertSame('fake-file-stream', TestSubject::fileStream('de53063d-5cf4-61c9-f294-c1f1f08093b4'));
+    }
 }

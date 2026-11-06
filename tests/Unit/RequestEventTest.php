@@ -111,6 +111,21 @@ class RequestEventTest extends TestCase
     }
 
     #[Test]
+    public function it_dispatches_event_on_file_upload_without_body(): void
+    {
+        $this->mockTokenAndApiResponse();
+        Event::fake([AbacusRequestSent::class]);
+
+        $this->client->fileUpload('raw-file-content');
+
+        Event::assertDispatched(AbacusRequestSent::class, function (AbacusRequestSent $event) {
+            return $event->method === 'POST'
+                && $event->path === '/api/file-store/v1/user'
+                && $event->body === [];
+        });
+    }
+
+    #[Test]
     public function it_dispatches_event_on_batch_request(): void
     {
         $this->mockTokenAndApiResponse();
