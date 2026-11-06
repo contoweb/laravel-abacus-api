@@ -182,7 +182,6 @@ class AbacusODataQueryBuilder
 
     /**
      * Execute a DELETE request
-     * Requires: ID set via id()
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria
      * @return BatchRequestItem|null Returns BatchRequestItem in batch mode, null otherwise
@@ -287,8 +286,10 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Fetch specific property of an entity
+     * Fetch a single regular property of an entity.
      *
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  string  $property  Name of the property
      * @return array|mixed
      *
      * @throws AbacusAuthenticationException
@@ -296,9 +297,10 @@ class AbacusODataQueryBuilder
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function findProperty($id, string $property): mixed
+    public function findProperty(int|string|array $idOrCriteria, string $property): mixed
     {
-        $path = $this->client->entityPropertyPath($this->resource, $id, $property);
+        $this->id($idOrCriteria);
+        $path = $this->buildPathWithId($this->client, $this->resource).'/'.$property;
 
         return $this->client
             ->get($path)
@@ -306,9 +308,30 @@ class AbacusODataQueryBuilder
     }
 
     /**
+     * Fetch the raw content of a stream property.
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  string  $property  Name of the stream property
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public function stream(int|string|array $idOrCriteria, string $property): string
+    {
+        $this->id($idOrCriteria);
+        $path = $this->buildPathWithId($this->client, $this->resource).'/'.$property;
+
+        return $this->client
+            ->get($path)
+            ->body();
+    }
+
+    /**
      * Fetch file via GET call to /Content.
      *
-     * @param  int|string|array<string, int|string>  $id
+     * @param  int|string|array<string, int|string>  $idOrCriteria
      * @return string The raw binary content
      *
      * @throws AbacusAuthenticationException
@@ -316,13 +339,9 @@ class AbacusODataQueryBuilder
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function content(int|string|array $id): string
+    public function content(int|string|array $idOrCriteria): string
     {
-        $path = $this->client->entityPropertyPath($this->resource, $id, 'Content');
-
-        return $this->client
-            ->get($path)
-            ->body();
+        return $this->stream($idOrCriteria, 'Content');
     }
 
     /**
@@ -338,12 +357,7 @@ class AbacusODataQueryBuilder
      */
     public function fileStream(int|string|array $idOrCriteria): string
     {
-        $this->id($idOrCriteria);
-        $path = $this->buildPathWithId($this->client, $this->resource);
-
-        return $this->client
-            ->get($path.'/FileStream')
-            ->body();
+        return $this->stream($idOrCriteria, 'FileStream');
     }
 
     /**

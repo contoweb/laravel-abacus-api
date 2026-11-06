@@ -214,6 +214,69 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
+     * Fetch a single regular property of an entity.
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  string  $property  Name of the property
+     * @return array|mixed
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public static function findProperty(int|string|array $idOrCriteria, string $property): mixed
+    {
+        return static::query()->findProperty($idOrCriteria, $property);
+    }
+
+    /**
+     * Fetch the raw content of a stream property.
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  string  $property  Name of the stream property
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public static function stream(int|string|array $idOrCriteria, string $property): string
+    {
+        return static::query()->stream($idOrCriteria, $property);
+    }
+
+    /**
+     * Fetch file via GET call to /Content.
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public static function content(int|string|array $idOrCriteria): string
+    {
+        return static::query()->content($idOrCriteria);
+    }
+
+    /**
+     * Fetch file via GET call to /FileStream.
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public static function fileStream(int|string|array $idOrCriteria): string
+    {
+        return static::query()->fileStream($idOrCriteria);
+    }
+
+    /**
      * Disable UUID escaping so UUID values are formatted without string quotes in OData queries.
      *
      * When disabled (default), UUID values are output as raw UUID: `$filter=Id eq 57bc1fe4-bac4-6549-53fa-8ce85e63f4cb`

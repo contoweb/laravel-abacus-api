@@ -37,6 +37,30 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
+     * Upload raw content to the temporary file store
+     *
+     * @param  string  $content  The raw file content
+     * @param  string  $contentType  Content type of the upload (Abacus detects the file type itself)
+     *
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     */
+    public function fileUpload(string $content, string $contentType = 'application/octet-stream'): Response
+    {
+        return $this->callWithTokenRefresh(function () use ($content, $contentType) {
+            $path = $this->fileStorePath();
+            event(new AbacusRequestSent(Request::METHOD_POST, $path));
+
+            return $this
+                ->client()
+                ->withBody($content, $contentType)
+                ->post($path);
+        })->throw($this->toException());
+    }
+
+    /**
      * Get the base path for entity API
      */
     protected function getEntityBasePath(): string
@@ -50,22 +74,6 @@ class AbacusODataClient extends AbacusClient
     public function entityPath(string $resource): string
     {
         return $this->getEntityBasePath()."/{$this->mandate}/{$resource}";
-    }
-
-    /**
-     * Path for single entity with ID
-     */
-    public function entityPathWithId(string $resource, mixed $id): string
-    {
-        return $this->getEntityBasePath()."/{$this->mandate}/{$resource}({$id})";
-    }
-
-    /**
-     * Path for entity property
-     */
-    public function entityPropertyPath(string $resource, mixed $id, string $property): string
-    {
-        return $this->getEntityBasePath()."/{$this->mandate}/{$resource}({$id})/{$property}";
     }
 
     /**
@@ -90,6 +98,14 @@ class AbacusODataClient extends AbacusClient
     public function batchPath(): string
     {
         return $this->getEntityBasePath()."/{$this->mandate}/\$batch";
+    }
+
+    /**
+     * Path of the temporary file store endpoint.
+     */
+    public function fileStorePath(): string
+    {
+        return '/api/file-store/v1/user';
     }
 
     /**
