@@ -23,10 +23,10 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
     - [Nested Expand](#nested-expand)
     - [CRUD Operations](#crud-operations)
     - [Retrieving Files](#retrieving-files)
+    - [Uploading Files](#uploading-files)
     - [Bound OData Actions](#bound-odata-actions)
     - [Pagination](#pagination)
     - [Batch Requests](#batch-requests)
-    - [Working Directly with the Service](#working-directly-with-the-service)
 - [OData Action API](#odata-action-api)
     - [Price Finding](#price-finding)
 - [AbaReports](#abareports)
@@ -52,6 +52,7 @@ Laravel package for the Abacus REST API with OData support, Eloquent-like models
 - **IDE Autocomplete** - Automatic IDE Helper generation
 - **CRUD Operations** - Create, Read, Update, Delete
 - **Batch Requests** - Multiple operations in a single HTTP request
+- **File Upload & Download** - Upload files to Abacus and read stream properties such as documents and texts
 - **Query Builder** - Fluent interface for complex queries
 - **Local Scopes** - Reusable query conditions on the model`
 - **Nested Expand** - Set `$select`, `$filter`, `$orderby`, `$top` and `$expand` of an expanded relation with a closure
@@ -260,9 +261,20 @@ $stockBatch = StockBatch::find([
 
 ### Retrieving Files
 
-Fetch binary content such as PDFs, images, and other files from Abacus entities.
+Abacus provides files and long texts as stream properties (`Edm.Stream`), for example `Content`, `FileStream`, `Text`, `PlainText` or `Picture`.
 
-#### Using Content Endpoint
+#### Reading Stream Properties
+
+Use `stream()` to read any stream property of an entity. It returns the raw response body.
+
+```php
+use App\Models\Abacus\ProductDocument;
+use App\Models\Abacus\SalesOrderHeader;
+
+$binaryData = ProductDocument::stream($documentId, 'Content');
+```
+
+##### Using Content Endpoint
 
 Endpoints ending with `Documents` support Abacus "Dossiers" and allow file downloads via the `content()` method.<br> 
 Example endpoints: `ProductDocuments`, `SalesOrderDocuments`, `AccountDocuments`
@@ -278,14 +290,14 @@ $document = Product::find(1)
     ->first();
 
 /* Download the file content */
-$binaryData = ProductDocument::query()->content($document->Id);
+$binaryData = ProductDocument::content($document->Id);
 
 /* The $binaryData variable now contains the raw file content */
 ```
 
-#### Using FileStream Endpoint
+##### Using FileStream Endpoint
 
-For attachments identified by composite keys (such as classification attachments), use the `fileStream()` method:
+Attachment endpoints provide their file via the `FileStream` property and can be downloaded with the `fileStream()` method:
 
 ```php
 use App\Models\Abacus\ProductClassificationElements;
@@ -294,8 +306,8 @@ use App\Models\Abacus\ProductClassificationAttachments;
 /* Retrieve the classification */
 $classification = ProductClassificationElements::paginate(1)->items()->first();
 
-/* Download the file using a composite key */
-$binaryData = ProductClassificationAttachments::query()->fileStream([
+/* Download the file */
+$binaryData = ProductClassificationAttachments::fileStream([
     'ClassificationId' => $classification->Id,
     'Language' => 'de',
     'SortOrder' => 1,
@@ -303,6 +315,30 @@ $binaryData = ProductClassificationAttachments::query()->fileStream([
 
 /* The $binaryData variable now contains the raw file content */
 ```
+
+### Uploading Files
+
+`Abacus::fileUpload()` stores content in the temporary file store of Abacus and returns the location URL of the stored file.
+Use this URL to link the content to an entity.
+
+```php
+use App\Models\Abacus\SalesOrderDocument;
+use Contoweb\AbacusApi\Facades\Abacus;
+
+/* Store the content in the temporary file store */
+$location = Abacus::fileUpload(file_get_contents($path));
+
+/* Attach the stored file to the entity */
+SalesOrderDocument::create([
+    'Name' => 'contract.pdf',
+    'Content@odata.mediaEditLink' => $location,
+    'StorageId' => $storageId,
+    'SalesOrderSalesOrderId' => 2537,
+    'SalesOrderSalesOrderBacklogId' => 0,
+]);
+```
+
+> The content type is optional (`Abacus::fileUpload($content, 'application/pdf')`), Abacus detects the file type itself.
 
 ### Bound OData Actions
 
@@ -628,26 +664,6 @@ $results = Abacus::batch(function() {
 /* Split into multiple batches if needed */
 $batch1 = Abacus::batch(/* first 50 operations */)->send();
 $batch2 = Abacus::batch(/* next 50 operations */)->send();
-```
-
-### Working Directly with the Service
-
-```php
-use Contoweb\AbacusApi\AbacusService;
-
-$service = app(AbacusService::class);
-
-/* Query */
-$result = $service->query('Subjects', [
-    '$filter' => "LastName eq 'Müller'",
-    '$top' => 10,
-]);
-
-/* Metadata */
-$metadata = $service->metadata();
-
-/* Entity IDs */
-$entities = $service->listEntityIds();
 ```
 
 ## OData Action API
