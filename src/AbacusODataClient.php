@@ -104,7 +104,7 @@ class AbacusODataClient extends AbacusClient
      */
     public function fileStorePath(): string
     {
-        return '/api/file-store/v1/user';
+        return "/api/file-store/$this->apiVersion/user";
     }
 
     /**
