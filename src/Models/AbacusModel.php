@@ -183,6 +183,38 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
+     * Apply the callback if the given "value" is (or resolves to) truthy.
+     *
+     * @template TWhenParameter
+     * @template TWhenReturnType
+     *
+     * @param  (Closure(AbacusODataQueryBuilder<static>): TWhenParameter)|TWhenParameter|null  $value
+     * @param  (callable(AbacusODataQueryBuilder<static>, TWhenParameter): TWhenReturnType)|null  $callback
+     * @param  (callable(AbacusODataQueryBuilder<static>, TWhenParameter): TWhenReturnType)|null  $default
+     * @return AbacusODataQueryBuilder<static>|TWhenReturnType
+     */
+    public static function when(mixed $value = null, ?callable $callback = null, ?callable $default = null): mixed
+    {
+        return static::query()->when(...func_get_args());
+    }
+
+    /**
+     * Apply the callback if the given "value" is (or resolves to) falsy.
+     *
+     * @template TUnlessParameter
+     * @template TUnlessReturnType
+     *
+     * @param  (Closure(AbacusODataQueryBuilder<static>): TUnlessParameter)|TUnlessParameter|null  $value
+     * @param  (callable(AbacusODataQueryBuilder<static>, TUnlessParameter): TUnlessReturnType)|null  $callback
+     * @param  (callable(AbacusODataQueryBuilder<static>, TUnlessParameter): TUnlessReturnType)|null  $default
+     * @return AbacusODataQueryBuilder<static>|TUnlessReturnType
+     */
+    public static function unless(mixed $value = null, ?callable $callback = null, ?callable $default = null): mixed
+    {
+        return static::query()->unless(...func_get_args());
+    }
+
+    /**
      * Execute a bound OData action on an entity.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys

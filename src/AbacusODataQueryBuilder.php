@@ -16,6 +16,7 @@ use DateTime;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Conditionable;
 use Illuminate\Support\Traits\ForwardsCalls;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,7 +28,8 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class AbacusODataQueryBuilder
 {
-    use ForwardsCalls;
+    use Conditionable,
+        ForwardsCalls;
 
     protected AbacusODataClient $client;
 

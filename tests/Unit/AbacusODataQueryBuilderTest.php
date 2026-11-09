@@ -791,4 +791,28 @@ class AbacusODataQueryBuilderTest extends TestCase
 
         $this->assertStringContainsString("'O''Brien'", $query['$filter']);
     }
+
+    #[Test]
+    public function it_applies_callback_only_when_condition_is_met(): void
+    {
+        $applied = (new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class))
+            ->when(true, fn ($q) => $q->where('Name', 'eq', 'John'));
+        $skipped = (new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class))
+            ->when(false, fn ($q) => $q->where('Name', 'eq', 'John'));
+
+        $this->assertSame("Name eq 'John'", $applied->toODataQuery()['$filter']);
+        $this->assertArrayNotHasKey('$filter', $skipped->toODataQuery());
+    }
+
+    #[Test]
+    public function it_applies_unless_callback_only_when_condition_is_not_met(): void
+    {
+        $applied = (new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class))
+            ->unless(false, fn (AbacusODataQueryBuilder $q) => $q->where('Name', 'eq', 'John'));
+        $skipped = (new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class))
+            ->unless(true, fn (AbacusODataQueryBuilder $q) => $q->where('Name', 'eq', 'John'));
+
+        $this->assertSame("Name eq 'John'", $applied->toODataQuery()['$filter']);
+        $this->assertArrayNotHasKey('$filter', $skipped->toODataQuery());
+    }
 }

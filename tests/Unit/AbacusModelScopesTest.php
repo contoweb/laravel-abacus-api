@@ -225,4 +225,14 @@ class AbacusModelScopesTest extends TestCase
             $query['$expand']
         );
     }
+
+    #[Test]
+    public function it_applies_scopes_conditionally_via_higher_order_when(): void
+    {
+        $applied = TestScopedBatch::when(true)->active()->toODataQuery();
+        $skipped = TestScopedBatch::when(false)->active()->toODataQuery();
+
+        $this->assertSame('Active eq true', $applied['$filter']);
+        $this->assertArrayNotHasKey('$filter', $skipped);
+    }
 }
