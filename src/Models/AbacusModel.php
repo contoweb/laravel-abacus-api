@@ -13,7 +13,7 @@ use Contoweb\AbacusApi\Exceptions\AbacusAuthenticationException;
 use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Models\Concerns\HasAttributes;
 use Contoweb\AbacusApi\Models\Concerns\HasCasting;
-use Contoweb\AbacusApi\OdataPaginator;
+use Contoweb\AbacusApi\ODataPaginator;
 use Exception;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\ConnectionException;
@@ -57,14 +57,14 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      * The $perPage parameter controls the OData query option $top to set the number of items per page.
      *
      * @param  int|null  $perPage  Number of items per page
-     * @return OdataPaginator<static>|BatchRequestItem
+     * @return ODataPaginator<static>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
      * @throws RequestException
      */
-    public static function paginate(?int $perPage = null): OdataPaginator|BatchRequestItem
+    public static function paginate(?int $perPage = null): ODataPaginator|BatchRequestItem
     {
         return static::query()->paginate($perPage);
     }

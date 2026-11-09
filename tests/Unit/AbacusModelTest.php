@@ -7,7 +7,7 @@ use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Models\AbacusComponent;
 use Contoweb\AbacusApi\Models\AbacusModel;
-use Contoweb\AbacusApi\OdataPaginator;
+use Contoweb\AbacusApi\ODataPaginator;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Collection;
@@ -605,7 +605,7 @@ class AbacusModelTest extends TestCase
 
         $paginator = TestSubject::paginate();
 
-        $this->assertInstanceOf(OdataPaginator::class, $paginator);
+        $this->assertInstanceOf(ODataPaginator::class, $paginator);
         $this->assertCount(2, $paginator->items());
         $this->assertEquals('First', $paginator->items()->first()->Name);
         $this->assertEquals('Second', $paginator->items()->last()->Name);
@@ -628,7 +628,7 @@ class AbacusModelTest extends TestCase
 
         $paginator = TestSubject::paginate(50);
 
-        $this->assertInstanceOf(OdataPaginator::class, $paginator);
+        $this->assertInstanceOf(ODataPaginator::class, $paginator);
 
         // Verify that the request was made with $top=50 (URL encoded as %24top)
         Http::assertSent(function ($request) {

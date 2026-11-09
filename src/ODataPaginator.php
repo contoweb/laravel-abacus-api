@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 /**
  * @template TModel of AbacusModel
  */
-class OdataPaginator
+class ODataPaginator
 {
     /** @var Collection<int, TModel> */
     private Collection $items;

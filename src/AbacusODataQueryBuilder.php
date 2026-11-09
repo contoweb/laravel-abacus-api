@@ -70,14 +70,14 @@ class AbacusODataQueryBuilder
      * The $perPage parameter controls the OData query option $top to set the number of items per page.
      *
      * @param  int|null  $perPage  Number of items per page
-     * @return OdataPaginator<TModel>|BatchRequestItem
+     * @return ODataPaginator<TModel>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
      * @throws RequestException
      */
-    public function paginate(?int $perPage = null): OdataPaginator|BatchRequestItem
+    public function paginate(?int $perPage = null): ODataPaginator|BatchRequestItem
     {
         if ($perPage <= 0 && $perPage !== null) {
             throw new InvalidArgumentException('Limit should be greater than 0');
@@ -109,7 +109,7 @@ class AbacusODataQueryBuilder
             $items = $response['value'];
         }
 
-        return new OdataPaginator(
+        return new ODataPaginator(
             $items,
             $this->client,
             $this->modelClass,

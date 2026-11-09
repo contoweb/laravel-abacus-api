@@ -10,7 +10,7 @@ use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Exceptions\AbacusNotFoundException;
-use Contoweb\AbacusApi\OdataPaginator;
+use Contoweb\AbacusApi\ODataPaginator;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
@@ -650,7 +650,7 @@ class AbacusODataQueryBuilderTest extends TestCase
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
         $result = $builder->paginate();
 
-        $this->assertInstanceOf(OdataPaginator::class, $result);
+        $this->assertInstanceOf(ODataPaginator::class, $result);
         $this->assertCount(2, $result->items());
     }
 
@@ -672,7 +672,7 @@ class AbacusODataQueryBuilderTest extends TestCase
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
         $result = $builder->paginate(10);
 
-        $this->assertInstanceOf(OdataPaginator::class, $result);
+        $this->assertInstanceOf(ODataPaginator::class, $result);
 
         // Verify that the request was made with $top=10 (URL encoded as %24top)
         Http::assertSent(function ($request) {
