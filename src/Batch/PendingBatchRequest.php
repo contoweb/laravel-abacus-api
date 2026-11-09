@@ -4,11 +4,12 @@ namespace Contoweb\AbacusApi\Batch;
 
 use Contoweb\AbacusApi\AbacusODataClient;
 use Contoweb\AbacusApi\DataTransferObjects\BatchResponseDto;
+use Countable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use RuntimeException;
 
-class PendingBatchRequest
+class PendingBatchRequest implements Countable
 {
     /**
      * The batch request items, keyed by string or integer.
