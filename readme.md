@@ -155,9 +155,9 @@ $subject = Subject::where('City', 'eq', 'Zürich')
     ->paginate();
 
 /* Filter with OData Enum values */
-use Contoweb\AbacusApi\ODataQueryString;
+use Contoweb\AbacusApi\Enums\ODataEnum;
 
-$subject = Product::where('Type', 'eq', ODataQueryString::enum('ch.abacus.orde.ProductType', 'Article'))
+$subject = Product::where('Type', 'eq', ODataEnum::make('ch.abacus.orde.ProductType', 'Article'))
     ->paginate()
     ->items();
 /* Results in: $filter=Type eq ch.abacus.orde.ProductType'Article' */

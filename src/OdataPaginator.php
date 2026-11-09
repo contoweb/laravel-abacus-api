@@ -37,7 +37,7 @@ class OdataPaginator
     }
 
     /**
-     * Returns all currently loaded items
+     * Returns all currently loaded items.
      *
      * @return Collection<int, TModel>
      */
@@ -52,7 +52,7 @@ class OdataPaginator
     }
 
     /**
-     * Checks if more pages are available
+     * Checks if more pages are available.
      */
     public function hasMorePages(): bool
     {
@@ -60,7 +60,7 @@ class OdataPaginator
     }
 
     /**
-     * Loads the next link page and appends it to the items collection
+     * Loads the next link page and appends it to the items collection.
      *
      * @throws RequestException
      * @throws ConnectionException

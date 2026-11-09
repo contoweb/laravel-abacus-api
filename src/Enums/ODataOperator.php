@@ -2,23 +2,8 @@
 
 namespace Contoweb\AbacusApi\Enums;
 
-/**
- * Abacus OData Query Operators
- *
- * Provides IDE autocomplete support for available OData filter operators.
- * Use these constants when building queries with the where() method.
- *
- * Supported operators:
- * - eq: equals
- * - ge: greater than or equal
- * - gt: greater than
- * - le: less than or equal
- * - lt: less than
- * - and: connect multiple filter parameters (handled automatically by whereAnd)
- */
 enum ODataOperator: string
 {
-    /* Comparison Operators */
     case EQUALS = 'eq';
     case GREATER_THAN = 'gt';
     case GREATER_THAN_OR_EQUAL = 'ge';
@@ -26,7 +11,7 @@ enum ODataOperator: string
     case LESS_THAN_OR_EQUAL = 'le';
 
     /**
-     * Get all supported operator values
+     * Get all supported operator values.
      */
     public static function values(): array
     {
@@ -34,7 +19,7 @@ enum ODataOperator: string
     }
 
     /**
-     * Check if an operator is supported (OData or Laravel style)
+     * Check if an operator is supported (OData or Laravel style).
      */
     public static function isValid(string $operator): bool
     {
@@ -43,7 +28,7 @@ enum ODataOperator: string
     }
 
     /**
-     * Convert Laravel Eloquent operator to OData operator
+     * Convert Laravel Eloquent operator to OData operator.
      *
      * @return string|null The OData operator, or null if not a Laravel operator
      */

@@ -82,7 +82,6 @@ class AbacusReportsService
     /**
      * Check if the job has finished (successfully).
      *
-     *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
      * @throws ConnectionException
@@ -142,6 +141,7 @@ class AbacusReportsService
      * @throws RequestException
      * @throws ReportExecutionException
      * @throws ConnectionException
+     * @throws AbacusAuthenticationException
      */
     public function result(Report $report, string $jobId): AbacusReportResult
     {
@@ -151,7 +151,7 @@ class AbacusReportsService
     }
 
     /**
-     * Validate report parameters
+     * Validate report parameters.
      *
      * @throws ReportValidationException
      */

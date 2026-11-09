@@ -28,7 +28,7 @@ class AbacusService
     }
 
     /**
-     * List of all available entity IDs
+     * List of all available entity IDs.
      * GET /api/entity/v1/mandants/{mandate}/
      *
      * @throws ConnectionException
@@ -107,7 +107,7 @@ class AbacusService
     }
 
     /**
-     * Upload raw content to the temporary file store
+     * Upload raw content to the temporary file store.
      *
      * @param  string  $content  The raw file content
      * @param  string  $contentType  Content type of the upload (Abacus detects the file type itself)

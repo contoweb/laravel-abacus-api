@@ -14,6 +14,7 @@ use Contoweb\AbacusApi\Exceptions\AbacusRateLimitException;
 use Contoweb\AbacusApi\Models\Concerns\HasAttributes;
 use Contoweb\AbacusApi\Models\Concerns\HasCasting;
 use Contoweb\AbacusApi\OdataPaginator;
+use Exception;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -39,7 +40,7 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Create query builder.
+     * Create a query builder for the model.
      *
      * @return AbacusODataQueryBuilder<static>
      */
@@ -51,29 +52,32 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Execute query and return all paginated results as Collection.
+     * Executes the query and returns a paginated result, or a BatchRequestItem in a batch context.
      *
+     * The $perPage parameter controls the OData query option $top to set the number of items per page.
+     *
+     * @param  int|null  $perPage  Number of items per page
      * @return OdataPaginator<static>|BatchRequestItem
      *
      * @throws ConnectionException
-     * @throws RequestException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
+     * @throws RequestException
      */
-    public static function paginate(?int $limit = null): OdataPaginator|BatchRequestItem
+    public static function paginate(?int $perPage = null): OdataPaginator|BatchRequestItem
     {
-        return static::query()->paginate($limit);
+        return static::query()->paginate($perPage);
     }
 
     /**
-     * Find entity via primary key.
+     * Find an entity by its primary key, or return a BatchRequestItem in a batch context.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      *
-     * @throws ConnectionException
-     * @throws RequestException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public static function find(int|string|array $idOrCriteria): static|BatchRequestItem
     {
@@ -81,7 +85,7 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Start where query.
+     * Filter with OData operators or Laravel operators (=, >, >=, <, <=).
      *
      * @return AbacusODataQueryBuilder<static>
      */
@@ -91,7 +95,7 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Start select query.
+     * Select only specific properties ($select).
      *
      * @return AbacusODataQueryBuilder<static>
      */
@@ -101,7 +105,7 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * $top - Return only top N elements
+     * Limit the number of results ($top).
      *
      * @return AbacusODataQueryBuilder<static>
      */
@@ -111,7 +115,7 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * OrderBy-Query starten.
+     * Sort by a property, asc or desc ($orderby).
      *
      * @return AbacusODataQueryBuilder<static>
      */
@@ -121,7 +125,9 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Expand Navigation Properties.
+     * Expand navigation properties ($expand).
+     *
+     * Pass a closure as second argument to set the query options of the expanded relation.
      *
      * @return AbacusODataQueryBuilder<static>
      */
@@ -131,14 +137,14 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Create entity.
+     * Create an entity, or return a BatchRequestItem in a batch context.
      *
-     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $data  Attributes of the new entity
      *
-     * @throws ConnectionException
-     * @throws RequestException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public static function create(array $data): static|BatchRequestItem
     {
@@ -146,14 +152,14 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Delete entity by ID.
+     * Delete an entity by its primary key, or return a BatchRequestItem in a batch context.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      *
-     * @throws ConnectionException
-     * @throws RequestException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public static function delete(int|string|array $idOrCriteria): ?BatchRequestItem
     {
@@ -161,15 +167,15 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Update entity by ID.
+     * Update an entity by its primary key, or return a BatchRequestItem in a batch context.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
-     * @param  array<string, mixed>  $data  Data to update
+     * @param  array<string, mixed>  $data  Attributes to update
      *
-     * @throws ConnectionException
-     * @throws RequestException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public static function update(int|string|array $idOrCriteria, array $data): static|BatchRequestItem
     {
@@ -177,17 +183,17 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Execute a bound OData action on an entity
+     * Execute a bound OData action on an entity.
      *
-     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @param  string  $actionName  Fully qualified action name (e.g. ch.abacus.orde.TriggerSalesOrderNextStep)
      * @param  array<string, mixed>  $data  Action parameters
-     * @return mixed|array|null
+     * @param  AbacusModel|AbacusComponent|null  $returnType  Type of the result
      *
-     * @throws ConnectionException
-     * @throws RequestException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public static function action(
         int|string|array $idOrCriteria,
@@ -199,14 +205,14 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Execute query and return first result
+     * Execute the query and return the first result, or a BatchRequestItem in a batch context.
      *
      * @return static|BatchRequestItem|null
      *
-     * @throws ConnectionException
-     * @throws RequestException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
      */
     public static function first(): AbacusModel|BatchRequestItem|null
     {
@@ -235,6 +241,7 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @param  string  $property  Name of the stream property
+     * @return string The raw response body
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -247,9 +254,10 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Fetch file via GET call to /Content.
+     * Fetch the file of the Content property.
      *
-     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @return string The raw file content
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -262,9 +270,10 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     }
 
     /**
-     * Fetch file via GET call to /FileStream.
+     * Fetch the file of the FileStream property.
      *
-     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @return string The raw file content
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -411,7 +420,7 @@ abstract class AbacusModel implements Arrayable, ArrayAccess, JsonSerializable
     {
         try {
             return ! is_null($this->getAttribute($offset));
-        } catch (\Exception $e) {
+        } catch (Exception) {
             return false;
         }
     }

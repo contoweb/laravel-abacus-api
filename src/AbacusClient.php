@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use stdClass;
 use Symfony\Component\HttpFoundation\Request;
+use TypeError;
 
 abstract class AbacusClient
 {
@@ -46,7 +47,7 @@ abstract class AbacusClient
     }
 
     /**
-     * HTTP client with OAuth2 bearer token
+     * HTTP client with OAuth2 bearer token.
      *
      * @throws ConnectionException
      * @throws AbacusAuthenticationException
@@ -62,7 +63,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Base URL with https:// prefix
+     * Base URL with https:// prefix.
      */
     protected function getBaseUrl(): string
     {
@@ -76,7 +77,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Generate a unique cache key for the access token
+     * Generate a unique cache key for the access token.
      */
     protected function getCacheKey(): string
     {
@@ -84,7 +85,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Get a cached access token or fetch a new one if not available
+     * Get a cached access token or fetch a new one if not available.
      *
      * @throws AbacusAuthenticationException
      * @throws ConnectionException
@@ -102,7 +103,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Get the OAuth token endpoint path
+     * Get the OAuth token endpoint path.
      */
     protected function getTokenEndpoint(): string
     {
@@ -110,7 +111,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Force fetch a fresh access token and update cache
+     * Force fetch a fresh access token and update cache.
      *
      * @throws AbacusAuthenticationException
      * @throws ConnectionException
@@ -142,15 +143,15 @@ abstract class AbacusClient
     }
 
     /**
-     * Retries the HTTP call if the response status is 401
-     * This can happen if the token became invalid
+     * Retries the HTTP call if the response status is 401.
+     * This can happen if the token became invalid.
      */
     protected function callWithTokenRefresh(callable $callback): Response
     {
         $response = $callback();
 
         if (! ($response instanceof Response)) {
-            throw new \TypeError('Callback function must return an instance of '.Response::class);
+            throw new TypeError('Callback function must return an instance of '.Response::class);
         }
 
         if ($response->status() === 401) {
@@ -162,7 +163,7 @@ abstract class AbacusClient
     }
 
     /**
-     * GET Request
+     * GET Request.
      *
      * @throws RequestException
      * @throws ConnectionException
@@ -184,7 +185,7 @@ abstract class AbacusClient
     }
 
     /**
-     * POST Request
+     * POST Request.
      *
      * @throws RequestException
      * @throws ConnectionException
@@ -206,7 +207,7 @@ abstract class AbacusClient
     }
 
     /**
-     * PATCH Request
+     * PATCH Request.
      *
      * @throws RequestException
      * @throws ConnectionException
@@ -228,7 +229,7 @@ abstract class AbacusClient
     }
 
     /**
-     * PUT Request
+     * PUT Request.
      *
      * @throws RequestException
      * @throws ConnectionException
@@ -250,7 +251,7 @@ abstract class AbacusClient
     }
 
     /**
-     * DELETE Request
+     * DELETE Request.
      *
      * @throws RequestException
      * @throws ConnectionException
@@ -268,7 +269,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Get mandate ID
+     * Get mandate ID.
      */
     public function getMandate(): string
     {
@@ -276,7 +277,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Get base URL for raw access
+     * Get base URL for raw access.
      */
     public function getUrl(): string
     {
@@ -284,7 +285,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Build query string from parameters
+     * Build query string from parameters.
      */
     public function buildQueryString(array $params): string
     {
@@ -298,7 +299,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Encrypt access token for caching
+     * Encrypt access token for caching.
      */
     private function encryptToken(string $token): string
     {
@@ -306,7 +307,7 @@ abstract class AbacusClient
     }
 
     /**
-     * Decrypt access token from cache
+     * Decrypt access token from cache.
      */
     private function decryptToken(string $encryptedToken): string
     {

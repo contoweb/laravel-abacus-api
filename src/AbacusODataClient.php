@@ -15,8 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 class AbacusODataClient extends AbacusClient
 {
     /**
-     * Follow OData nextLink for pagination
-     * Accepts full URL from @odata.nextLink
+     * Follow OData nextLink for pagination.
      *
      * @throws RequestException
      * @throws ConnectionException
@@ -37,7 +36,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Upload raw content to the temporary file store
+     * Upload raw content to the temporary file store.
      *
      * @param  string  $content  The raw file content
      * @param  string  $contentType  Content type of the upload (Abacus detects the file type itself)
@@ -61,7 +60,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Get the base path for entity API
+     * Get the base path for entity API.
      */
     protected function getEntityBasePath(): string
     {
@@ -69,7 +68,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Create complete entity path
+     * Create complete entity path.
      */
     public function entityPath(string $resource): string
     {
@@ -77,7 +76,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Metadata path
+     * Metadata path.
      */
     public function metadataPath(): string
     {
@@ -85,7 +84,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Entity list path
+     * Entity list path.
      */
     public function entitiesPath(): string
     {
@@ -93,7 +92,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Batch path
+     * Batch path.
      */
     public function batchPath(): string
     {
@@ -109,7 +108,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Send batch request with multiple operations
+     * Send batch request with multiple operations.
      *
      * @throws ConnectionException
      * @throws RequestException
