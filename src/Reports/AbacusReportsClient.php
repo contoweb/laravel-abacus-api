@@ -124,7 +124,7 @@ class AbacusReportsClient extends AbacusClient
     }
 
     /**
-     * Get the base path for reports API
+     * Get the base path for reports API.
      */
     protected function getReportBasePath(): string
     {
@@ -132,7 +132,7 @@ class AbacusReportsClient extends AbacusClient
     }
 
     /**
-     * Build report submission path
+     * Build report submission path.
      */
     public function reportPath(string $reportName): string
     {
@@ -140,7 +140,7 @@ class AbacusReportsClient extends AbacusClient
     }
 
     /**
-     * Build job status path
+     * Build job status path.
      */
     public function jobPath(string $jobId): string
     {
@@ -148,7 +148,7 @@ class AbacusReportsClient extends AbacusClient
     }
 
     /**
-     * Build job output path
+     * Build job output path.
      */
     public function jobOutputPath(string $jobId): string
     {

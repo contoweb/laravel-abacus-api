@@ -7,11 +7,12 @@ use Contoweb\AbacusApi\AbacusODataQueryBuilder;
 use Contoweb\AbacusApi\Enums\ODataOperator;
 use Contoweb\AbacusApi\Models\AbacusComponent;
 use Contoweb\AbacusApi\Models\AbacusModel;
-use Contoweb\AbacusApi\OdataPaginator;
+use Contoweb\AbacusApi\ODataPaginator;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\HigherOrderWhenProxy;
 use PHPUnit\Framework\Attributes\Test;
 
 /* Test model for testing */
@@ -605,7 +606,7 @@ class AbacusModelTest extends TestCase
 
         $paginator = TestSubject::paginate();
 
-        $this->assertInstanceOf(OdataPaginator::class, $paginator);
+        $this->assertInstanceOf(ODataPaginator::class, $paginator);
         $this->assertCount(2, $paginator->items());
         $this->assertEquals('First', $paginator->items()->first()->Name);
         $this->assertEquals('Second', $paginator->items()->last()->Name);
@@ -628,7 +629,7 @@ class AbacusModelTest extends TestCase
 
         $paginator = TestSubject::paginate(50);
 
-        $this->assertInstanceOf(OdataPaginator::class, $paginator);
+        $this->assertInstanceOf(ODataPaginator::class, $paginator);
 
         // Verify that the request was made with $top=50 (URL encoded as %24top)
         Http::assertSent(function ($request) {
@@ -1109,5 +1110,207 @@ class AbacusModelTest extends TestCase
         $this->assertInstanceOf(TestMeasurements::class, $result);
         $this->assertEquals(10.5, $result->Length);
         $this->assertEquals(5.0, $result->Width);
+    }
+
+    #[Test]
+    public function it_finds_property_via_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Name' => Http::response([
+                'value' => 'John Doe',
+            ], 200),
+        ]);
+
+        $this->assertEquals(['value' => 'John Doe'], TestSubject::findProperty(42, 'Name'));
+    }
+
+    #[Test]
+    public function it_streams_property_via_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Picture' => Http::response('fake-picture-bytes', 200),
+        ]);
+
+        $this->assertSame('fake-picture-bytes', TestSubject::stream(42, 'Picture'));
+    }
+
+    #[Test]
+    public function it_streams_property_via_model_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            "*stock-batches(BatchNumber='123',BatchSequenceNumber=0,ProductId=456,VariantId=0)/Text" => Http::response('batch text', 200),
+        ]);
+
+        $text = TestStockBatch::stream([
+            'BatchNumber' => '123',
+            'BatchSequenceNumber' => 0,
+            'ProductId' => 456,
+            'VariantId' => 0,
+        ], 'Text');
+
+        $this->assertSame('batch text', $text);
+    }
+
+    #[Test]
+    public function it_fetches_content_via_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(de53063d-5cf4-61c9-f294-c1f1f08093b4)/Content' => Http::response('fake-binary-content', 200),
+        ]);
+
+        $this->assertSame('fake-binary-content', TestSubject::content('de53063d-5cf4-61c9-f294-c1f1f08093b4'));
+    }
+
+    #[Test]
+    public function it_fetches_file_stream_via_model(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(de53063d-5cf4-61c9-f294-c1f1f08093b4)/FileStream' => Http::response('fake-file-stream', 200),
+        ]);
+
+        $this->assertSame('fake-file-stream', TestSubject::fileStream('de53063d-5cf4-61c9-f294-c1f1f08093b4'));
+    }
+
+    #[Test]
+    public function it_applies_when_callback_if_condition_is_truthy(): void
+    {
+        $query = TestSubject::when(true, fn ($q) => $q->where('Name', 'eq', 'John'));
+
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
+        $this->assertSame("Name eq 'John'", $query->toODataQuery()['$filter']);
+    }
+
+    #[Test]
+    public function it_skips_when_callback_if_condition_is_falsy(): void
+    {
+        $query = TestSubject::when(false, fn ($q) => $q->where('Name', 'eq', 'John'));
+
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
+        $this->assertArrayNotHasKey('$filter', $query->toODataQuery());
+    }
+
+    #[Test]
+    public function it_runs_when_default_callback_if_condition_is_falsy(): void
+    {
+        $query = TestSubject::when(
+            false,
+            fn ($q) => $q->where('Name', 'eq', 'John'),
+            fn ($q) => $q->where('Name', 'eq', 'Jane'),
+        );
+
+        $this->assertSame("Name eq 'Jane'", $query->toODataQuery()['$filter']);
+    }
+
+    #[Test]
+    public function it_returns_callback_result_from_when(): void
+    {
+        $this->assertSame(42, TestSubject::when(true, fn ($q) => 42));
+    }
+
+    #[Test]
+    public function it_resolves_closure_condition_in_when(): void
+    {
+        $received = null;
+
+        $query = TestSubject::when(fn ($q) => 'resolved', function ($q, $value) use (&$received) {
+            $received = $value;
+        });
+
+        $this->assertSame('resolved', $received);
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
+    }
+
+    #[Test]
+    public function it_supports_higher_order_when_with_truthy_condition(): void
+    {
+        $query = TestSubject::when(true)->where('Name', 'eq', 'John');
+
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
+        $this->assertSame("Name eq 'John'", $query->toODataQuery()['$filter']);
+    }
+
+    #[Test]
+    public function it_supports_higher_order_when_with_falsy_condition(): void
+    {
+        $query = TestSubject::when(false)->where('Name', 'eq', 'John');
+
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
+        $this->assertArrayNotHasKey('$filter', $query->toODataQuery());
+    }
+
+    #[Test]
+    public function it_limits_higher_order_when_to_the_next_call(): void
+    {
+        $query = TestSubject::when(false)
+            ->where('Name', 'eq', 'John')
+            ->where('Age', 'gt', 18);
+
+        $this->assertSame('Age gt 18', $query->toODataQuery()['$filter']);
+    }
+
+    #[Test]
+    public function it_returns_proxy_when_when_is_called_without_arguments(): void
+    {
+        $this->assertInstanceOf(HigherOrderWhenProxy::class, TestSubject::when());
+    }
+
+    #[Test]
+    public function it_applies_unless_callback_if_condition_is_falsy(): void
+    {
+        $query = TestSubject::unless(false, fn ($q) => $q->where('Name', 'eq', 'John'));
+
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
+        $this->assertSame("Name eq 'John'", $query->toODataQuery()['$filter']);
+    }
+
+    #[Test]
+    public function it_skips_unless_callback_if_condition_is_truthy(): void
+    {
+        $query = TestSubject::unless(true, fn ($q) => $q->where('Name', 'eq', 'John'));
+
+        $this->assertInstanceOf(AbacusODataQueryBuilder::class, $query);
+        $this->assertArrayNotHasKey('$filter', $query->toODataQuery());
+    }
+
+    #[Test]
+    public function it_runs_unless_default_callback_if_condition_is_truthy(): void
+    {
+        $query = TestSubject::unless(
+            true,
+            fn ($q) => $q->where('Name', 'eq', 'John'),
+            fn ($q) => $q->where('Name', 'eq', 'Jane'),
+        );
+
+        $this->assertSame("Name eq 'Jane'", $query->toODataQuery()['$filter']);
+    }
+
+    #[Test]
+    public function it_supports_higher_order_unless(): void
+    {
+        $applied = TestSubject::unless(false)->where('Name', 'eq', 'John');
+        $skipped = TestSubject::unless(true)->where('Name', 'eq', 'John');
+
+        $this->assertSame("Name eq 'John'", $applied->toODataQuery()['$filter']);
+        $this->assertArrayNotHasKey('$filter', $skipped->toODataQuery());
     }
 }

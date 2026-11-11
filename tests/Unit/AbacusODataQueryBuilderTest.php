@@ -9,7 +9,8 @@ use Contoweb\AbacusApi\Batch\BatchContext;
 use Contoweb\AbacusApi\Batch\BatchRequestItem;
 use Contoweb\AbacusApi\Batch\PendingBatchRequest;
 use Contoweb\AbacusApi\Enums\ODataOperator;
-use Contoweb\AbacusApi\OdataPaginator;
+use Contoweb\AbacusApi\Exceptions\AbacusNotFoundException;
+use Contoweb\AbacusApi\ODataPaginator;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
@@ -437,6 +438,105 @@ class AbacusODataQueryBuilderTest extends TestCase
     }
 
     #[Test]
+    public function it_executes_find_property_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/SalesOrderHeader(SalesOrderId=2537,SalesOrderBacklogId=0)/Name' => Http::response([
+                'value' => 'Order 2537',
+            ], 200),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'SalesOrderHeader', TestSubject::class);
+        $result = $builder->findProperty([
+            'SalesOrderId' => 2537,
+            'SalesOrderBacklogId' => 0,
+        ], 'Name');
+
+        $this->assertEquals(['value' => 'Order 2537'], $result);
+    }
+
+    #[Test]
+    public function it_streams_a_property_with_simple_id(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Picture' => Http::response('fake-picture-bytes', 200, [
+                'Content-Type' => 'image/png',
+            ]),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+        $result = $builder->stream(42, 'Picture');
+
+        $this->assertSame('fake-picture-bytes', $result);
+    }
+
+    #[Test]
+    public function it_streams_a_property_with_composite_key(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/SalesOrderHeader(SalesOrderId=2537,SalesOrderBacklogId=0)/PlainText' => Http::response('Plain text content', 200, [
+                'Content-Type' => 'text/plain',
+            ]),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'SalesOrderHeader', TestSubject::class);
+        $result = $builder->stream([
+            'SalesOrderId' => 2537,
+            'SalesOrderBacklogId' => 0,
+        ], 'PlainText');
+
+        $this->assertSame('Plain text content', $result);
+    }
+
+    #[Test]
+    public function it_returns_the_stream_body_without_decoding_json(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Content' => Http::response('{"Id":42}', 200, [
+                'Content-Type' => 'application/json',
+            ]),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+
+        $this->assertSame('{"Id":42}', $builder->stream(42, 'Content'));
+    }
+
+    #[Test]
+    public function it_throws_not_found_exception_when_stream_does_not_exist(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/entity/v1/mandants/1212/Subjects(42)/Content' => Http::response(['error' => 'Not found'], 404),
+        ]);
+
+        $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
+
+        $this->expectException(AbacusNotFoundException::class);
+
+        $builder->stream(42, 'Content');
+    }
+
+    #[Test]
     public function it_chains_multiple_methods_fluently(): void
     {
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
@@ -550,7 +650,7 @@ class AbacusODataQueryBuilderTest extends TestCase
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
         $result = $builder->paginate();
 
-        $this->assertInstanceOf(OdataPaginator::class, $result);
+        $this->assertInstanceOf(ODataPaginator::class, $result);
         $this->assertCount(2, $result->items());
     }
 
@@ -572,7 +672,7 @@ class AbacusODataQueryBuilderTest extends TestCase
         $builder = new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class);
         $result = $builder->paginate(10);
 
-        $this->assertInstanceOf(OdataPaginator::class, $result);
+        $this->assertInstanceOf(ODataPaginator::class, $result);
 
         // Verify that the request was made with $top=10 (URL encoded as %24top)
         Http::assertSent(function ($request) {
@@ -690,5 +790,29 @@ class AbacusODataQueryBuilderTest extends TestCase
         $query = $builder->toODataQuery();
 
         $this->assertStringContainsString("'O''Brien'", $query['$filter']);
+    }
+
+    #[Test]
+    public function it_applies_callback_only_when_condition_is_met(): void
+    {
+        $applied = (new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class))
+            ->when(true, fn ($q) => $q->where('Name', 'eq', 'John'));
+        $skipped = (new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class))
+            ->when(false, fn ($q) => $q->where('Name', 'eq', 'John'));
+
+        $this->assertSame("Name eq 'John'", $applied->toODataQuery()['$filter']);
+        $this->assertArrayNotHasKey('$filter', $skipped->toODataQuery());
+    }
+
+    #[Test]
+    public function it_applies_unless_callback_only_when_condition_is_not_met(): void
+    {
+        $applied = (new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class))
+            ->unless(false, fn (AbacusODataQueryBuilder $q) => $q->where('Name', 'eq', 'John'));
+        $skipped = (new AbacusODataQueryBuilder($this->client, 'Subjects', TestSubject::class))
+            ->unless(true, fn (AbacusODataQueryBuilder $q) => $q->where('Name', 'eq', 'John'));
+
+        $this->assertSame("Name eq 'John'", $applied->toODataQuery()['$filter']);
+        $this->assertArrayNotHasKey('$filter', $skipped->toODataQuery());
     }
 }

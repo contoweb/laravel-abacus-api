@@ -3,6 +3,7 @@
 namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\AbacusODataClient;
+use Contoweb\AbacusApi\Exceptions\AbacusForbiddenException;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -25,30 +26,6 @@ class AbacusODataClientTest extends TestCase
         $path = $this->client->entityPath('Subjects');
 
         $this->assertEquals('/api/entity/v1/mandants/1212/Subjects', $path);
-    }
-
-    #[Test]
-    public function it_builds_entity_path_with_id(): void
-    {
-        $path = $this->client->entityPathWithId('Subjects', 123);
-
-        $this->assertEquals('/api/entity/v1/mandants/1212/Subjects(123)', $path);
-    }
-
-    #[Test]
-    public function it_builds_entity_path_with_string_id(): void
-    {
-        $path = $this->client->entityPathWithId('Users', 'abc-def');
-
-        $this->assertEquals('/api/entity/v1/mandants/1212/Users(abc-def)', $path);
-    }
-
-    #[Test]
-    public function it_builds_entity_property_path(): void
-    {
-        $path = $this->client->entityPropertyPath('Subjects', 123, 'Name');
-
-        $this->assertEquals('/api/entity/v1/mandants/1212/Subjects(123)/Name', $path);
     }
 
     #[Test]
@@ -134,27 +111,82 @@ class AbacusODataClientTest extends TestCase
     }
 
     #[Test]
-    public function it_builds_path_with_numeric_id(): void
+    public function it_uploads_raw_content_to_the_file_store(): void
     {
-        $path = $this->client->entityPathWithId('Orders', 99999);
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/file-store/v1/user' => Http::response('', 201, [
+                'Location' => 'https://api.example.com/api/file-store/v1/user/abc-123',
+            ]),
+        ]);
 
-        $this->assertEquals('/api/entity/v1/mandants/1212/Orders(99999)', $path);
+        $response = $this->client->fileUpload('raw-file-content');
+
+        $this->assertEquals(201, $response->status());
+        $this->assertEquals('https://api.example.com/api/file-store/v1/user/abc-123', $response->header('Location'));
+
+        Http::assertSent(function (Request $request) {
+            return $request->method() === 'POST'
+                && $request->url() === 'https://api.example.com/api/file-store/v1/user'
+                && $request->body() === 'raw-file-content'
+                && $request->hasHeader('Content-Type', 'application/octet-stream')
+                && $request->hasHeader('Authorization', 'Bearer test-token');
+        });
     }
 
     #[Test]
-    public function it_builds_path_with_guid_id(): void
+    public function it_uploads_with_custom_content_type(): void
     {
-        $guid = '550e8400-e29b-41d4-a716-446655440000';
-        $path = $this->client->entityPathWithId('Documents', $guid);
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/file-store/v1/user' => Http::response('', 201),
+        ]);
 
-        $this->assertEquals('/api/entity/v1/mandants/1212/Documents(550e8400-e29b-41d4-a716-446655440000)', $path);
+        $this->client->fileUpload('%PDF-1.4', 'application/pdf');
+
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://api.example.com/api/file-store/v1/user'
+                && $request->hasHeader('Content-Type', 'application/pdf');
+        });
     }
 
     #[Test]
-    public function it_builds_property_path_with_nested_property(): void
+    public function it_refreshes_token_on_file_upload_401(): void
     {
-        $path = $this->client->entityPropertyPath('Subjects', 42, 'Address/City');
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::sequence()
+                ->push(['access_token' => 'initial-token', 'expires_in' => 3600], 200)
+                ->push(['access_token' => 'refreshed-token', 'expires_in' => 3600], 200),
+            '*/api/file-store/v1/user' => Http::sequence()
+                ->push(['error' => 'Unauthorized'], 401)
+                ->push('', 201),
+        ]);
 
-        $this->assertEquals('/api/entity/v1/mandants/1212/Subjects(42)/Address/City', $path);
+        $response = $this->client->fileUpload('raw-file-content');
+
+        $this->assertEquals(201, $response->status());
+        Http::assertSentCount(4);
+    }
+
+    #[Test]
+    public function it_maps_forbidden_file_upload_to_exception(): void
+    {
+        Http::fake([
+            '*/oauth/oauth2/v1/token' => Http::response([
+                'access_token' => 'test-token',
+                'expires_in' => 3600,
+            ], 200),
+            '*/api/file-store/v1/user' => Http::response(['error' => 'Forbidden'], 403),
+        ]);
+
+        $this->expectException(AbacusForbiddenException::class);
+
+        $this->client->fileUpload('raw-file-content');
     }
 }

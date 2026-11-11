@@ -29,7 +29,7 @@ class GenerateIdeHelperCommand extends Command
 
     protected $description = 'Generate IDE helper files for the Abacus models';
 
-    protected const BUILDER_ENTRY_POINTS = ['query', 'select', 'where', 'orderBy', 'top', 'expand', 'withoutUuidEscaping', 'withUuidEscaping'];
+    protected const BUILDER_ENTRY_POINTS = ['query', 'select', 'where', 'orderBy', 'top', 'expand', 'withoutUuidEscaping', 'withUuidEscaping', 'when', 'unless'];
 
     protected const BUILTIN_TYPES = ['int', 'float', 'string', 'bool', 'array', 'callable', 'iterable', 'object', 'mixed', 'null', 'void', 'never', 'false', 'true', 'self', 'static'];
 

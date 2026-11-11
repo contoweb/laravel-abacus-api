@@ -16,6 +16,7 @@ use DateTime;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Conditionable;
 use Illuminate\Support\Traits\ForwardsCalls;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,7 +28,8 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class AbacusODataQueryBuilder
 {
-    use ForwardsCalls;
+    use Conditionable,
+        ForwardsCalls;
 
     protected AbacusODataClient $client;
 
@@ -65,19 +67,19 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Executes the query and returns a paginated result
+     * Executes the query and returns a paginated result, or a BatchRequestItem in a batch context.
      *
-     * The $perPage parameter controls the OData query option $top to set the number of items per page
-     * Returns a BatchRequestItem in batch context, otherwise an OdataPaginator
+     * The $perPage parameter controls the OData query option $top to set the number of items per page.
      *
-     * @return OdataPaginator<TModel>|BatchRequestItem
+     * @param  int|null  $perPage  Number of items per page
+     * @return ODataPaginator<TModel>|BatchRequestItem
      *
      * @throws ConnectionException
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
      * @throws RequestException
      */
-    public function paginate(?int $perPage = null): OdataPaginator|BatchRequestItem
+    public function paginate(?int $perPage = null): ODataPaginator|BatchRequestItem
     {
         if ($perPage <= 0 && $perPage !== null) {
             throw new InvalidArgumentException('Limit should be greater than 0');
@@ -109,7 +111,7 @@ class AbacusODataQueryBuilder
             $items = $response['value'];
         }
 
-        return new OdataPaginator(
+        return new ODataPaginator(
             $items,
             $this->client,
             $this->modelClass,
@@ -118,9 +120,9 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Fetch entity via primary key
+     * Find an entity by its primary key, or return a BatchRequestItem in a batch context.
      *
-     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @return TModel|BatchRequestItem
      *
      * @throws AbacusAuthenticationException
@@ -150,11 +152,10 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Execute a POST request (create entity)
-     * Valid query methods: select(), expand()
+     * Create an entity, or return a BatchRequestItem in a batch context.
      *
-     * @param  array<string, mixed>  $data  Request body data
-     * @return TModel|BatchRequestItem The created entity
+     * @param  array<string, mixed>  $data  Attributes of the new entity
+     * @return TModel|BatchRequestItem
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -181,11 +182,9 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Execute a DELETE request
-     * Requires: ID set via id()
+     * Delete an entity by its primary key, or return a BatchRequestItem in a batch context.
      *
-     * @param  int|string|array<string, int|string>  $idOrCriteria
-     * @return BatchRequestItem|null Returns BatchRequestItem in batch mode, null otherwise
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -211,11 +210,11 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Update an entity
+     * Update an entity by its primary key, or return a BatchRequestItem in a batch context.
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
-     * @param  array<string, mixed>  $data  Request body data
-     * @return TModel|BatchRequestItem The updated entity
+     * @param  array<string, mixed>  $data  Attributes to update
+     * @return TModel|BatchRequestItem
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -244,12 +243,12 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Execute a bound OData action on an entity
+     * Execute a bound OData action on an entity.
      *
-     * @param  int|string|array<string, int|string>  $idOrCriteria
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      * @param  string  $actionName  Fully qualified action name (e.g. ch.abacus.orde.TriggerSalesOrderNextStep)
      * @param  array<string, mixed>  $data  Action parameters
-     * @return mixed|array|null
+     * @param  AbacusModel|AbacusComponent|null  $returnType  Type of the result
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -287,8 +286,10 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Fetch specific property of an entity
+     * Fetch a single regular property of an entity.
      *
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  string  $property  Name of the property
      * @return array|mixed
      *
      * @throws AbacusAuthenticationException
@@ -296,9 +297,10 @@ class AbacusODataQueryBuilder
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function findProperty($id, string $property): mixed
+    public function findProperty(int|string|array $idOrCriteria, string $property): mixed
     {
-        $path = $this->client->entityPropertyPath($this->resource, $id, $property);
+        $this->id($idOrCriteria);
+        $path = $this->buildPathWithId($this->client, $this->resource).'/'.$property;
 
         return $this->client
             ->get($path)
@@ -306,19 +308,21 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Fetch file via GET call to /Content.
+     * Fetch the raw content of a stream property.
      *
-     * @param  int|string|array<string, int|string>  $id
-     * @return string The raw binary content
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @param  string  $property  Name of the stream property
+     * @return string The raw response body
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
      * @throws ConnectionException
      * @throws RequestException
      */
-    public function content(int|string|array $id): string
+    public function stream(int|string|array $idOrCriteria, string $property): string
     {
-        $path = $this->client->entityPropertyPath($this->resource, $id, 'Content');
+        $this->id($idOrCriteria);
+        $path = $this->buildPathWithId($this->client, $this->resource).'/'.$property;
 
         return $this->client
             ->get($path)
@@ -326,10 +330,26 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Fetch file via GET call to /FileStream.
+     * Fetch the file of the Content property.
      *
-     * @param  int|string|array<string, int|string>  $idOrCriteria
-     * @return string The raw binary content
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @return string The raw file content
+     *
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     * @throws ConnectionException
+     * @throws RequestException
+     */
+    public function content(int|string|array $idOrCriteria): string
+    {
+        return $this->stream($idOrCriteria, 'Content');
+    }
+
+    /**
+     * Fetch the file of the FileStream property.
+     *
+     * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
+     * @return string The raw file content
      *
      * @throws AbacusAuthenticationException
      * @throws AbacusRateLimitException
@@ -338,16 +358,11 @@ class AbacusODataQueryBuilder
      */
     public function fileStream(int|string|array $idOrCriteria): string
     {
-        $this->id($idOrCriteria);
-        $path = $this->buildPathWithId($this->client, $this->resource);
-
-        return $this->client
-            ->get($path.'/FileStream')
-            ->body();
+        return $this->stream($idOrCriteria, 'FileStream');
     }
 
     /**
-     * Execute query and return first result
+     * Execute the query and return the first result, or a BatchRequestItem in a batch context.
      *
      * @return TModel|BatchRequestItem|null
      *
@@ -369,7 +384,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Convert current query to a BatchRequestItem
+     * Convert current query to a BatchRequestItem.
      */
     protected function toBatchItem(string $method, ?array $data = null): BatchRequestItem
     {
@@ -387,7 +402,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Set entity ID (simple or composite)
+     * Set entity ID (simple or composite).
      *
      * @param  int|string|array<string, int|string>  $idOrCriteria  Single value for simple keys, array for composite keys
      */
@@ -403,7 +418,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Check if an entity ID has been set
+     * Check if an entity ID has been set.
      */
     public function hasId(): bool
     {
@@ -411,7 +426,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Filter with OData operators or Laravel Eloquent operators.
+     * Filter with OData operators or Laravel operators (=, >, >=, <, <=).
      *
      * @return $this
      */
@@ -439,7 +454,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Convenience method for equality
+     * Filter by equality.
      */
     public function whereEquals(string $field, mixed $value): static
     {
@@ -447,7 +462,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * $select - Query only specific properties
+     * Select only specific properties ($select).
      */
     public function select(array|string $fields): static
     {
@@ -460,7 +475,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * $top - Return only top N elements
+     * Limit the number of results ($top).
      */
     public function top(int $limit): static
     {
@@ -470,7 +485,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * $orderby - Sort by attribute (asc or desc)
+     * Sort by a property, asc or desc ($orderby).
      */
     public function orderBy(string $field, string $direction = 'asc'): static
     {
@@ -484,10 +499,9 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * $expand - Expand navigation properties
+     * Expand navigation properties ($expand).
      *
-     * Pass a closure as second argument to set the nested query options
-     * of the expanded navigation property with the query builder of the related model.
+     * Pass a closure as second argument to set the query options of the expanded relation.
      */
     public function expand(array|string $relations, string|Closure|null $callback = null): static
     {
@@ -582,7 +596,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Build the full path with entity ID (simple or composite)
+     * Build the full path with entity ID (simple or composite).
      */
     public function buildPathWithId(AbacusODataClient $client, string $resource): string
     {
@@ -592,8 +606,8 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Build the entity ID segment for the path
-     * Handles both simple IDs and composite keys
+     * Build the entity ID segment for the path.
+     * Handles both simple IDs and composite keys.
      */
     private function buildEntityIdSegment(): string
     {
@@ -611,7 +625,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Assemble OData query parameters for list queries
+     * Assemble OData query parameters for list queries.
      */
     public function buildODataQuery(): array
     {
@@ -685,7 +699,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Format values for OData
+     * Format values for OData.
      */
     private function formatValue(mixed $value): string
     {
@@ -720,7 +734,7 @@ class AbacusODataQueryBuilder
     }
 
     /**
-     * Debug: Display query parameters
+     * Debug: Display query parameters.
      */
     public function toODataQuery(): array
     {

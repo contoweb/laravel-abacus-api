@@ -2,13 +2,6 @@
 
 namespace Contoweb\AbacusApi\Enums;
 
-/**
- * OData Enum Value Wrapper
- *
- * Use this class to pass enum values to where() filters.
- * Enum values in OData have a special format: Namespace.Type'Value'
- * and must NOT be wrapped in additional quotes.
- */
 class ODataEnum
 {
     public function __construct(
@@ -17,7 +10,7 @@ class ODataEnum
     ) {}
 
     /**
-     * Create a new OData enum value
+     * Create a new OData enum value.
      *
      * @param  string  $namespace  The full enum namespace (e.g., 'ch.abacus.orde.ProductType')
      * @param  string  $value  The enum value (e.g., 'Article')
@@ -28,7 +21,7 @@ class ODataEnum
     }
 
     /**
-     * Format as OData enum string
+     * Format as OData enum string.
      *
      * @return string Formatted as: Namespace.Type'Value'
      */

@@ -28,7 +28,7 @@ class AbacusService
     }
 
     /**
-     * List of all available entity IDs
+     * List of all available entity IDs.
      * GET /api/entity/v1/mandants/{mandate}/
      *
      * @throws ConnectionException
@@ -104,5 +104,23 @@ class AbacusService
     public function batch(callable $callback): PendingBatchRequest
     {
         return $this->newBatch()->capture($callback);
+    }
+
+    /**
+     * Upload raw content to the temporary file store.
+     *
+     * @param  string  $content  The raw file content
+     * @param  string  $contentType  Content type of the upload (Abacus detects the file type itself)
+     *
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     */
+    public function fileUpload(string $content, string $contentType = 'application/octet-stream'): string
+    {
+        return $this->client
+            ->fileUpload($content, $contentType)
+            ->header('Location');
     }
 }

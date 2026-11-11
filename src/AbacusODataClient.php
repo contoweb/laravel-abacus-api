@@ -15,8 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 class AbacusODataClient extends AbacusClient
 {
     /**
-     * Follow OData nextLink for pagination
-     * Accepts full URL from @odata.nextLink
+     * Follow OData nextLink for pagination.
      *
      * @throws RequestException
      * @throws ConnectionException
@@ -37,7 +36,31 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Get the base path for entity API
+     * Upload raw content to the temporary file store.
+     *
+     * @param  string  $content  The raw file content
+     * @param  string  $contentType  Content type of the upload (Abacus detects the file type itself)
+     *
+     * @throws RequestException
+     * @throws ConnectionException
+     * @throws AbacusAuthenticationException
+     * @throws AbacusRateLimitException
+     */
+    public function fileUpload(string $content, string $contentType = 'application/octet-stream'): Response
+    {
+        return $this->callWithTokenRefresh(function () use ($content, $contentType) {
+            $path = $this->fileStorePath();
+            event(new AbacusRequestSent(Request::METHOD_POST, $path));
+
+            return $this
+                ->client()
+                ->withBody($content, $contentType)
+                ->post($path);
+        })->throw($this->toException());
+    }
+
+    /**
+     * Get the base path for entity API.
      */
     protected function getEntityBasePath(): string
     {
@@ -45,7 +68,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Create complete entity path
+     * Create complete entity path.
      */
     public function entityPath(string $resource): string
     {
@@ -53,23 +76,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Path for single entity with ID
-     */
-    public function entityPathWithId(string $resource, mixed $id): string
-    {
-        return $this->getEntityBasePath()."/{$this->mandate}/{$resource}({$id})";
-    }
-
-    /**
-     * Path for entity property
-     */
-    public function entityPropertyPath(string $resource, mixed $id, string $property): string
-    {
-        return $this->getEntityBasePath()."/{$this->mandate}/{$resource}({$id})/{$property}";
-    }
-
-    /**
-     * Metadata path
+     * Metadata path.
      */
     public function metadataPath(): string
     {
@@ -77,7 +84,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Entity list path
+     * Entity list path.
      */
     public function entitiesPath(): string
     {
@@ -85,7 +92,7 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Batch path
+     * Batch path.
      */
     public function batchPath(): string
     {
@@ -93,7 +100,15 @@ class AbacusODataClient extends AbacusClient
     }
 
     /**
-     * Send batch request with multiple operations
+     * Path of the temporary file store endpoint.
+     */
+    public function fileStorePath(): string
+    {
+        return "/api/file-store/$this->apiVersion/user";
+    }
+
+    /**
+     * Send batch request with multiple operations.
      *
      * @throws ConnectionException
      * @throws RequestException

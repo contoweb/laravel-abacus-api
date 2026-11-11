@@ -77,11 +77,16 @@ class BatchResponseDto
     /**
      * Returns a collection of model instances if the response contains multiple items,
      * otherwise returns a single model instance.
+     * Returns null if the response has no body.
      *
-     * @return Collection<int|string, AbacusModel>|AbacusModel
+     * @return Collection<int, AbacusModel>|AbacusModel|null
      */
-    public function mapped(): Collection|AbacusModel
+    public function mapped(): Collection|AbacusModel|null
     {
+        if ($this->body === null) {
+            return null;
+        }
+
         if (isset($this->body['value'])) {
             return collect($this->body['value'])
                 ->map(fn ($item) => new $this->modelClass($item));

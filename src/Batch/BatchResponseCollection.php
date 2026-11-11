@@ -46,7 +46,7 @@ class BatchResponseCollection extends Collection
      * Get all models from successful responses.
      *
      * A successful batch response will be mapped to their model instance(s),
-     * failed responses will be null.
+     * failed responses and responses without a body will be null.
      *
      * @return Collection<int, AbacusModel|Collection<int, AbacusModel>|null>
      */

@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static array listEntityIds()
  * @method static string metadata()
  * @method static AbacusODataClient client(AbacusCredentialsProvider $credentialsProvider)
+ * @method static string fileUpload(string $content, string $contentType = 'application/octet-stream')
+ * @method static array callUnboundAction(string $action, string $wrapperKey, array $payload)
  *
  * @see AbacusService
  */

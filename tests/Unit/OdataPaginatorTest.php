@@ -3,7 +3,7 @@
 namespace Contoweb\AbacusApi\Tests\Unit;
 
 use Contoweb\AbacusApi\AbacusODataClient;
-use Contoweb\AbacusApi\OdataPaginator;
+use Contoweb\AbacusApi\ODataPaginator;
 use Contoweb\AbacusApi\Tests\Fixtures\TestSubject;
 use Contoweb\AbacusApi\Tests\TestCase;
 use Illuminate\Support\Facades\Http;
@@ -35,7 +35,7 @@ class OdataPaginatorTest extends TestCase
             ['Id' => 2, 'Name' => 'Second'],
         ];
 
-        $paginator = new OdataPaginator($items, $this->client, TestSubject::class);
+        $paginator = new ODataPaginator($items, $this->client, TestSubject::class);
 
         $collection = $paginator->items();
         $this->assertCount(2, $collection);
@@ -52,7 +52,7 @@ class OdataPaginatorTest extends TestCase
             ['Id' => 1, 'Name' => 'Test'],
         ];
 
-        $paginator = new OdataPaginator($items, $this->client, TestSubject::class);
+        $paginator = new ODataPaginator($items, $this->client, TestSubject::class);
         $collection = $paginator->items();
 
         $this->assertCount(1, $collection);
@@ -65,7 +65,7 @@ class OdataPaginatorTest extends TestCase
         $items = [['Id' => 1, 'Name' => 'First']];
         $nextLink = 'https://example.com/Subjects?$skiptoken=abc123';
 
-        $paginator = new OdataPaginator($items, $this->client, TestSubject::class, $nextLink);
+        $paginator = new ODataPaginator($items, $this->client, TestSubject::class, $nextLink);
 
         $this->assertTrue($paginator->hasMorePages());
     }
@@ -75,7 +75,7 @@ class OdataPaginatorTest extends TestCase
     {
         $items = [['Id' => 1, 'Name' => 'First']];
 
-        $paginator = new OdataPaginator($items, $this->client, TestSubject::class, null);
+        $paginator = new ODataPaginator($items, $this->client, TestSubject::class, null);
 
         $this->assertFalse($paginator->hasMorePages());
     }
@@ -99,7 +99,7 @@ class OdataPaginatorTest extends TestCase
         $items = [['Id' => 1, 'Name' => 'First']];
         $nextLink = 'https://example.com/Subjects?$skiptoken=abc123';
 
-        $paginator = new OdataPaginator($items, $this->client, TestSubject::class, $nextLink);
+        $paginator = new ODataPaginator($items, $this->client, TestSubject::class, $nextLink);
 
         $this->assertCount(1, $paginator->items());
         $paginator->nextPage();
@@ -129,7 +129,7 @@ class OdataPaginatorTest extends TestCase
         $items = [['Id' => 1, 'Name' => 'First']];
         $nextLink = 'https://example.com/Subjects?$skiptoken=abc123';
 
-        $paginator = new OdataPaginator($items, $this->client, TestSubject::class, $nextLink);
+        $paginator = new ODataPaginator($items, $this->client, TestSubject::class, $nextLink);
 
         $this->assertTrue($paginator->hasMorePages());
         $paginator->nextPage();
@@ -159,7 +159,7 @@ class OdataPaginatorTest extends TestCase
         $items = [['Id' => 1, 'Name' => 'First']];
         $nextLink = 'https://example.com/Subjects?$skiptoken=abc123';
 
-        $paginator = new OdataPaginator($items, $this->client, TestSubject::class, $nextLink);
+        $paginator = new ODataPaginator($items, $this->client, TestSubject::class, $nextLink);
 
         $this->assertTrue($paginator->hasMorePages());
         $paginator->nextPage();
@@ -192,7 +192,7 @@ class OdataPaginatorTest extends TestCase
         $items = [['Id' => 1, 'Name' => 'First']];
         $nextLink = 'https://example.com/Subjects?$skiptoken=abc123';
 
-        $paginator = new OdataPaginator($items, $this->client, TestSubject::class, $nextLink);
+        $paginator = new ODataPaginator($items, $this->client, TestSubject::class, $nextLink);
 
         $this->assertCount(1, $paginator->items());
         $this->assertTrue($paginator->hasMorePages());
